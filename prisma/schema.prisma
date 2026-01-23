@@ -1,0 +1,176 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// User & Auth
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          String    @default("USER") // ADMIN, USER
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// Store Configuration (CMS)
+model StoreConfig {
+  id          String   @id @default("store-config")
+  storeName   String   @default("Gut Cosméticos & Makes")
+  description String?
+  bannerUrl   String?
+  logoUrl     String?
+  themeColor  String   @default("#000000")
+  instagram   String?
+  whatsapp    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Products
+model Product {
+  id             String    @id @default(cuid())
+  name           String
+  description    String?   
+  slug           String    @unique
+  status         String    @default("DRAFT") // DRAFT, ACTIVE, ARCHIVED
+  
+  // Pricing & Costs
+  price          Decimal   
+  compareAtPrice Decimal?  // "De: R$ 50,00"
+  costPerItem    Decimal?  // Custo do produto (para cálculo de lucro)
+
+  // Inventory & Logistics
+  sku            String?
+  barcode        String?   // EAN/GTIN
+  trackQuantity  Boolean   @default(true)
+  stock          Int       @default(0)
+  weight         Decimal?  // em kg (0.5 = 500g)
+  length         Decimal?  // cm
+  width          Decimal?  // cm
+  height         Decimal?  // cm
+  
+  // Compliance & Details
+  expiresAt      DateTime? // Data de validade
+  brand          String?   // Marca/Fabricante
+  tags           String?   // Tags separadas por vírgula (ex: "verão, natural, vegano")
+
+  // Media
+  videoUrl       String?   // Youtube/Vimeo
+  images         ProductImage[]
+
+  // SEO Fields
+  seoTitle       String?
+  seoDescription String?
+
+  // Organization
+  categoryId     String?
+  category       Category? @relation(fields: [categoryId], references: [id])
+  
+  variants       ProductVariant[]
+  
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model ProductVariant {
+  id             String    @id @default(cuid())
+  productId      String
+  product        Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  name           String    // e.g., "Red", "Large"
+  price          Decimal?  // Override product price if different
+  stock          Int       @default(0)
+  sku            String?
+  
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  url       String
+  alt       String?
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+// Collections / Categories
+model Category {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String?
+  imageUrl    String?
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// Customers (CRM)
+model Customer {
+  id          String   @id @default(cuid())
+  name        String
+  email       String?  @unique
+  phone       String?  // For WhatsApp integration
+  orders      Order[]
+  addresses   Address[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Address {
+  id          String   @id @default(cuid())
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  
+  street      String
+  number      String
+  complement  String?
+  district    String
+  city        String
+  state       String
+  zipCode     String
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Orders
+model Order {
+  id            String      @id @default(cuid())
+  code          Int         // Friendly ID: #1001 (Handle generation in code)
+  customerId    String?
+  customer      Customer?   @relation(fields: [customerId], references: [id])
+  
+  status        String      @default("PENDING") // PENDING, PAID, FULFILLED, CANCELLED
+  total         Decimal
+  paymentMethod String?     // CREDIT_CARD, PIX, CASH
+  
+  items         OrderItem[]
+  
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  productId String
+  name      String  // Snapshot of name
+  price     Decimal // Snapshot of price
+  quantity  Int
+}

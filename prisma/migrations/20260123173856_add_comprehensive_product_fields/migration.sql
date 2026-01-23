@@ -1,0 +1,11 @@
+-- AlterTable
+ALTER TABLE "Product" ADD COLUMN "brand" TEXT;
+ALTER TABLE "Product" ADD COLUMN "expiresAt" DATETIME;
+ALTER TABLE "Product" ADD COLUMN "height" DECIMAL;
+ALTER TABLE "Product" ADD COLUMN "length" DECIMAL;
+ALTER TABLE "Product" ADD COLUMN "seoDescription" TEXT;
+ALTER TABLE "Product" ADD COLUMN "seoTitle" TEXT;
+ALTER TABLE "Product" ADD COLUMN "tags" TEXT;
+ALTER TABLE "Product" ADD COLUMN "videoUrl" TEXT;
+ALTER TABLE "Product" ADD COLUMN "weight" DECIMAL;
+ALTER TABLE "Product" ADD COLUMN "width" DECIMAL;
