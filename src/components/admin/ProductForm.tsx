@@ -18,15 +18,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { upsertProduct } from "@/lib/actions/product"; // Server Action
 import { useState, useTransition } from "react";
+import { Switch } from "@/components/ui/switch";
 import { Loader2, Upload, AlertCircle } from "lucide-react";
-
-// Mock Categories - in real app, fetch these
-const categories = [
-    { id: "cat_cabelos", name: "Cuidados com os Cabelos" },
-    { id: "cat_makeup", name: "Maquiagem" },
-    { id: "cat_skin", name: "Skincare" },
-    { id: "cat_perfume", name: "Perfumaria" },
-];
+import { StatusFeedback } from "@/components/admin/StatusFeedback";
+import { getDistinctBrands } from "@/lib/actions/brands";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 const formSchema = z.object({
     name: z.string().min(2, "Nome obrigatório"),
@@ -34,53 +33,69 @@ const formSchema = z.object({
     price: z.string().min(1, "Preço obrigatório"),
     compareAtPrice: z.string().optional(),
     costPerItem: z.string().optional(),
-    stock: z.string().min(1, "Estoque obrigatório"),
+    stock: z.coerce.number().min(0, "Estoque inválido"),
     sku: z.string().optional(),
     barcode: z.string().optional(),
     categoryId: z.string().optional(),
+    isNewArrival: z.boolean().default(false),
     brand: z.string().optional(),
-    videoUrl: z.string().url("URL inválida").optional().or(z.literal("")),
+    videoUrl: z.string().optional().or(z.literal("")),
     weight: z.string().optional(),
     length: z.string().optional(),
     width: z.string().optional(),
     height: z.string().optional(),
     seoTitle: z.string().optional(),
     seoDescription: z.string().optional(),
+    expiresAt: z.string().optional(),
 });
 
-export function ProductForm() {
-    const [isPending, startTransition] = useTransition();
+type ProductFormValues = z.infer<typeof formSchema>;
 
-    const form = useForm<z.infer<typeof formSchema>>({
-        resolver: zodResolver(formSchema),
+export function ProductForm({ categories = [], initialData }: { categories?: any[], initialData?: any }) {
+    const [isPending, startTransition] = useTransition();
+    const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
+
+    const form = useForm<ProductFormValues>({
+        resolver: zodResolver(formSchema) as any,
         defaultValues: {
-            name: "",
-            description: "",
-            price: "",
-            compareAtPrice: "",
-            costPerItem: "",
-            stock: "",
-            sku: "",
-            barcode: "",
-            categoryId: "",
-            brand: "",
-            videoUrl: "",
-            weight: "",
-            length: "",
-            width: "",
-            height: "",
-            seoTitle: "",
-            seoDescription: "",
+            name: initialData?.name || "",
+            description: initialData?.description || "",
+            price: initialData?.price ? String(initialData.price) : "",
+            compareAtPrice: initialData?.compareAtPrice ? String(initialData.compareAtPrice) : "",
+            costPerItem: initialData?.costPerItem ? String(initialData.costPerItem) : "",
+            stock: initialData?.stock !== undefined ? Number(initialData.stock) : 0,
+            sku: initialData?.sku || "",
+            barcode: initialData?.barcode || "",
+            categoryId: initialData?.categoryId || "",
+            isNewArrival: !!initialData?.isNewArrival,
+            brand: initialData?.brand || "",
+            videoUrl: initialData?.videoUrl || "",
+            weight: initialData?.weight ? String(initialData.weight) : "",
+            length: initialData?.length ? String(initialData.length) : "",
+            width: initialData?.width ? String(initialData.width) : "",
+            height: initialData?.height ? String(initialData.height) : "",
+            seoTitle: initialData?.seoTitle || "",
+            seoDescription: initialData?.seoDescription || "",
+            expiresAt: initialData?.expiresAt ? new Date(initialData.expiresAt).toISOString().split("T")[0] : "",
         },
     });
 
     function onSubmit(values: z.infer<typeof formSchema>) {
+        setStatus("idle");
         startTransition(async () => {
-            const formData = new FormData();
-            Object.entries(values).forEach(([key, value]) => {
-                if (value) formData.append(key, value);
-            });
-            await upsertProduct(formData);
+            try {
+                const formData = new FormData();
+                Object.entries(values).forEach(([key, value]) => {
+                    if (value !== undefined && value !== null) {
+                        formData.append(key, String(value));
+                    }
+                });
+                await upsertProduct(formData);
+                setStatus("success");
+            } catch (error) {
+                console.error(error);
+                setStatus("error");
+            }
         });
     }
 
@@ -91,11 +106,35 @@ export function ProductForm() {
                 {/* Header Actions */}
                 <div className="flex items-center justify-between sticky top-0 bg-gray-50/95 backdrop-blur-sm z-10 py-4 border-b mb-6">
                     <h1 className="text-2xl font-bold">Novo Produto</h1>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 items-center">
+                        <StatusFeedback status={status} onReset={() => setStatus("idle")} />
                         <Button type="button" variant="outline" onClick={() => window.history.back()}>Cancelar</Button>
-                        <Button type="submit" disabled={isPending} className="bg-blue-600 hover:bg-blue-700 text-white font-bold">
+                        <FormField
+                            control={form.control}
+                            name="isNewArrival"
+                            render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                    <div className="space-y-0.5">
+                                        <FormLabel className="text-base">Lançamento</FormLabel>
+                                        <FormDescription>
+                                            Exibir este produto na seção de Lançamentos na Home?
+                                        </FormDescription>
+                                    </div>
+                                    <FormControl>
+                                        <Switch
+                                            checked={field.value}
+                                            onCheckedChange={field.onChange}
+                                        />
+                                    </FormControl>
+                                </FormItem>
+                            )}
+                        />
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                        <Button type="submit" disabled={isPending}>
                             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Salvar alterações
+                            {initialData ? "Salvar Alterações" : "Criar Produto"}
                         </Button>
                     </div>
                 </div>
@@ -252,8 +291,17 @@ export function ProductForm() {
                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                     <FormControl><SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger></FormControl>
                                     <SelectContent>
-                                        {categories.map(cat => (
-                                            <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                                        {categories.map((parent: any) => (
+                                            <div key={parent.id}>
+                                                <SelectItem value={parent.id} className="font-bold bg-slate-50">
+                                                    {parent.name}
+                                                </SelectItem>
+                                                {parent.children && parent.children.map((child: any) => (
+                                                    <SelectItem key={child.id} value={child.id} className="pl-6">
+                                                        {child.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </div>
                                         ))}
                                     </SelectContent>
                                 </Select>
@@ -261,13 +309,95 @@ export function ProductForm() {
                             </FormItem>
                         )} />
 
-                        <FormField control={form.control} name="brand" render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Marca</FormLabel>
-                                <FormControl><Input placeholder="Ex: Max Love" {...field} /></FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )} />
+                        <FormField
+                            control={form.control}
+                            name="brand"
+                            render={({ field }) => {
+                                const [open, setOpen] = useState(false);
+                                const [brands, setBrands] = useState<string[]>([]);
+                                const [inputValue, setInputValue] = useState("");
+
+                                // Fetch brands on open
+                                const onOpenChange = (isOpen: boolean) => {
+                                    setOpen(isOpen);
+                                    if (isOpen && brands.length === 0) {
+                                        getDistinctBrands().then(setBrands);
+                                    }
+                                };
+
+                                return (
+                                    <FormItem className="flex flex-col">
+                                        <FormLabel>Marca</FormLabel>
+                                        <Popover open={open} onOpenChange={onOpenChange}>
+                                            <PopoverTrigger asChild>
+                                                <FormControl>
+                                                    <Button
+                                                        variant="outline"
+                                                        role="combobox"
+                                                        aria-expanded={open}
+                                                        className={cn(
+                                                            "justify-between font-normal",
+                                                            !field.value && "text-muted-foreground"
+                                                        )}
+                                                    >
+                                                        {field.value || "Selecione ou crie..."}
+                                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                    </Button>
+                                                </FormControl>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-[200px] p-0">
+                                                <Command>
+                                                    <CommandInput
+                                                        placeholder="Buscar marca..."
+                                                        value={inputValue}
+                                                        onValueChange={setInputValue}
+                                                    />
+                                                    <CommandList>
+                                                        <CommandEmpty>
+                                                            <div className="p-2">
+                                                                <p className="text-sm text-muted-foreground mb-2">"{inputValue}" não encontrada.</p>
+                                                                <Button
+                                                                    variant="secondary"
+                                                                    size="sm"
+                                                                    className="w-full h-8 px-2"
+                                                                    onClick={() => {
+                                                                        field.onChange(inputValue);
+                                                                        setOpen(false);
+                                                                    }}
+                                                                >
+                                                                    Criar "{inputValue}"
+                                                                </Button>
+                                                            </div>
+                                                        </CommandEmpty>
+                                                        <CommandGroup heading="Marcas Existentes">
+                                                            {brands.map((brand) => (
+                                                                <CommandItem
+                                                                    key={brand}
+                                                                    value={brand}
+                                                                    onSelect={(currentValue: string) => {
+                                                                        field.onChange(currentValue === field.value ? "" : currentValue);
+                                                                        setOpen(false);
+                                                                    }}
+                                                                >
+                                                                    <Check
+                                                                        className={cn(
+                                                                            "mr-2 h-4 w-4",
+                                                                            brand === field.value ? "opacity-100" : "opacity-0"
+                                                                        )}
+                                                                    />
+                                                                    {brand}
+                                                                </CommandItem>
+                                                            ))}
+                                                        </CommandGroup>
+                                                    </CommandList>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
+                                        <FormMessage />
+                                    </FormItem>
+                                );
+                            }}
+                        />
 
                         <div className="col-span-full">
                             <FormField control={form.control} name="videoUrl" render={({ field }) => (
@@ -281,26 +411,7 @@ export function ProductForm() {
                     </div>
                 </div>
 
-                {/* SEO */}
-                <div className="bg-white p-6 rounded-lg border shadow-sm space-y-6">
-                    <h2 className="font-bold text-lg mb-4">SEO (Google)</h2>
-                    <div className="space-y-4">
-                        <FormField control={form.control} name="seoTitle" render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Título para SEO</FormLabel>
-                                <FormControl><Input placeholder="Título que aparece no Google" {...field} /></FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )} />
-                        <FormField control={form.control} name="seoDescription" render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Descrição para SEO</FormLabel>
-                                <FormControl><Textarea placeholder="Descrição curta que aparece no Google" {...field} /></FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )} />
-                    </div>
-                </div>
+
 
             </form>
         </Form>

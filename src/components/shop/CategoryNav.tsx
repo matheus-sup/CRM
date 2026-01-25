@@ -1,35 +1,36 @@
 import Link from "next/link";
-import { ArrowRight, Shirt, Scissors, Footprints, Sparkles, Droplets } from "lucide-react";
+import { prisma } from "@/lib/prisma";
+import { Sparkles, Package } from "lucide-react";
 
-const categories = [
-    { name: "Cabelos", icon: <Scissors className="h-10 w-10 text-gray-300" /> },
-    { name: "Maquiagem", icon: <Sparkles className="h-10 w-10 text-gray-300" /> },
-    { name: "Perfumes", icon: <Droplets className="h-10 w-10 text-gray-300" /> },
-    { name: "Skincare", icon: <Sparkles className="h-10 w-10 text-gray-300" /> },
-    { name: "Unhas", icon: <Scissors className="h-10 w-10 text-gray-300" /> },
-    { name: "Corpo", icon: <Footprints className="h-10 w-10 text-gray-300" /> },
-    { name: "Roupas", icon: <Shirt className="h-10 w-10 text-gray-300" /> },
-];
+export async function CategoryNav() {
+    const categories = await prisma.category.findMany({
+        orderBy: { name: 'asc' },
+        take: 20
+    });
 
-export function CategoryNav() {
     return (
-        <div className="bg-primary pb-8 pt-4">
+        <div className="pb-4 pt-4 shadow-inner" style={{ backgroundColor: "var(--brand-accent)" }}>
             <div className="container mx-auto px-4">
-                <div className="flex items-start gap-4 overflow-x-auto no-scrollbar pb-2">
-                    {categories.map((cat, idx) => (
-                        <Link key={idx} href={`/categoria/${cat.name.toLowerCase()}`} className="group shrink-0 flex flex-col items-center gap-2">
-                            <div className="h-28 w-28 bg-white rounded-sm flex items-center justify-center transition-transform group-hover:-translate-y-1 shadow-sm border border-white/10">
-                                {cat.icon}
-                            </div>
-                            <span className="text-white font-bold text-sm text-center">{cat.name}</span>
-                        </Link>
-                    ))}
-
-                    <Link href="/categorias" className="shrink-0 flex flex-col items-center gap-2 group ml-4 justify-center h-28">
-                        <div className="flex items-center gap-1 text-white font-bold text-sm bg-white/10 px-4 py-2 rounded-full group-hover:bg-white/20 transition-colors">
-                            Ver todas <ArrowRight className="h-4 w-4" />
+                <div className="flex items-center gap-4 overflow-x-auto no-scrollbar scroll-smooth pb-2 md:justify-center">
+                    {categories.length > 0 ? (
+                        categories.map((cat) => (
+                            <Link key={cat.id} href={`/produtos?category=${cat.id}`} className="group flex-none min-w-[90px] flex flex-col items-center gap-2">
+                                <div className="h-20 w-20 bg-white/10 rounded-2xl flex items-center justify-center transition-all duration-300 group-hover:bg-white group-hover:-translate-y-1 shadow-sm border border-white/10 group-hover:border-white/50 backdrop-blur-sm overflow-hidden">
+                                    {cat.imageUrl ? (
+                                        <img src={cat.imageUrl} alt={cat.name} className="h-full w-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                                    ) : (
+                                        <Sparkles className="h-8 w-8 text-slate-300 group-hover:text-primary transition-colors" />
+                                    )}
+                                </div>
+                                <span className="text-white/90 font-medium text-xs tracking-wide group-hover:text-white transition-colors uppercase">{cat.name}</span>
+                            </Link>
+                        ))
+                    ) : (
+                        // Fallback/Empty State placeholder so it doesn't look broken initially
+                        <div className="flex items-center justify-center w-full py-4 text-white/50 text-sm italic">
+                            <span className="flex items-center gap-2"><Package className="h-4 w-4" /> Nenhuma categoria encontrada</span>
                         </div>
-                    </Link>
+                    )}
                 </div>
             </div>
         </div>

@@ -33,7 +33,7 @@ export default async function ProductDetailsPage({
                     </div>
 
                     <div className="flex items-baseline gap-4">
-                        <span className="text-4xl font-bold text-primary">
+                        <span className="text-4xl font-bold" style={{ color: "var(--price-color)" }}>
                             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(product.price))}
                         </span>
                         {product.compareAtPrice && (

@@ -28,52 +28,93 @@ export async function getProductBySlug(slug: string) {
 export async function upsertProduct(formData: FormData) {
     const id = formData.get("id") as string | null;
     const name = formData.get("name") as string;
-    const price = parseFloat(formData.get("price") as string);
-    const compareAtPrice = formData.get("compareAtPrice") ? parseFloat(formData.get("compareAtPrice") as string) : null;
-    const stock = parseInt(formData.get("stock") as string) || 0;
     const description = formData.get("description") as string;
+
+    // Helper to safely parse decimals (handles commas and dots)
+    const parseDecimal = (value: FormDataEntryValue | null) => {
+        if (!value || typeof value !== "string") return null;
+        const cleaned = value.replace(",", "."); // Allow comma as decimal separator
+        const parsed = parseFloat(cleaned);
+        return isNaN(parsed) ? null : parsed;
+    };
+
+    const parseIntSafe = (value: FormDataEntryValue | null) => {
+        if (!value || typeof value !== "string") return 0;
+        const parsed = parseInt(value, 10);
+        return isNaN(parsed) ? 0 : parsed;
+    };
+
+    const price = parseDecimal(formData.get("price"));
+    if (price === null) {
+        throw new Error("Preço inválido");
+    }
+
+    const compareAtPrice = parseDecimal(formData.get("compareAtPrice"));
+    const costPerItem = parseDecimal(formData.get("costPerItem"));
+    const stock = parseIntSafe(formData.get("stock"));
+    const weight = parseDecimal(formData.get("weight"));
+    const length = parseDecimal(formData.get("length"));
+    const width = parseDecimal(formData.get("width"));
+    const height = parseDecimal(formData.get("height"));
+
     const sku = formData.get("sku") as string | null;
-    const categoryId = formData.get("categoryId") as string | null;
-    const costPerItem = formData.get("costPerItem") ? parseFloat(formData.get("costPerItem") as string) : null;
+    // Treat empty string as null for category
+    const rawCategoryId = formData.get("categoryId") as string | null;
+    const categoryId = rawCategoryId && rawCategoryId.trim() !== "" ? rawCategoryId : null;
+
     const barcode = formData.get("barcode") as string | null;
     const brand = formData.get("brand") as string | null;
     const videoUrl = formData.get("videoUrl") as string | null;
-    const weight = formData.get("weight") ? parseFloat(formData.get("weight") as string) : null;
-    const length = formData.get("length") ? parseFloat(formData.get("length") as string) : null;
-    const width = formData.get("width") ? parseFloat(formData.get("width") as string) : null;
-    const height = formData.get("height") ? parseFloat(formData.get("height") as string) : null;
     const seoTitle = formData.get("seoTitle") as string | null;
     const seoDescription = formData.get("seoDescription") as string | null;
+    const isNewArrival = formData.get("isNewArrival") === "true";
+
+    const rawExpiresAt = formData.get("expiresAt") as string | null;
+    const expiresAt = rawExpiresAt ? new Date(rawExpiresAt as string) : null;
 
     // Simple slug generation
-    const slug = name
+    let slug = name
         .toLowerCase()
         .trim()
         .replace(/[^\w\s-]/g, "")
         .replace(/[\s_-]+/g, "-")
         .replace(/^-+|-+$/g, "");
 
-    const data = {
+    if (!slug) {
+        slug = `product-${Date.now()}`;
+    }
+
+    // Base data without relations that might cause scalar/relation conflicts
+    const data: any = {
         name,
-        slug: id ? undefined : slug,
+        slug: id ? undefined : slug, // Don't update slug if editing
         description,
         price,
         compareAtPrice,
         costPerItem,
         stock,
-        sku,
-        barcode,
-        brand,
-        videoUrl,
+        sku: sku || null,
+        barcode: barcode || null,
+        brand: brand || null,
+        videoUrl: videoUrl || null,
         weight,
         length,
         width,
         height,
-        seoTitle,
-        seoDescription,
-        categoryId: categoryId || null,
+        seoTitle: seoTitle || null,
+        seoDescription: seoDescription || null,
+        isNewArrival,
+        expiresAt: expiresAt && !isNaN(expiresAt.getTime()) ? expiresAt : null,
         status: "ACTIVE",
     };
+
+    // Handle Category Relation
+    if (categoryId) {
+        data.category = { connect: { id: categoryId } };
+    } else if (id) {
+        // If updating and no category provided, disconnect it
+        data.category = { disconnect: true };
+    }
 
     if (id) {
         await prisma.product.update({
@@ -81,6 +122,18 @@ export async function upsertProduct(formData: FormData) {
             data,
         });
     } else {
+        // Create Logic
+        // Ensure slug is unique by appending timestamp if collision (basic heuristic, in real app better logic needed)
+        // For now, we rely on the generated slug but catch collision if we wanted to be 100% safe.
+        // But the previous code just crashed.
+
+        // Check for existing slug to prevent crash
+        const existing = await prisma.product.findUnique({ where: { slug } });
+        if (existing) {
+            slug = `${slug}-${Date.now()}`;
+            data.slug = slug;
+        }
+
         await prisma.product.create({
             data: {
                 ...data,

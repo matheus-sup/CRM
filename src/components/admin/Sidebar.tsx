@@ -9,7 +9,7 @@ import {
     Users,
     Settings,
     LogOut,
-    Palette,
+    LayoutTemplate,
     MessageSquare,
     BarChart3,
     Truck,
@@ -22,7 +22,15 @@ import {
     Facebook,
     Globe,
     Grid,
-    ExternalLink
+    ExternalLink,
+    Image as ImageIcon,
+    FileText,
+    Rss,
+    List,
+    Filter,
+    Share2,
+    Hammer,
+    Lock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -34,6 +42,7 @@ type NavItem = {
     icon: any; // Lucide icon component
     badge?: string;
     external?: boolean;
+    locked?: boolean;
     subItems?: { href: string; label: string }[];
 };
 
@@ -46,23 +55,18 @@ const navSections: NavSection[] = [
     {
         title: "",
         items: [
-            { href: "/admin", label: "Início", icon: LayoutDashboard },
-            { href: "/admin/estatisticas", label: "Estatísticas", icon: BarChart3 },
+            { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
         ]
     },
     {
         title: "Gestão",
         items: [
+            { href: "/admin/pdv", label: "PDV (Caixa)", icon: Store },
             { href: "/admin/pedidos", label: "Vendas", icon: ShoppingBag },
             {
                 href: "/admin/produtos",
                 label: "Produtos",
                 icon: Package,
-                subItems: [
-                    { href: "/admin/produtos", label: "Lista de produtos" },
-                    { href: "/admin/inventario", label: "Inventário" },
-                    { href: "/admin/categorias", label: "Categorias" },
-                ]
             },
             { href: "/admin/pagamentos", label: "Pagamentos", icon: CreditCard },
             { href: "/admin/envios", label: "Envios", icon: Truck },
@@ -73,11 +77,21 @@ const navSections: NavSection[] = [
         ]
     },
     {
-        title: "Canais de venda",
+        title: "Loja Online",
         items: [
-            { href: "/admin/cms", label: "Loja online", icon: Store, external: true },
-            { href: "/admin/pdv", label: "Ponto de Venda", icon: Smartphone },
-            { href: "/admin/social", label: "Instagram e Facebook", icon: Instagram },
+            { href: "/admin/site", label: "Layout", icon: LayoutTemplate },
+            { href: "/admin/paginas", label: "Páginas", icon: FileText },
+            { href: "/admin/blog", label: "Blog", icon: Rss, locked: true },
+            { href: "/admin/menus", label: "Menus", icon: List },
+            { href: "/admin/filtros", label: "Filtros", icon: Filter, locked: true },
+            { href: "/admin/manutencao", label: "Página em construção", icon: Hammer },
+            { href: "/", label: "Ver Loja", icon: ExternalLink, external: true },
+        ]
+    },
+    {
+        title: "Configurações",
+        items: [
+            { href: "/admin/configuracoes", label: "Geral", icon: Settings },
         ]
     }
 ];
@@ -105,15 +119,18 @@ export function Sidebar() {
                         <div className="space-y-1">
                             {section.items.map((item) => {
                                 const isActive = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
+                                const isLocked = item.locked;
 
                                 return (
                                     <div key={item.href}>
                                         <Link
-                                            href={item.href}
+                                            href={isLocked ? "#" : item.href}
                                             className={cn(
                                                 "flex items-center justify-between gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-100",
-                                                isActive ? "bg-blue-50 text-blue-600" : "text-slate-600"
+                                                isActive ? "bg-blue-50 text-blue-600" : "text-slate-600",
+                                                isLocked && "opacity-50 cursor-not-allowed hover:bg-transparent"
                                             )}
+                                            onClick={(e) => isLocked && e.preventDefault()}
                                         >
                                             <div className="flex items-center gap-3">
                                                 <item.icon className="h-5 w-5 opacity-70" />
@@ -124,7 +141,10 @@ export function Sidebar() {
                                                     {item.badge}
                                                 </span>
                                             )}
-                                            {item.external && (
+                                            {item.locked && (
+                                                <Lock className="h-3 w-3 opacity-40" />
+                                            )}
+                                            {item.external && !item.locked && (
                                                 <ExternalLink className="h-3 w-3 opacity-40" />
                                             )}
                                         </Link>
@@ -154,17 +174,6 @@ export function Sidebar() {
                 ))}
             </nav>
 
-            <div className="border-t p-4">
-                <Link
-                    href="/admin/configuracoes"
-                    className={cn(
-                        "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-100 text-slate-600"
-                    )}
-                >
-                    <Settings className="h-5 w-5 opacity-70" />
-                    Configurações
-                </Link>
-            </div>
         </aside>
     );
 }
