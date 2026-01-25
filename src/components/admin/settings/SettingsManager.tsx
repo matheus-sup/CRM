@@ -5,6 +5,7 @@ import { SettingsSidebar } from "./SettingsSidebar";
 import { SocialLinksForm } from "./SocialLinksForm";
 import { MaintenanceForm } from "./MaintenanceForm";
 import { SettingsForm } from "@/app/(admin)/admin/configuracoes/settings-form"; // Reuse existing for Identity/Colors
+import { MarketingForm } from "./MarketingForm";
 // Import other forms as we create them
 
 export function SettingsManager({ config }: { config: any }) {
@@ -14,6 +15,8 @@ export function SettingsManager({ config }: { config: any }) {
         switch (activeTab) {
             case "redes-sociais":
                 return <SocialLinksForm config={config} />;
+            case "marketing":
+                return <MarketingForm config={config} />;
             case "identidade":
                 return <SettingsForm config={config} />; // Using the old monolithic form for now, user can instruct to split later
             case "contato":

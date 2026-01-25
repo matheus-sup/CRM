@@ -137,6 +137,10 @@ export async function updateStoreConfig(prevState: any, formData: FormData) {
         addIfPresent("footerBg");
         addIfPresent("footerText");
 
+        // Analytics
+        addIfPresent("facebookPixelId");
+        addIfPresent("googleTagId");
+
         // Booleans
         const addBoolIfPresent = (key: string) => {
             if (formData.has(key)) {

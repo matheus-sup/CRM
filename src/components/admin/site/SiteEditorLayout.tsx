@@ -434,7 +434,7 @@ export function SiteEditorLayout({ config, banners, products }: SiteEditorLayout
                         "bg-white shadow-2xl overflow-hidden border border-slate-200 origin-top transform transition-all duration-500",
                         fullScreenPreview ? "w-full h-full rounded-none scale-100 border-0" : "min-h-[800px] rounded-lg scale-[0.9]",
                         /* Width override based on device */
-                        !fullScreenPreview && previewDevice === 'mobile' ? "w-[375px] border-slate-300 border-[8px] rounded-[3rem]" : (!fullScreenPreview && "w-full max-w-[1200px]")
+                        !fullScreenPreview && previewDevice === 'mobile' ? "w-[375px] border-slate-300 border-8 rounded-[3rem]" : (!fullScreenPreview && "w-full max-w-[1200px]")
                     )}
                 >
                     {/* Preview Styles Injection */}

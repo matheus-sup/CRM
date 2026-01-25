@@ -1,9 +1,14 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Inter } from "next/font/google"; // Using Inter as standard font
+import { Inter } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { ThemeInjector } from "@/components/theme-injector";
 import { getStoreConfig } from "@/lib/actions/settings";
+import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
+import { CartSync } from "@/components/shop/CartSync";
+import { WhatsAppButton } from "@/components/whatsapp-button";
+import { AnalyticsScripts } from "@/components/shop/AnalyticsScripts";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -11,8 +16,6 @@ export const metadata: Metadata = {
   title: "Gut Cosméticos & Makes",
   description: "Sua loja de cosméticos favorita",
 };
-
-import { WhatsAppButton } from "@/components/whatsapp-button";
 
 export default async function RootLayout({
   children,
@@ -22,10 +25,21 @@ export default async function RootLayout({
   const config = await getStoreConfig();
 
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" suppressHydrationWarning>
       <body className={cn(inter.className, "min-h-screen bg-background antialiased")}>
-        {children}
-        <WhatsAppButton />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <ThemeInjector config={config} />
+          <CartSync />
+          <AnalyticsScripts />
+          {children}
+          <WhatsAppButton />
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );

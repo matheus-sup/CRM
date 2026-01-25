@@ -43,7 +43,7 @@ export default async function MenusPage() {
                                 <List className="h-4 w-4 text-slate-400" />
                                 {menu.title}
                             </div>
-                            <div className="w-48 text-sm text-slate-500 font-mono bg-slate-100 px-2 py-0.5 rounded w-fit">{menu.handle}</div>
+                            <div className="w-48 text-sm text-slate-500 font-mono bg-slate-100 px-2 py-0.5 rounded truncate">{menu.handle}</div>
                             <div className="w-32 text-sm text-slate-600">
                                 {menu.items?.length || 0} links
                             </div>

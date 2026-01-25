@@ -82,6 +82,10 @@ model StoreConfig {
   twitter         String?
   pinterest       String?
   pinterestTag    String? // "Etiqueta do Pinterest"
+  
+  // Analytics
+  facebookPixelId String? // Ex: 123456789
+  googleTagId     String? // Ex: G-XXXXXX or GT-XXXXXX
 
   whatsapp    String?
   phone       String?  // Fixo ou principal

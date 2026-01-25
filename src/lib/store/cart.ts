@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { updateCartDB } from '@/lib/actions/cart';
 
 export interface CartItem {
     id: string;
@@ -18,6 +19,7 @@ interface CartState {
     clearCart: () => void;
     toggleCart: () => void;
     getCartTotal: () => number;
+    syncWithUser: () => Promise<void>;
 }
 
 export const useCart = create<CartState>()(
@@ -29,40 +31,55 @@ export const useCart = create<CartState>()(
                 const currentItems = get().items;
                 const existingItem = currentItems.find((i) => i.id === item.id);
 
+                let newItems;
                 if (existingItem) {
-                    set({
-                        items: currentItems.map((i) =>
-                            i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
-                        ),
-                        isOpen: true,
-                    });
+                    newItems = currentItems.map((i) =>
+                        i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
+                    );
                 } else {
-                    set({ items: [...currentItems, { ...item, quantity: 1 }], isOpen: true });
+                    newItems = [...currentItems, { ...item, quantity: 1 }];
                 }
+
+                set({ items: newItems, isOpen: true });
+                updateCartDB(newItems);
             },
             removeItem: (id) => {
-                set({ items: get().items.filter((i) => i.id !== id) });
+                const newItems = get().items.filter((i) => i.id !== id);
+                set({ items: newItems });
+                updateCartDB(newItems);
             },
             decreaseItem: (id) => {
                 const currentItems = get().items;
                 const existingItem = currentItems.find((i) => i.id === id);
 
+                let newItems;
                 if (existingItem && existingItem.quantity > 1) {
-                    set({
-                        items: currentItems.map((i) =>
-                            i.id === id ? { ...i, quantity: i.quantity - 1 } : i
-                        ),
-                    });
+                    newItems = currentItems.map((i) =>
+                        i.id === id ? { ...i, quantity: i.quantity - 1 } : i
+                    );
                 } else {
-                    // If quantity is 1, remove it
-                    set({ items: currentItems.filter((i) => i.id !== id) });
+                    newItems = currentItems.filter((i) => i.id !== id);
                 }
+
+                set({ items: newItems });
+                updateCartDB(newItems);
             },
-            clearCart: () => set({ items: [] }),
+            clearCart: () => {
+                set({ items: [] });
+                updateCartDB([]);
+            },
             toggleCart: () => set({ isOpen: !get().isOpen }),
             getCartTotal: () => {
                 return get().items.reduce((total, item) => total + item.price * item.quantity, 0);
             },
+            syncWithUser: async () => {
+                const { syncCart } = await import("@/lib/actions/cart");
+                const currentItems = get().items;
+                const res = await syncCart(currentItems);
+                if (res.success) {
+                    set({ items: res.items });
+                }
+            }
         }),
         {
             name: 'cart-storage',
