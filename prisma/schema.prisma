@@ -292,7 +292,8 @@ model Product {
   
   variants       ProductVariant[]
   cartItems      CartItem[]
-  
+  itemDiscounts  ItemDiscount[]
+
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 }
@@ -504,9 +505,23 @@ model Coupon {
   active    Boolean  @default(true)
   usageCount Int     @default(0)
   maxUsage   Int?    // Null = unlimited
-  
+
   endDate    DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// Item Discounts (Desconto por Item)
+model ItemDiscount {
+  id              String   @id @default(cuid())
+  productId       String
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  discountPercent Decimal  // % de desconto
+  promoStock      Int      // Quantidade disponivel na promocao
+  soldCount       Int      @default(0) // Quantidade vendida na promocao
+  active          Boolean  @default(true)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
