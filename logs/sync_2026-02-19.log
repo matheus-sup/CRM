@@ -1,0 +1,124 @@
+[19/02/2026 18:36:08] ========== SYNC INICIADO ========== 
+[19/02/2026 18:36:08] Diretorio: C:\Users\mathe\CRM 
+[19/02/2026 18:36:08] Branch: main 
+[19/02/2026 18:36:08] Intervalo: 30s 
+[19/02/2026 18:36:08] --- Ciclo de sincronizacao iniciado --- 
+[19/02/2026 18:36:08] [PULL] Buscando atualizacoes remotas... 
+[19/02/2026 18:36:08] [PULL] From https://github.com/matheus-sup/CRM 
+[19/02/2026 18:36:08] [PULL]  * branch            main       -
+[19/02/2026 18:36:08] [PULL] Already up to date. 
+[19/02/2026 18:36:08] [STATUS] Alteracoes locais detectadas: 
+[19/02/2026 18:36:08]    ?? logs/ 
+[19/02/2026 18:36:08]    ?? sync-crm.bat 
+[19/02/2026 18:36:08] [ADD] Adicionando todos os arquivos... 
+[19/02/2026 18:36:08] [ADD] Concluido. 
+[19/02/2026 18:36:08] [COMMIT] Mensagem: auto-sync: 19/02/2026 18:36:08 
+[19/02/2026 18:36:09] [COMMIT] Author identity unknown 
+[19/02/2026 18:36:09] [COMMIT] *** Please tell me who you are. 
+[19/02/2026 18:36:09] [COMMIT] Run 
+[19/02/2026 18:36:09] [COMMIT]   git config --global user.email "you@example.com" 
+[19/02/2026 18:36:09] [COMMIT] to set your account's default identity. 
+[19/02/2026 18:36:09] [COMMIT] Omit --global to set the identity only in this repository. 
+[19/02/2026 18:36:09] [COMMIT] fatal: unable to auto-detect email address (got 'mathe@DESKTOP-VO0PAHG.(none)') 
+[19/02/2026 18:36:09] [PUSH] Enviando para GitHub... 
+[19/02/2026 18:36:58] ========== SYNC INICIADO ========== 
+[19/02/2026 18:36:58] Diretorio: C:\Users\mathe\CRM 
+[19/02/2026 18:36:58] Branch: main 
+[19/02/2026 18:36:58] Intervalo: 30s 
+[19/02/2026 18:36:58] --- Ciclo de sincronizacao iniciado --- 
+[19/02/2026 18:36:58] [PULL] Buscando atualizacoes remotas... 
+[19/02/2026 18:36:59] [PULL] From https://github.com/matheus-sup/CRM 
+[19/02/2026 18:36:59] [PULL]  * branch            main       -
+[19/02/2026 18:36:59] [PULL] Already up to date. 
+[19/02/2026 18:36:59] [STATUS] Alteracoes locais detectadas: 
+[19/02/2026 18:36:59]    AM logs/sync_2026-02-19.log 
+[19/02/2026 18:36:59]    A  sync-crm.bat 
+[19/02/2026 18:36:59] [ADD] Adicionando todos os arquivos... 
+[19/02/2026 18:36:59] [ADD] Concluido. 
+[19/02/2026 18:36:59] [COMMIT] Mensagem: auto-sync: 19/02/2026 18:36:59 
+[19/02/2026 18:36:59] [COMMIT] Author identity unknown 
+[19/02/2026 18:36:59] [COMMIT] *** Please tell me who you are. 
+[19/02/2026 18:36:59] [COMMIT] Run 
+[19/02/2026 18:36:59] [COMMIT]   git config --global user.email "you@example.com" 
+[19/02/2026 18:36:59] [COMMIT] to set your account's default identity. 
+[19/02/2026 18:36:59] [COMMIT] Omit --global to set the identity only in this repository. 
+[19/02/2026 18:36:59] [COMMIT] fatal: unable to auto-detect email address (got 'mathe@DESKTOP-VO0PAHG.(none)') 
+[19/02/2026 18:36:59] [PUSH] Enviando para GitHub... 
+[19/02/2026 18:37:42] [PUSH] Everything up-to-date 
+[19/02/2026 18:37:42] [PUSH] Enviado com sucesso 
+[19/02/2026 18:38:12] --- Ciclo de sincronizacao iniciado --- 
+[19/02/2026 18:38:12] [PULL] Buscando atualizacoes remotas... 
+[19/02/2026 18:38:12] [PULL] From https://github.com/matheus-sup/CRM 
+[19/02/2026 18:38:12] [PULL]  * branch            main       -
+[19/02/2026 18:38:12] [PULL] Already up to date. 
+[19/02/2026 18:38:23] [STATUS] Alteracoes locais detectadas: 
+[19/02/2026 18:38:23]    AM logs/sync_2026-02-19.log 
+[19/02/2026 18:38:23]    A  sync-crm.bat 
+[19/02/2026 18:38:23] [ADD] Adicionando todos os arquivos... 
+[19/02/2026 18:38:23] [ADD] Concluido. 
+[19/02/2026 18:38:23] [COMMIT] Mensagem: auto-sync: 19/02/2026 18:38:23 
+[19/02/2026 18:38:23] [COMMIT] Author identity unknown 
+[19/02/2026 18:38:23] [COMMIT] *** Please tell me who you are. 
+[19/02/2026 18:38:23] [COMMIT] Run 
+[19/02/2026 18:38:23] [COMMIT]   git config --global user.email "you@example.com" 
+[19/02/2026 18:38:23] [COMMIT] to set your account's default identity. 
+[19/02/2026 18:38:23] [COMMIT] Omit --global to set the identity only in this repository. 
+[19/02/2026 18:38:23] [COMMIT] fatal: unable to auto-detect email address (got 'mathe@DESKTOP-VO0PAHG.(none)') 
+[19/02/2026 18:38:23] [PUSH] Enviando para GitHub... 
+[19/02/2026 18:38:24] [PUSH] Everything up-to-date 
+[19/02/2026 18:38:24] [PUSH] Enviado com sucesso 
+[19/02/2026 19:00:55] ========== SYNC INICIADO ========== 
+[19/02/2026 19:00:55] Diretorio: C:\Users\mathe\CRM 
+[19/02/2026 19:00:55] Branch: main 
+[19/02/2026 19:00:55] Intervalo: 30s 
+[19/02/2026 19:00:55] --- Ciclo de sincronizacao iniciado --- 
+[19/02/2026 19:00:55] [PULL] Buscando atualizacoes remotas... 
+[19/02/2026 19:00:55] [PULL] From https://github.com/matheus-sup/CRM 
+[19/02/2026 19:00:55] [PULL]  * branch            main       -
+[19/02/2026 19:00:55] [PULL] Already up to date. 
+[19/02/2026 19:00:55] [STATUS] Alteracoes locais detectadas: 
+[19/02/2026 19:00:55]    AM logs/sync_2026-02-19.log 
+[19/02/2026 19:00:55]     M package-lock.json 
+[19/02/2026 19:00:55]     M prisma/dev.db 
+[19/02/2026 19:00:55]    A  sync-crm.bat 
+[19/02/2026 19:00:55] [ADD] Adicionando todos os arquivos... 
+[19/02/2026 19:00:56] [ADD] Concluido. 
+[19/02/2026 19:00:56] [COMMIT] Mensagem: auto-sync: 19/02/2026 19:00:56 
+[19/02/2026 19:00:56] [COMMIT] Author identity unknown 
+[19/02/2026 19:00:56] [COMMIT] *** Please tell me who you are. 
+[19/02/2026 19:00:56] [COMMIT] Run 
+[19/02/2026 19:00:56] [COMMIT]   git config --global user.email "you@example.com" 
+[19/02/2026 19:00:56] [COMMIT] to set your account's default identity. 
+[19/02/2026 19:00:56] [COMMIT] Omit --global to set the identity only in this repository. 
+[19/02/2026 19:00:56] [COMMIT] fatal: unable to auto-detect email address (got 'mathe@DESKTOP-VO0PAHG.(none)') 
+[19/02/2026 19:00:56] [PUSH] Enviando para GitHub... 
+[19/02/2026 19:00:56] [PUSH] Everything up-to-date 
+[19/02/2026 19:00:56] [PUSH] Enviado com sucesso 
+[19/02/2026 19:01:26] --- Ciclo de sincronizacao iniciado --- 
+[19/02/2026 19:01:26] [PULL] Buscando atualizacoes remotas... 
+[19/02/2026 19:01:26] [PULL] From https://github.com/matheus-sup/CRM 
+[19/02/2026 19:01:26] [PULL]  * branch            main       -
+[19/02/2026 19:01:26] [PULL] Already up to date. 
+[19/02/2026 19:04:09] [STATUS] Alteracoes locais detectadas: 
+[19/02/2026 19:04:09]    AM logs/sync_2026-02-19.log 
+[19/02/2026 19:04:09]    M  package-lock.json 
+[19/02/2026 19:04:09]    MM prisma/dev.db 
+[19/02/2026 19:04:09]    A  sync-crm.bat 
+[19/02/2026 19:04:09] [ADD] Adicionando todos os arquivos... 
+[19/02/2026 19:04:09] [ADD] Concluido. 
+[19/02/2026 19:04:09] [COMMIT] Mensagem: auto-sync: 19/02/2026 19:04:09 
+[19/02/2026 19:04:09] [COMMIT] Author identity unknown 
+[19/02/2026 19:04:09] [COMMIT] *** Please tell me who you are. 
+[19/02/2026 19:04:09] [COMMIT] Run 
+[19/02/2026 19:04:09] [COMMIT]   git config --global user.email "you@example.com" 
+[19/02/2026 19:04:09] [COMMIT] to set your account's default identity. 
+[19/02/2026 19:04:09] [COMMIT] Omit --global to set the identity only in this repository. 
+[19/02/2026 19:04:09] [COMMIT] fatal: unable to auto-detect email address (got 'mathe@DESKTOP-VO0PAHG.(none)') 
+[19/02/2026 19:04:09] [PUSH] Enviando para GitHub... 
+[19/02/2026 19:04:10] [PUSH] Everything up-to-date 
+[19/02/2026 19:04:10] [PUSH] Enviado com sucesso 
+[19/02/2026 19:04:40] --- Ciclo de sincronizacao iniciado --- 
+[19/02/2026 19:04:40] [PULL] Buscando atualizacoes remotas... 
+[19/02/2026 19:04:40] [PULL] From https://github.com/matheus-sup/CRM 
+[19/02/2026 19:04:40] [PULL]  * branch            main       -
+[19/02/2026 19:04:40] [PULL] Already up to date. 
