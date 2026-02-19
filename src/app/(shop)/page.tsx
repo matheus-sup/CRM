@@ -1,91 +1,52 @@
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import Image from "next/image";
 import { getProducts } from "@/lib/actions/product";
 import { getActiveBanners } from "@/lib/actions/banner";
+import { prisma } from "@/lib/prisma";
 import { getStoreConfig } from "@/lib/actions/settings";
-import { HeroBanner } from "@/components/shop/HeroBanner";
-import { NewArrivals } from "@/components/shop/NewArrivals";
-import { Testimonials } from "@/components/shop/Testimonials";
-import { InstagramFeed } from "@/components/shop/InstagramFeed";
-import { GoogleReviews } from "@/components/shop/GoogleReviews";
-import { CategoriesSection } from "@/components/shop/CategoriesSection";
+import { BlockRenderer } from "@/components/shop/pbuilder/BlockRenderer";
+import { PageBlock } from "@/types/page-builder";
+import { ModernHome } from "@/components/shop/modern/ModernHome";
 
 export default async function HomePage() {
     const products = await getProducts();
     const banners = await getActiveBanners();
     const config = await getStoreConfig();
 
-    // Default layout matches SiteHomeForm defaults
-    const DEFAULT_LAYOUT = [
-        { id: "categories-main", label: "Categorias principais", enabled: true },
-        { id: "hero", label: "Banners rotativos", enabled: true },
-        { id: "products-featured", label: "Produtos em destaque", enabled: true },
-        { id: "products-new", label: "Produtos novos", enabled: true },
-        { id: "brands", label: "Marcas", enabled: true },
-        { id: "banners-categories", label: "Banners de categorias", enabled: true },
-        { id: "products-offers", label: "Produtos em oferta", enabled: true },
-        { id: "instagram", label: "Postagens do Instagram", enabled: true },
-        { id: "google-reviews", label: "Avaliações Google", enabled: true },
-        { id: "info-shipping", label: "Informações de frete...", enabled: true },
-        { id: "newsletter", label: "Newsletter", enabled: true },
-        { id: "banners-promo", label: "Banners promocionais", enabled: true },
-        { id: "testimonials", label: "Depoimentos", enabled: false }, // Disabling old testimonials in favor of Google
-    ];
+    // Fetch Categories for Modern/Legacy Views
+    // (Legacy fetches internally in CategoryNav, but Modern needs it for the grid)
+    const categories = await prisma.category.findMany({
+        where: { parentId: null }, // Main categories only for home
+        orderBy: { name: 'asc' },
+        take: 8,
+        include: { children: true }
+    });
 
-    let layout = DEFAULT_LAYOUT;
+    // Fetch Brands
+    const brands = await prisma.brand.findMany({
+        orderBy: { name: 'asc' },
+        include: { _count: { select: { products: true } } }
+    });
+
+    // --- PAGE BUILDER RENDERING ---
+    let blocks: PageBlock[] = [];
     try {
-        if (config?.homeLayout) {
-            layout = JSON.parse(config.homeLayout);
+        const parsed = JSON.parse(config.homeLayout || "[]");
+        // Legacy fallback logic (same as Admin)
+        if (parsed.length > 0 && "enabled" in parsed[0]) {
+            return <ModernHome products={products} banners={banners} categories={categories} brands={brands} config={config} />;
         }
-    } catch (e) {
-        console.error("Failed to parse home layout", e);
+        blocks = parsed;
+    } catch {
+        return <ModernHome products={products} banners={banners} categories={categories} brands={brands} config={config} />;
     }
 
-    // Component Registry
-    const renderSection = (id: string, index: number) => {
-        switch (id) {
-            case "hero":
-                return <HeroBanner key={`hero-${index}`} banners={banners} />;
-            case "products-new":
-            case "new-arrivals": // Legacy support
-                const newArrivals = products.filter((p: any) => p.isNewArrival);
-                if (newArrivals.length === 0) return null; // Don't show if empty
-                return <NewArrivals key={`new-${index}`} products={newArrivals} />;
-            case "testimonials":
-                return <Testimonials key={`test-${index}`} />;
-            case "instagram":
-                return <InstagramFeed key={`insta-${index}`} />;
-            case "google-reviews":
-                return <GoogleReviews key={`google-${index}`} />;
-
-            case "categories-main":
-                return <CategoriesSection key={`cats-${index}`} />;
-            case "products-featured":
-                return <NewArrivals key={`feat-${index}`} products={products.filter((p: any) => p.isFeatured).slice(0, 4)} />;
-            case "brands":
-                return <div key={id} className="container mx-auto p-8 text-center border-dashed border-2 rounded-xl text-slate-400">Carrossel de Marcas (Em breve)</div>;
-            case "banners-categories":
-                return <div key={id} className="container mx-auto p-8 text-center border-dashed border-2 rounded-xl text-slate-400">Banners de Categorias (Em breve)</div>;
-            case "products-offers":
-                return <NewArrivals key={`offer-${index}`} products={products.slice(2, 6)} />; // Reuse for now
-            case "info-shipping":
-                return <div key={id} className="container mx-auto p-8 text-center border-dashed border-2 rounded-xl text-slate-400">Barra de Informações (Frete/Pagamento)</div>;
-            case "newsletter":
-                return <div key={id} className="container mx-auto p-8 text-center border-dashed border-2 rounded-xl text-slate-400">Newsletter (Em breve)</div>;
-            case "banners-promo":
-                return <div key={id} className="container mx-auto p-8 text-center border-dashed border-2 rounded-xl text-slate-400">Banners Promocionais (Em breve)</div>;
-
-            default:
-                return null;
-        }
-    };
+    // New Empty State
+    if (blocks.length === 0) {
+        return <ModernHome products={products} banners={banners} categories={categories} brands={brands} config={config} />;
+    }
 
     return (
-        <div className="space-y-12 pb-20">
-            {layout
-                .filter((section: any) => section.enabled)
-                .map((section: any, index: number) => renderSection(section.id, index))}
-        </div>
+        <main className="min-h-screen">
+            <BlockRenderer blocks={blocks} products={products} categories={categories} brands={brands} config={config} />
+        </main>
     );
 }

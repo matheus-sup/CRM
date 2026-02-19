@@ -57,6 +57,7 @@ export async function syncCart(localItems: CartItem[]) {
             name: item.product.name,
             price: Number(item.product.price),
             image: item.product.images[0]?.url,
+            slug: item.product.slug,
             quantity: item.quantity
         })) || [];
 

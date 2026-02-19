@@ -18,6 +18,7 @@ export function PaymentSettingsForm({ config }: { config: any }) {
 
     // Local state for toggles to enable/disable inputs visually
     const [pagarmeEnabled, setPagarmeEnabled] = useState(config?.pagarmeEnabled || false);
+    const [mercadoPagoEnabled, setMercadoPagoEnabled] = useState(config?.mercadoPagoEnabled || false);
     const [asaasEnabled, setAsaasEnabled] = useState(config?.asaasEnabled || false);
     const [manualPixEnabled, setManualPixEnabled] = useState(config?.manualPixEnabled || false);
 
@@ -28,8 +29,9 @@ export function PaymentSettingsForm({ config }: { config: any }) {
     return (
         <form action={formAction}>
             <Tabs defaultValue="pagarme" className="space-y-4">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="pagarme">Pagar.me (Stone)</TabsTrigger>
+                    <TabsTrigger value="mercado_pago">Mercado Pago</TabsTrigger>
                     <TabsTrigger value="asaas">Asaas</TabsTrigger>
                     <TabsTrigger value="pix">Pix Manual</TabsTrigger>
                 </TabsList>
@@ -73,6 +75,62 @@ export function PaymentSettingsForm({ config }: { config: any }) {
                                         defaultValue={config?.pagarmeApiKey || ""}
                                         placeholder="sk_..."
                                         disabled={!pagarmeEnabled}
+                                    />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                {/* MERCADO PAGO TAB */}
+                <TabsContent value="mercado_pago">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <CreditCard className="h-5 w-5" /> Integração Mercado Pago
+                            </CardTitle>
+                            <CardDescription>Receba por Cartão, Pix e Boleto via Mercado Pago (Checkout Transparente).</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <div className="flex items-center justify-between p-4 border rounded-lg bg-slate-50">
+                                <div className="space-y-0.5">
+                                    <Label className="text-base">Ativar Mercado Pago</Label>
+                                    <p className="text-sm text-slate-500">Habilitar checkout transparente na loja.</p>
+                                </div>
+                                <Switch
+                                    checked={mercadoPagoEnabled}
+                                    onCheckedChange={setMercadoPagoEnabled}
+                                />
+                                <BooleanInput name="mercadoPagoEnabled" value={mercadoPagoEnabled} />
+                            </div>
+
+                            <div className="space-y-4">
+                                <Alert className="bg-blue-50 border-blue-200">
+                                    <AlertCircle className="h-4 w-4 text-blue-600" />
+                                    <AlertTitle className="text-blue-800">Onde pegar as credenciais?</AlertTitle>
+                                    <AlertDescription className="text-blue-700 text-xs mt-1">
+                                        Acesse o Mercado Pago Developers &gt; Suas Integrações &gt; Criar Aplicação. Use as credenciais de Produção.
+                                    </AlertDescription>
+                                </Alert>
+
+                                <div className="space-y-2">
+                                    <Label>Access Token (Produção)</Label>
+                                    <Input
+                                        name="mercadoPagoAccessToken"
+                                        type="password"
+                                        defaultValue={config?.mercadoPagoAccessToken || ""}
+                                        placeholder="APP_USR-..."
+                                        disabled={!mercadoPagoEnabled}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Public Key (Produção) - Opcional</Label>
+                                    <Input
+                                        name="mercadoPagoPublicKey"
+                                        type="text"
+                                        defaultValue={config?.mercadoPagoPublicKey || ""}
+                                        placeholder="APP_USR-..."
+                                        disabled={!mercadoPagoEnabled}
                                     />
                                 </div>
                             </div>
@@ -164,7 +222,7 @@ export function PaymentSettingsForm({ config }: { config: any }) {
                                     <Input
                                         name="pixHolder"
                                         defaultValue={config?.pixHolder || ""}
-                                        placeholder="Ex: Gut Cosméticos Ltda"
+                                        placeholder="Ex: Minha Empresa Ltda"
                                         disabled={!manualPixEnabled}
                                     />
                                 </div>
@@ -230,11 +288,13 @@ export function PaymentSettingsForm({ config }: { config: any }) {
                 </Button>
             </div>
 
-            {state.message && (
-                <p className={`mt-4 text-sm ${state.success ? 'text-green-600' : 'text-red-500'}`}>
-                    {state.message}
-                </p>
-            )}
-        </form>
+            {
+                state.message && (
+                    <p className={`mt-4 text-sm ${state.success ? 'text-green-600' : 'text-red-500'}`}>
+                        {state.message}
+                    </p>
+                )
+            }
+        </form >
     );
 }

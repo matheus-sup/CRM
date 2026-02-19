@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { updateStoreConfig } from "@/lib/actions/settings";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -10,8 +10,22 @@ import { ColorPickerInput } from "@/components/admin/site/ColorPickerInput";
 
 const initialState = { success: false, message: "" };
 
-export function SiteColorsForm({ config, onConfigChange }: { config: any, onConfigChange?: (key: string, value: string) => void }) {
+interface SiteColorsFormProps {
+    config: any;
+    onConfigChange?: (key: string, value: string) => void;
+    onHighlightComponent?: (component: string) => void;
+}
+
+export function SiteColorsForm({ config, onConfigChange, onHighlightComponent }: SiteColorsFormProps) {
     const [state, formAction, isPending] = useActionState(updateStoreConfig, initialState);
+    const [highlightedArea, setHighlightedArea] = useState<string | null>(null);
+
+    const handleFocus = (target: string) => {
+        if (highlightedArea !== target) {
+            onHighlightComponent?.(target);
+            setHighlightedArea(target);
+        }
+    };
 
     return (
         <Card>
@@ -24,8 +38,11 @@ export function SiteColorsForm({ config, onConfigChange }: { config: any, onConf
             <CardContent>
                 <form action={formAction} className="space-y-6">
 
-                    <div className="space-y-4 border-b pb-4">
-                        <Label className="text-base font-semibold">Cores Base</Label>
+                    <div className="space-y-4 border-b pb-4" onFocus={() => handleFocus("home")}>
+                        <div>
+                            <Label className="text-base font-semibold">Cores Base</Label>
+                            <p className="text-xs text-muted-foreground mt-1">Aplicadas em todo o site (fundo, textos gerais, títulos).</p>
+                        </div>
                         <div className="grid gap-4">
                             <ColorPickerInput
                                 id="backgroundColor"
@@ -45,29 +62,14 @@ export function SiteColorsForm({ config, onConfigChange }: { config: any, onConf
                                 value={config.headingColor || "#1e293b"}
                                 onChange={(val) => onConfigChange?.("headingColor", val)}
                             />
-                            <ColorPickerInput
-                                id="footerText"
-                                label="Cor Texto Rodapé"
-                                value={config.footerText || "#a3a3a3"}
-                                onChange={(val) => onConfigChange?.("footerText", val)}
-                            />
-                            <ColorPickerInput
-                                id="headerColor"
-                                label="Cor do Cabeçalho (Fundo)"
-                                value={config.headerColor || "#ffffff"}
-                                onChange={(val) => onConfigChange?.("headerColor", val)}
-                            />
-                            <ColorPickerInput
-                                id="footerBg"
-                                label="Cor do Rodapé (Fundo)"
-                                value={config.footerBg || "#171717"}
-                                onChange={(val) => onConfigChange?.("footerBg", val)}
-                            />
                         </div>
                     </div>
 
-                    <div className="space-y-4 border-b pb-4">
-                        <Label className="text-base font-semibold">Destaques & Botões</Label>
+                    <div className="space-y-4 border-b pb-4" onFocus={() => handleFocus("product-grid")}>
+                        <div>
+                            <Label className="text-base font-semibold">Destaques & Botões</Label>
+                            <p className="text-xs text-muted-foreground mt-1">Aplicadas em botões, links, ícones e preços.</p>
+                        </div>
                         <div className="grid gap-4">
                             <ColorPickerInput
                                 id="themeColor"
@@ -96,22 +98,12 @@ export function SiteColorsForm({ config, onConfigChange }: { config: any, onConf
                         </div>
                     </div>
 
-                    <div className="space-y-4 border-b pb-4">
-                        <Label className="text-base font-semibold">Cores Específicas (Avançado)</Label>
+                    <div className="space-y-4 border-b pb-4" onFocus={() => handleFocus("hero")}>
+                        <div>
+                            <Label className="text-base font-semibold">Cores Específicas (Avançado)</Label>
+                            <p className="text-xs text-muted-foreground mt-1">Personalize áreas específicas do site.</p>
+                        </div>
                         <div className="grid gap-4 md:grid-cols-1">
-                            <ColorPickerInput
-                                id="headerBtnBg"
-                                label="Botão Cabeçalho (Fundo)"
-                                value={(config as any).headerBtnBg || config.themeColor || "#db2777"}
-                                onChange={(val) => onConfigChange?.("headerBtnBg", val)}
-                            />
-                            <ColorPickerInput
-                                id="headerBtnText"
-                                label="Botão Cabeçalho (Texto)"
-                                value={(config as any).headerBtnText || "#ffffff"}
-                                onChange={(val) => onConfigChange?.("headerBtnText", val)}
-                            />
-
                             <ColorPickerInput
                                 id="bannerTextColor"
                                 label="Texto do Banner (Hero)"

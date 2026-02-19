@@ -16,7 +16,7 @@ export default async function DashboardLayout({
     }
 
     return (
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 pt-32 pb-8">
             <div className="flex flex-col md:flex-row gap-8">
                 {/* Sidebar */}
                 <aside className="w-full md:w-64 shrink-0 space-y-6">

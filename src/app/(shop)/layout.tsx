@@ -4,8 +4,11 @@ import { TopBar } from "@/components/shop/TopBar";
 import { CategoryNav } from "@/components/shop/CategoryNav";
 import { ChatWidget } from "@/components/shop/ChatWidget";
 import { CartSheet } from "@/components/shop/CartSheet";
+import { WhatsAppFloat } from "@/components/shop/WhatsAppFloat";
 import { getStoreConfig } from "@/lib/actions/settings";
-import { ThemeInjector } from "@/components/theme-injector"; // Added
+import { ThemeInjector } from "@/components/theme-injector";
+import { cn } from "@/lib/utils";
+import { prisma } from "@/lib/prisma"; // Added
 
 export const dynamic = "force-dynamic";
 
@@ -15,16 +18,18 @@ export default async function ShopLayout({
     children: React.ReactNode;
 }) {
     const config = await getStoreConfig();
-    console.log("DEBUG: ShopLayout Config:", {
-        footerBg: config?.footerBg,
-        headerColor: config?.headerColor
-    });
 
     const serializedConfig = {
         ...config,
         minPurchaseValue: (config as any)?.minPurchaseValue ? Number((config as any).minPurchaseValue) : 0,
     };
 
+    // Fetch categories for Header Menu (Universal usage)
+    const categories = await prisma.category.findMany({
+        where: { parentId: null },
+        orderBy: { name: 'asc' },
+        take: 20,
+    });
     // Generate CSS variables for server-side injection (Prevents Flash of Unstyled Content)
     const cssVariables = `
         :root {
@@ -67,6 +72,14 @@ export default async function ShopLayout({
         }
     `;
 
+    const currentTheme = (config as any)?.theme || "modern";
+    const isLegacy = currentTheme === "legacy";
+
+    // Fetch Footer Menus (All menus for dynamic blocks)
+    const footerMenus = await prisma.menu.findMany({
+        include: { items: { orderBy: { order: 'asc' } } }
+    });
+
     return (
         <div className="flex min-h-screen flex-col">
             <style dangerouslySetInnerHTML={{ __html: cssVariables }} />
@@ -74,14 +87,21 @@ export default async function ShopLayout({
             {/* ThemeInjector handles client-side updates (if any) and finer details, but server-side style covers initial load */}
             <ThemeInjector config={serializedConfig} />
 
-            <Header config={serializedConfig} />
-            <CategoryNav />
-            <main className="flex-1 bg-muted/20">
+            {/* Legacy TopBar - Only show if Legacy */}
+            {isLegacy && <TopBar />}
+
+            <Header config={serializedConfig} categories={categories} />
+
+            {/* Legacy CategoryNav - Only show if Legacy */}
+            {isLegacy && <CategoryNav />}
+
+            <main className={cn("flex-1", isLegacy ? "bg-muted/20" : "bg-white")}>
                 {children}
             </main>
             <ChatWidget />
             <CartSheet />
-            <Footer config={serializedConfig} />
+            <WhatsAppFloat whatsapp={serializedConfig.whatsapp} />
+            <Footer config={serializedConfig} menus={footerMenus} />
         </div>
     );
 }

@@ -168,6 +168,6 @@ export default async function OrderDetailsPage({ params }: { params: { id: strin
                 </div>
             </div>
         </div>
-        </div >
+
     );
 }

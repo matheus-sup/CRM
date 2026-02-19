@@ -7,6 +7,7 @@ export interface CartItem {
     name: string;
     price: number;
     image?: string;
+    slug?: string;
     quantity: number;
 }
 
@@ -14,10 +15,12 @@ interface CartState {
     items: CartItem[];
     isOpen: boolean;
     addItem: (item: CartItem) => void;
+    addItemSilent: (item: CartItem) => void;
     removeItem: (id: string) => void;
     decreaseItem: (id: string) => void;
     clearCart: () => void;
     toggleCart: () => void;
+    closeCart: () => void;
     getCartTotal: () => number;
     syncWithUser: () => Promise<void>;
 }
@@ -34,13 +37,29 @@ export const useCart = create<CartState>()(
                 let newItems;
                 if (existingItem) {
                     newItems = currentItems.map((i) =>
-                        i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
+                        i.id === item.id ? { ...i, ...item, quantity: i.quantity + 1 } : i
                     );
                 } else {
                     newItems = [...currentItems, { ...item, quantity: 1 }];
                 }
 
                 set({ items: newItems, isOpen: true });
+                updateCartDB(newItems);
+            },
+            addItemSilent: (item) => {
+                const currentItems = get().items;
+                const existingItem = currentItems.find((i) => i.id === item.id);
+
+                let newItems;
+                if (existingItem) {
+                    newItems = currentItems.map((i) =>
+                        i.id === item.id ? { ...i, ...item, quantity: i.quantity + 1 } : i
+                    );
+                } else {
+                    newItems = [...currentItems, { ...item, quantity: 1 }];
+                }
+
+                set({ items: newItems });
                 updateCartDB(newItems);
             },
             removeItem: (id) => {
@@ -69,6 +88,7 @@ export const useCart = create<CartState>()(
                 updateCartDB([]);
             },
             toggleCart: () => set({ isOpen: !get().isOpen }),
+            closeCart: () => set({ isOpen: false }),
             getCartTotal: () => {
                 return get().items.reduce((total, item) => total + item.price * item.quantity, 0);
             },

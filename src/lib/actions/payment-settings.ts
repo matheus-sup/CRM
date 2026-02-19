@@ -32,6 +32,11 @@ export async function updatePaymentConfig(prevState: any, formData: FormData) {
         // Pagar.me
         const pagarmeApiKey = formData.get("pagarmeApiKey") as string;
 
+        // Mercado Pago
+        const mercadoPagoEnabled = formData.get("mercadoPagoEnabled") === "true";
+        const mercadoPagoAccessToken = formData.get("mercadoPagoAccessToken") as string;
+        const mercadoPagoPublicKey = formData.get("mercadoPagoPublicKey") as string;
+
         // Asaas
         const asaasApiKey = formData.get("asaasApiKey") as string;
         const asaasWalletId = formData.get("asaasWalletId") as string;
@@ -51,6 +56,9 @@ export async function updatePaymentConfig(prevState: any, formData: FormData) {
             update: {
                 pagarmeEnabled,
                 pagarmeApiKey,
+                mercadoPagoEnabled,
+                mercadoPagoAccessToken,
+                mercadoPagoPublicKey,
                 asaasEnabled,
                 asaasApiKey,
                 asaasWalletId,
@@ -66,6 +74,9 @@ export async function updatePaymentConfig(prevState: any, formData: FormData) {
                 id: "payment-config",
                 pagarmeEnabled,
                 pagarmeApiKey,
+                mercadoPagoEnabled,
+                mercadoPagoAccessToken,
+                mercadoPagoPublicKey,
                 asaasEnabled,
                 asaasApiKey,
                 asaasWalletId,

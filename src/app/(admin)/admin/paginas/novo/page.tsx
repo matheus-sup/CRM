@@ -8,15 +8,45 @@ import { Label } from "@/components/ui/label";
 import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
 import { createPage } from "@/lib/actions/page";
+import { RichTextEditor } from "@/components/admin/RichTextEditor";
 
 export default function NewPagePage() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [content, setContent] = useState("");
+    const [title, setTitle] = useState("");
+    const [slug, setSlug] = useState("");
 
-    const handleSubmit = async (formData: FormData) => {
+    // Auto-generate slug from title
+    const handleTitleChange = (value: string) => {
+        setTitle(value);
+        // Only auto-generate if slug hasn't been manually edited
+        if (!slug || slug === generateSlug(title)) {
+            setSlug(generateSlug(value));
+        }
+    };
+
+    const generateSlug = (text: string) => {
+        return text
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "") // Remove accents
+            .replace(/[^a-z0-9\s-]/g, "") // Remove special chars
+            .replace(/\s+/g, "-") // Replace spaces with hyphens
+            .replace(/-+/g, "-") // Remove multiple hyphens
+            .trim();
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
         setLoading(true);
         setError("");
+
+        const formData = new FormData();
+        formData.append("title", title);
+        formData.append("slug", slug);
+        formData.append("content", content);
 
         const res = await createPage(formData);
 
@@ -40,7 +70,7 @@ export default function NewPagePage() {
             </div>
 
             <div className="bg-white rounded-xl border shadow-sm p-6">
-                <form action={handleSubmit} className="space-y-6">
+                <form onSubmit={handleSubmit} className="space-y-6">
                     {error && (
                         <div className="p-4 bg-red-50 text-red-600 rounded-md text-sm border border-red-100">
                             {error}
@@ -54,6 +84,8 @@ export default function NewPagePage() {
                                 id="title"
                                 name="title"
                                 placeholder="ex: Sobre Nós"
+                                value={title}
+                                onChange={(e) => handleTitleChange(e.target.value)}
                                 required
                             />
                         </div>
@@ -67,6 +99,8 @@ export default function NewPagePage() {
                                     name="slug"
                                     className="rounded-l-none"
                                     placeholder="sobre-nos"
+                                    value={slug}
+                                    onChange={(e) => setSlug(e.target.value)}
                                     required
                                 />
                             </div>
@@ -74,16 +108,12 @@ export default function NewPagePage() {
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="content">Conteúdo (HTML Simples)</Label>
-                        <textarea
-                            name="content"
-                            id="content"
-                            className="w-full min-h-[300px] p-3 rounded-md border border-input bg-transparent text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                            placeholder="<p>Escreva o conteúdo da sua página aqui...</p>"
-                        ></textarea>
-                        <p className="text-xs text-slate-500">
-                            Em breve: Editor visual rico. Por enquanto, suporte a HTML básico.
-                        </p>
+                        <Label>Conteúdo</Label>
+                        <RichTextEditor
+                            value={content}
+                            onChange={setContent}
+                            placeholder="Escreva o conteúdo da sua página aqui..."
+                        />
                     </div>
 
                     <div className="pt-4 border-t flex justify-end">

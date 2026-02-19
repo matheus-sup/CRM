@@ -54,7 +54,7 @@ export function GoogleReviews() {
                             </div>
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold text-foreground leading-tight">Gut Cosméticos & Makes</h2>
+                            <h2 className="text-xl font-bold text-foreground leading-tight">Minha Loja</h2>
                             <div className="flex items-center gap-1 text-sm text-muted-foreground">
                                 <span className="font-bold text-primary">4.9</span>
                                 <div className="flex">

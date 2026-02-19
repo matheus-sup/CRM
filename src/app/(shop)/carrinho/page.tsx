@@ -16,7 +16,7 @@ export default function CartPage() {
 
     if (items.length === 0) {
         return (
-            <div className="container mx-auto px-4 py-20 flex flex-col items-center justify-center text-center">
+            <div className="container mx-auto px-4 pt-32 pb-20 flex flex-col items-center justify-center text-center">
                 <div className="bg-slate-100 p-6 rounded-full mb-6">
                     <ShoppingBag className="h-12 w-12 text-slate-400" />
                 </div>
@@ -34,25 +34,26 @@ export default function CartPage() {
     }
 
     return (
-        <div className="container mx-auto px-4 py-12">
+        <div className="container mx-auto px-4 pt-32 pb-12">
             <h1 className="text-3xl font-bold text-slate-800 mb-8">Carrinho de Compras</h1>
 
             <div className="flex flex-col lg:flex-row gap-12">
                 {/* Cart Items List */}
                 <div className="flex-1 space-y-6">
                     <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
-                        <div className="hidden md:grid grid-cols-12 gap-4 p-4 border-b bg-slate-50 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                            <div className="col-span-6">Produto</div>
-                            <div className="col-span-2 text-center">Preço</div>
-                            <div className="col-span-2 text-center">Qtd</div>
-                            <div className="col-span-2 text-right">Total</div>
+                        <div className="hidden md:grid grid-cols-[1fr_110px_130px_130px_90px] gap-4 p-4 border-b bg-slate-50 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                            <div className="">Produto</div>
+                            <div className="text-center">Preço</div>
+                            <div className="text-center">Qtd</div>
+                            <div className="text-center">Total</div>
+                            <div className="text-center">Excluir</div>
                         </div>
 
                         <div className="divide-y">
                             {items.map((item) => (
-                                <div key={item.id} className="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 items-center group">
+                                <div key={item.id} className="grid grid-cols-1 md:grid-cols-[1fr_110px_130px_130px_90px] gap-4 p-4 items-center group">
                                     {/* Product Info */}
-                                    <div className="col-span-1 md:col-span-6 flex gap-4 items-center">
+                                    <div className="col-span-1 md:col-span-1 flex gap-4 items-center">
                                         <div className="h-20 w-20 shrink-0 bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
                                             {item.image ? (
                                                 <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
@@ -63,7 +64,9 @@ export default function CartPage() {
                                             )}
                                         </div>
                                         <div>
-                                            <h3 className="font-medium text-slate-900">{item.name}</h3>
+                                            <Link href={`/produto/${item.slug}`} className="font-medium text-slate-900 hover:text-primary transition-colors">
+                                                {item.name}
+                                            </Link>
                                             <button
                                                 onClick={() => removeItem(item.id)}
                                                 className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1 mt-1 md:hidden"
@@ -74,13 +77,13 @@ export default function CartPage() {
                                     </div>
 
                                     {/* Price */}
-                                    <div className="col-span-1 md:col-span-2 md:text-center text-sm font-medium text-slate-600">
+                                    <div className="col-span-1 md:col-span-1 md:text-center text-sm font-medium text-slate-600">
                                         <span className="md:hidden text-slate-400 font-normal mr-2">Preço:</span>
                                         {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.price)}
                                     </div>
 
                                     {/* Quantity */}
-                                    <div className="col-span-1 md:col-span-2 flex justify-start md:justify-center items-center">
+                                    <div className="col-span-1 md:col-span-1 flex justify-start md:justify-center items-center">
                                         <span className="md:hidden text-slate-400 font-normal mr-4 text-sm">Qtd:</span>
                                         <div className="flex items-center border rounded-lg bg-white">
                                             <button
@@ -100,20 +103,22 @@ export default function CartPage() {
                                     </div>
 
                                     {/* Total Line */}
-                                    <div className="col-span-1 md:col-span-2 flex justify-between md:justify-end items-center">
+                                    <div className="col-span-1 md:col-span-1 flex justify-between md:justify-center items-center">
                                         <span className="md:hidden text-slate-400 font-normal text-sm">Subtotal:</span>
-                                        <div className="flex items-center gap-4">
-                                            <span className="font-bold text-slate-900">
-                                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.price * item.quantity)}
-                                            </span>
-                                            <button
-                                                onClick={() => removeItem(item.id)}
-                                                className="text-slate-400 hover:text-red-500 hidden md:block"
-                                                title="Remover item"
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </button>
-                                        </div>
+                                        <span className="font-bold text-slate-900 text-lg">
+                                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.price * item.quantity)}
+                                        </span>
+                                    </div>
+
+                                    {/* Actions */}
+                                    <div className="hidden md:flex col-span-1 justify-center">
+                                        <button
+                                            onClick={() => removeItem(item.id)}
+                                            className="text-slate-400 hover:text-red-500 transition-colors p-2 hover:bg-red-50 rounded-full"
+                                            title="Remover item"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </button>
                                     </div>
                                 </div>
                             ))}

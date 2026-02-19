@@ -4,7 +4,12 @@ import { prisma } from "@/lib/prisma";
 export default async function NewProductPage() {
     const categories = await prisma.category.findMany({
         where: { parentId: null },
-        include: { children: true },
+        include: {
+            children: {
+                include: { _count: { select: { products: true } } }
+            },
+            _count: { select: { products: true } }
+        },
         orderBy: { name: 'asc' }
     });
 

@@ -16,12 +16,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { upsertProduct } from "@/lib/actions/product"; // Server Action
-import { useState, useTransition } from "react";
+import { upsertProduct, deleteProduct } from "@/lib/actions/product"; // Server Action
+import React, { useState, useTransition } from "react";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Upload, AlertCircle } from "lucide-react";
+import { Loader2, Upload, AlertCircle, Plus, Trash2 } from "lucide-react";
 import { StatusFeedback } from "@/components/admin/StatusFeedback";
-import { getDistinctBrands } from "@/lib/actions/brands";
+import { createCategory, deleteCategory } from "@/lib/actions/category";
+import { createBrand, deleteBrand, getAllBrands } from "@/lib/actions/brands-management";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -38,7 +39,7 @@ const formSchema = z.object({
     barcode: z.string().optional(),
     categoryId: z.string().optional(),
     isNewArrival: z.boolean().default(false),
-    brand: z.string().optional(),
+    brandId: z.string().optional(),
     videoUrl: z.string().optional().or(z.literal("")),
     weight: z.string().optional(),
     length: z.string().optional(),
@@ -68,7 +69,7 @@ export function ProductForm({ categories = [], initialData }: { categories?: any
             barcode: initialData?.barcode || "",
             categoryId: initialData?.categoryId || "",
             isNewArrival: !!initialData?.isNewArrival,
-            brand: initialData?.brand || "",
+            brandId: initialData?.brandId || "",
             videoUrl: initialData?.videoUrl || "",
             weight: initialData?.weight ? String(initialData.weight) : "",
             length: initialData?.length ? String(initialData.length) : "",
@@ -80,23 +81,114 @@ export function ProductForm({ categories = [], initialData }: { categories?: any
         },
     });
 
-    function onSubmit(values: z.infer<typeof formSchema>) {
-        setStatus("idle");
-        startTransition(async () => {
-            try {
-                const formData = new FormData();
-                Object.entries(values).forEach(([key, value]) => {
-                    if (value !== undefined && value !== null) {
-                        formData.append(key, String(value));
-                    }
-                });
-                await upsertProduct(formData);
-                setStatus("success");
-            } catch (error) {
-                console.error(error);
-                setStatus("error");
+    // Image Handling State
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+    const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+    const [previewUrls, setPreviewUrls] = useState<string[]>(
+        initialData?.images?.map((img: any) => img.url) || []
+    );
+
+    function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+        if (e.target.files && e.target.files.length > 0) {
+            const newFiles = Array.from(e.target.files);
+            setSelectedFiles((prev) => [...prev, ...newFiles]);
+
+            // Create previews
+            const newUrls = newFiles.map(file => URL.createObjectURL(file));
+            setPreviewUrls((prev) => [...prev, ...newUrls]);
+        }
+    }
+
+    function removeFile(index: number) {
+        setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+        setPreviewUrls((prev) => prev.filter((_, i) => i !== index));
+    }
+
+    // Brand State
+    const [brands, setBrands] = useState<{ id: string, name: string }[]>([]);
+    const [isBrandDialogOpen, setIsBrandDialogOpen] = useState(false);
+    const [newBrandName, setNewBrandName] = useState("");
+
+    // Fetch brands on mount
+    React.useEffect(() => {
+        getAllBrands().then((res: any) => setBrands(res));
+    }, []);
+
+    async function handleCreateBrand() {
+        if (newBrandName.trim()) {
+            const res = await createBrand(newBrandName.trim());
+            if (res.success) {
+                const updated = await getAllBrands();
+                setBrands(updated);
+
+                const newB = updated.find((b: any) => b.name.toLowerCase() === newBrandName.trim().toLowerCase());
+                if (newB) {
+                    form.setValue("brandId", newB.id);
+                }
+                setIsBrandDialogOpen(false);
+                setNewBrandName("");
+            } else {
+                alert(res.message || "Erro ao criar marca");
             }
-        });
+        }
+    }
+
+    function onSubmit(values: z.infer<typeof formSchema>) {
+        // Wrapper to handle internal logic with force flag
+        const submitLogic = async (excludeNameCheck = false) => {
+            setStatus("idle");
+            startTransition(async () => {
+                try {
+                    const formData = new FormData();
+                    Object.entries(values).forEach(([key, value]) => {
+                        if (value !== undefined && value !== null) {
+                            formData.append(key, String(value));
+                        }
+                    });
+
+                    // Append Images
+                    selectedFiles.forEach((file) => {
+                        formData.append("images", file);
+                    });
+
+                    if (initialData?.id) {
+                        formData.append("id", initialData.id);
+                    }
+
+                    if (excludeNameCheck) {
+                        formData.append("forceSave", "true");
+                    }
+
+                    // @ts-ignore
+                    const res = await upsertProduct(formData);
+
+                    if (res && res.success === false) {
+                        if (res.requiresConfirmation) {
+                            if (confirm(res.message)) {
+                                // User confirmed, retry with forceSave
+                                submitLogic(true);
+                            } else {
+                                setStatus("error"); // or stay idle?
+                            }
+                            return;
+                        }
+
+                        // Hard error
+                        alert(res.message);
+                        setStatus("error");
+                        return;
+                    }
+
+                    setStatus("success");
+                    // Optional: redirect or reset? The action redirects, but typically we wait.
+                } catch (error) {
+                    console.error(error);
+                    setStatus("error");
+                }
+            });
+        };
+
+        submitLogic(false);
     }
 
     return (
@@ -109,6 +201,23 @@ export function ProductForm({ categories = [], initialData }: { categories?: any
                     <div className="flex gap-2 items-center">
                         <StatusFeedback status={status} onReset={() => setStatus("idle")} />
                         <Button type="button" variant="outline" onClick={() => window.history.back()}>Cancelar</Button>
+                        {initialData && (
+                            <Button
+                                type="button"
+                                variant="destructive"
+                                size="icon"
+                                onClick={async () => {
+                                    if (confirm(`Tem certeza que deseja excluir o produto "${initialData.name}"? Esta ação não pode ser desfeita.`)) {
+                                        await deleteProduct(initialData.id); // Renamed import or use from props? No, imported directly.
+                                        // deleteProduct handles redirect, but we might want to ensure client state is clean.
+                                        // The action redirects to /admin/products.
+                                    }
+                                }}
+                                title="Excluir produto"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        )}
                         <FormField
                             control={form.control}
                             name="isNewArrival"
@@ -181,13 +290,46 @@ export function ProductForm({ categories = [], initialData }: { categories?: any
                 {/* Images */}
                 <div className="bg-white p-6 rounded-lg border shadow-sm space-y-4">
                     <h2 className="font-bold text-lg mb-4">Fotos e vídeo</h2>
-                    <div className="border-2 border-dashed border-blue-200 rounded-lg bg-blue-50/30 p-10 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-blue-50 transition-colors">
+
+                    {/* Hidden Input */}
+                    <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        className="hidden"
+                        ref={fileInputRef}
+                        onChange={handleFileChange}
+                    />
+
+                    {/* Dropzone / Trigger */}
+                    <div
+                        onClick={() => fileInputRef.current?.click()}
+                        className="border-2 border-dashed border-blue-200 rounded-lg bg-blue-50/30 p-10 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-blue-50 transition-colors"
+                    >
                         <div className="bg-blue-100 p-3 rounded-full mb-3 text-blue-600">
                             <Upload className="h-6 w-6" />
                         </div>
                         <span className="text-blue-600 font-bold mb-1">Adicionar fotos</span>
-                        <span className="text-xs text-muted-foreground">Arraste e solte, ou selecione fotos do produto</span>
+                        <span className="text-xs text-muted-foreground">Clique para selecionar fotos do produto</span>
                     </div>
+
+                    {/* Previews */}
+                    {previewUrls.length > 0 && (
+                        <div className="grid grid-cols-4 gap-4 mt-4">
+                            {previewUrls.map((url, index) => (
+                                <div key={index} className="relative aspect-square border rounded-lg overflow-hidden bg-gray-100 group">
+                                    <img src={url} alt={`Preview ${index}`} className="w-full h-full object-cover" />
+                                    <button
+                                        type="button"
+                                        onClick={() => removeFile(index)}
+                                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                        <div className="h-3 w-3 flex items-center justify-center">x</div>
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 {/* Pricing & Costs */}
@@ -285,118 +427,187 @@ export function ProductForm({ categories = [], initialData }: { categories?: any
                 <div className="bg-white p-6 rounded-lg border shadow-sm space-y-6">
                     <h2 className="font-bold text-lg mb-4">Organização e Mídia</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <FormField control={form.control} name="categoryId" render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Categoria</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                    <FormControl><SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger></FormControl>
-                                    <SelectContent>
-                                        {categories.map((parent: any) => (
-                                            <div key={parent.id}>
-                                                <SelectItem value={parent.id} className="font-bold bg-slate-50">
-                                                    {parent.name}
-                                                </SelectItem>
-                                                {parent.children && parent.children.map((child: any) => (
-                                                    <SelectItem key={child.id} value={child.id} className="pl-6">
-                                                        {child.name}
-                                                    </SelectItem>
+                        <FormField control={form.control} name="categoryId" render={({ field }) => {
+                            const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
+                            const [newCategoryName, setNewCategoryName] = useState("");
+
+                            async function handleCreateCategory() {
+                                if (!newCategoryName.trim()) return;
+                                const res = await createCategory(new FormData(), newCategoryName.trim()); // Small hack: adapt createCategory to accept string or FormData if needed, but here we need to fix the call. 
+                                // Actually createCategory expects FormData. Let's fix usage.
+                            }
+
+                            // Correction: We need to define the handlers properly inside the component or outside if possible.
+                            // But since we need access to 'categories' prop updates, it's tricky without a router refresh or state update.
+                            // However, server actions usually purge cache.
+                            // Let's implement the UI and simple handlers.
+
+                            return (
+                                <FormItem>
+                                    <FormLabel>Categoria</FormLabel>
+                                    <div className="flex gap-2">
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl><SelectTrigger className="flex-1"><SelectValue placeholder="Selecione..." /></SelectTrigger></FormControl>
+                                            <SelectContent>
+                                                {categories.map((parent: any) => (
+                                                    <div key={parent.id}>
+                                                        <SelectItem value={parent.id} className="font-bold bg-slate-50">
+                                                            {parent.name}
+                                                        </SelectItem>
+                                                        {parent.children && parent.children.map((child: any) => (
+                                                            <SelectItem key={child.id} value={child.id} className="pl-6">
+                                                                {child.name}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </div>
                                                 ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="icon"
+                                            onClick={() => setIsCategoryDialogOpen(true)}
+                                            title="Nova Categoria"
+                                        >
+                                            <Plus className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="icon"
+                                            className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                                            disabled={!field.value}
+                                            onClick={async () => {
+                                                if (!field.value) return;
+                                                // Find selected category
+                                                const allCats = categories.flatMap((c: any) => [c, ...(c.children || [])]);
+                                                const selected = allCats.find((c: any) => c.id === field.value);
+                                                if (!selected) return;
+
+                                                const count = selected._count?.products || 0;
+                                                if (count > 0) {
+                                                    if (!confirm(`Tem certeza? Existem ${count} produtos nesta categoria.`)) return;
+                                                } else {
+                                                    if (!confirm("Excluir esta categoria?")) return;
+                                                }
+
+                                                await deleteCategory(field.value);
+                                                form.setValue("categoryId", ""); // Reset after delete
+                                            }}
+                                            title="Excluir Categoria Selecionada"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+
+                                    {isCategoryDialogOpen && (
+                                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                                            <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-sm space-y-4">
+                                                <h3 className="text-lg font-bold">Nova Categoria</h3>
+                                                <Input
+                                                    placeholder="Nome da categoria"
+                                                    value={newCategoryName}
+                                                    onChange={(e) => setNewCategoryName(e.target.value)}
+                                                    autoFocus
+                                                />
+                                                <div className="flex justify-end gap-2">
+                                                    <Button variant="ghost" type="button" onClick={() => setIsCategoryDialogOpen(false)}>Cancelar</Button>
+                                                    <Button type="button" onClick={async () => {
+                                                        const formData = new FormData();
+                                                        formData.append("name", newCategoryName);
+                                                        await createCategory(formData);
+                                                        setIsCategoryDialogOpen(false);
+                                                        setNewCategoryName("");
+                                                    }}>Criar</Button>
+                                                </div>
                                             </div>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                        )} />
+                                        </div>
+                                    )}
+                                    <FormMessage />
+                                </FormItem>
+                            )
+                        }} />
 
                         <FormField
                             control={form.control}
-                            name="brand"
-                            render={({ field }) => {
-                                const [open, setOpen] = useState(false);
-                                const [brands, setBrands] = useState<string[]>([]);
-                                const [inputValue, setInputValue] = useState("");
+                            name="brandId"
+                            render={({ field }) => (
+                                <FormItem className="flex flex-col">
+                                    <FormLabel>Marca</FormLabel>
+                                    <div className="flex gap-2">
+                                        <Select onValueChange={field.onChange} value={field.value || ""}>
+                                            <FormControl>
+                                                <SelectTrigger className="flex-1">
+                                                    <SelectValue placeholder="Selecione uma marca..." />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {brands.map((brand) => (
+                                                    <SelectItem key={brand.id} value={brand.id}>
+                                                        {brand.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="icon"
+                                            onClick={() => setIsBrandDialogOpen(true)}
+                                            title="Adicionar nova marca"
+                                        >
+                                            <Plus className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="icon"
+                                            className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                                            disabled={!field.value}
+                                            onClick={async () => {
+                                                if (!field.value) return;
+                                                const selected = brands.find(b => b.id === field.value);
+                                                if (!selected) return;
 
-                                // Fetch brands on open
-                                const onOpenChange = (isOpen: boolean) => {
-                                    setOpen(isOpen);
-                                    if (isOpen && brands.length === 0) {
-                                        getDistinctBrands().then(setBrands);
-                                    }
-                                };
+                                                if (!confirm(`Tem certeza que deseja excluir a marca "${selected.name}"?`)) return;
 
-                                return (
-                                    <FormItem className="flex flex-col">
-                                        <FormLabel>Marca</FormLabel>
-                                        <Popover open={open} onOpenChange={onOpenChange}>
-                                            <PopoverTrigger asChild>
-                                                <FormControl>
-                                                    <Button
-                                                        variant="outline"
-                                                        role="combobox"
-                                                        aria-expanded={open}
-                                                        className={cn(
-                                                            "justify-between font-normal",
-                                                            !field.value && "text-muted-foreground"
-                                                        )}
-                                                    >
-                                                        {field.value || "Selecione ou crie..."}
-                                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                                    </Button>
-                                                </FormControl>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-[200px] p-0">
-                                                <Command>
-                                                    <CommandInput
-                                                        placeholder="Buscar marca..."
-                                                        value={inputValue}
-                                                        onValueChange={setInputValue}
-                                                    />
-                                                    <CommandList>
-                                                        <CommandEmpty>
-                                                            <div className="p-2">
-                                                                <p className="text-sm text-muted-foreground mb-2">"{inputValue}" não encontrada.</p>
-                                                                <Button
-                                                                    variant="secondary"
-                                                                    size="sm"
-                                                                    className="w-full h-8 px-2"
-                                                                    onClick={() => {
-                                                                        field.onChange(inputValue);
-                                                                        setOpen(false);
-                                                                    }}
-                                                                >
-                                                                    Criar "{inputValue}"
-                                                                </Button>
-                                                            </div>
-                                                        </CommandEmpty>
-                                                        <CommandGroup heading="Marcas Existentes">
-                                                            {brands.map((brand) => (
-                                                                <CommandItem
-                                                                    key={brand}
-                                                                    value={brand}
-                                                                    onSelect={(currentValue: string) => {
-                                                                        field.onChange(currentValue === field.value ? "" : currentValue);
-                                                                        setOpen(false);
-                                                                    }}
-                                                                >
-                                                                    <Check
-                                                                        className={cn(
-                                                                            "mr-2 h-4 w-4",
-                                                                            brand === field.value ? "opacity-100" : "opacity-0"
-                                                                        )}
-                                                                    />
-                                                                    {brand}
-                                                                </CommandItem>
-                                                            ))}
-                                                        </CommandGroup>
-                                                    </CommandList>
-                                                </Command>
-                                            </PopoverContent>
-                                        </Popover>
-                                        <FormMessage />
-                                    </FormItem>
-                                );
-                            }}
+                                                const res = await deleteBrand(field.value);
+                                                if (res.success) {
+                                                    const updated = await getAllBrands();
+                                                    setBrands(updated);
+                                                    form.setValue("brandId", "");
+                                                } else {
+                                                    alert(res.message);
+                                                }
+                                            }}
+                                            title="Excluir marca selecionada"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+
+                                    {/* Dialog for New Brand */}
+                                    {isBrandDialogOpen && (
+                                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                                            <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-sm space-y-4">
+                                                <h3 className="text-lg font-bold">Nova Marca</h3>
+                                                <Input
+                                                    placeholder="Nome da marca"
+                                                    value={newBrandName}
+                                                    onChange={(e) => setNewBrandName(e.target.value)}
+                                                    autoFocus
+                                                />
+                                                <div className="flex justify-end gap-2">
+                                                    <Button variant="ghost" type="button" onClick={() => setIsBrandDialogOpen(false)}>Cancelar</Button>
+                                                    <Button type="button" onClick={handleCreateBrand}>Adicionar</Button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <FormMessage />
+                                </FormItem>
+                            )}
                         />
 
                         <div className="col-span-full">

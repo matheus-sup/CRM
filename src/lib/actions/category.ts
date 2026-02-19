@@ -31,3 +31,15 @@ export async function createCategory(formData: FormData) {
         return { success: false, message: "Erro ao criar categoria." };
     }
 }
+
+export async function deleteCategory(id: string) {
+    try {
+        await prisma.category.delete({
+            where: { id }
+        });
+        revalidatePath("/admin/produtos");
+        return { success: true };
+    } catch (e) {
+        return { success: false, message: "Não foi possível excluir a categoria." };
+    }
+}

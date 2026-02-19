@@ -1,0 +1,11 @@
+
+model ShippingConfig {
+  id String @id @default("shipping-config")
+
+  // Melhor Envio
+  melhorEnvioEnabled Boolean @default(false)
+  melhorEnvioToken   String? // Access Token
+  melhorEnvioAppId   String? // Client ID
+  melhorEnvioEmail   String? // Email de cadastro
+  melhorEnvioSandbox Boolean @default(true)
+}

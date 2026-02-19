@@ -10,35 +10,55 @@ import { revalidatePath } from "next/cache";
 /**
  * Returns the LIVE configuration. Used by the storefront.
  */
-export async function getStoreConfig() {
-    const config = await prisma.storeConfig.upsert({
-        where: { id: "store-config" },
-        update: {},
-        create: {
-            id: "store-config",
-            storeName: "Gut Cosméticos",
-            themeColor: "#db2777"
-        }
-    });
+import { serializeForClient } from "@/lib/utils";
 
-    return config;
+// ...
+
+export async function getStoreConfig() {
+    const [config, menus] = await Promise.all([
+        prisma.storeConfig.upsert({
+            where: { id: "store-config" },
+            update: {},
+            create: {
+                id: "store-config",
+                storeName: "Minha Loja",
+                themeColor: "#db2777"
+            }
+        }),
+        prisma.menu.findMany({
+            include: { items: true }
+        })
+    ]);
+
+    return serializeForClient({ ...config, menus });
 }
 
-/**
- * Returns the DRAFT configuration. Used by the CMS/Editor.
- * If draft doesn't exist, it clones the LIVE config.
- */
+// ...
+
 export async function getDraftStoreConfig() {
-    let draft = await prisma.storeConfig.findUnique({
-        where: { id: "store-config-draft" }
-    });
+    let [draft, menus] = await Promise.all([
+        prisma.storeConfig.findUnique({
+            where: { id: "store-config-draft" }
+        }),
+        prisma.menu.findMany({
+            include: { items: true }
+        })
+    ]);
 
     if (!draft) {
         // Clone from Live
-        const live = await getStoreConfig();
+        // Note: We call internal helper or duplicate upsert if needed, but getStoreConfig() is now serialized... 
+        // Wait, if getStoreConfig returns serialized, we can't easily destructure Dates. 
+        // Better to separate the "Raw" fetch from the "Serialized" return.
+
+        // Let's keep it simple: Just serialize at the very end of return.
+        const live = await prisma.storeConfig.upsert({
+            where: { id: "store-config" },
+            update: {},
+            create: { id: "store-config", storeName: "Minha Loja", themeColor: "#6366f1" }
+        });
         const { id, createdAt, updatedAt, ...dataToClone } = live;
 
-        // Try to create, if fails gracefully recover (upsert logic somewhat manual here because we need dynamic defaults)
         try {
             draft = await prisma.storeConfig.create({
                 data: {
@@ -47,14 +67,13 @@ export async function getDraftStoreConfig() {
                 }
             });
         } catch (e) {
-            // Race condition hit: just fetch it again
             draft = await prisma.storeConfig.findUniqueOrThrow({
                 where: { id: "store-config-draft" }
             });
         }
     }
 
-    return draft;
+    return serializeForClient({ ...draft, menus });
 }
 
 // ==============================================================================
@@ -74,6 +93,18 @@ export async function updateStoreConfig(prevState: any, formData: FormData) {
             if (formData.has(key)) data[key] = formData.get(key) as string;
         };
 
+        const addBoolIfPresent = (key: string) => {
+            if (formData.has(key)) {
+                data[key] = formData.get(key) === "true";
+            }
+        };
+
+        const addIntIfPresent = (key: string) => {
+            if (formData.has(key)) {
+                data[key] = parseInt(formData.get(key) as string, 10);
+            }
+        };
+
         // Identity
         addIfPresent("storeName");
         addIfPresent("description");
@@ -81,6 +112,7 @@ export async function updateStoreConfig(prevState: any, formData: FormData) {
         addIfPresent("bannerUrl");
         addIfPresent("cnpj");
         addIfPresent("legalName");
+        addIfPresent("faviconUrl");
 
         // Colors
         addIfPresent("themeColor");
@@ -116,7 +148,15 @@ export async function updateStoreConfig(prevState: any, formData: FormData) {
         addIfPresent("cartCountText");
         addIfPresent("searchBtnBg");
         addIfPresent("searchBtnBg");
+        addIfPresent("searchBtnBg");
         addIfPresent("searchIconColor");
+
+        // Header Branding
+        addBoolIfPresent("headerShowLogo");
+        addIntIfPresent("headerLogoWidth");
+        addIfPresent("headerText");
+        addIfPresent("headerSubtext");
+        addIfPresent("headerSearchPlaceholder");
 
         // Contact Info
         addIfPresent("whatsapp");
@@ -132,6 +172,15 @@ export async function updateStoreConfig(prevState: any, formData: FormData) {
         addIfPresent("tiktok");
         addIfPresent("twitter");
         addIfPresent("pinterest");
+        addIfPresent("pinterestTag");
+
+        // Social Login Auth
+        addIfPresent("googleClientId");
+        addIfPresent("googleClientSecret");
+        addIfPresent("appleClientId");
+        addIfPresent("appleKeyId");
+        addIfPresent("appleTeamId");
+        addIfPresent("applePrivateKey");
 
         // Footer Colors
         addIfPresent("footerBg");
@@ -142,12 +191,6 @@ export async function updateStoreConfig(prevState: any, formData: FormData) {
         addIfPresent("googleTagId");
 
         // Booleans
-        const addBoolIfPresent = (key: string) => {
-            if (formData.has(key)) {
-                data[key] = formData.get(key) === "true";
-            }
-        };
-
         addBoolIfPresent("footerLogo");
         addBoolIfPresent("newsletterEnabled");
         addBoolIfPresent("showPaymentMethods");
@@ -158,11 +201,6 @@ export async function updateStoreConfig(prevState: any, formData: FormData) {
         addIfPresent("paginationType"); // String
 
         // Int fields
-        const addIntIfPresent = (key: string) => {
-            if (formData.has(key)) {
-                data[key] = parseInt(formData.get(key) as string, 10);
-            }
-        };
         addIntIfPresent("mobileColumns");
         addIntIfPresent("desktopColumns");
 
@@ -208,6 +246,7 @@ export async function updateStoreConfig(prevState: any, formData: FormData) {
         });
 
         revalidatePath("/admin/site");
+        revalidatePath("/admin/editor");
 
         return { success: true, message: "Rascunho salvo!" };
     } catch (error) {
@@ -282,8 +321,8 @@ export async function discardDraft() {
  */
 export async function saveDraftConfig(data: any) {
     try {
-        // Remove ID/Dates to avoid conflicts
-        const { id, createdAt, updatedAt, ...cleanData } = data;
+        // Remove ID/Dates and potential relational data that cannot be saved directly to StoreConfig
+        const { id, createdAt, updatedAt, menus, products, categories, banners, ...cleanData } = data;
 
         // Ensure decimals are handled
         if (cleanData.minPurchaseValue) cleanData.minPurchaseValue = Number(cleanData.minPurchaseValue);
@@ -294,9 +333,34 @@ export async function saveDraftConfig(data: any) {
         });
 
         revalidatePath("/admin/site");
+        revalidatePath("/admin/editor");
         return { success: true, message: "Rascunho salvo com sucesso!" };
-    } catch (error) {
+    } catch (error: any) {
         console.error("Erro ao salvar rascunho JSON:", error);
-        return { success: false, message: "Erro ao salvar rascunho." };
+        return { success: false, message: "Erro: " + (error.message || "Erro desconhecido") };
     }
 }
+
+/**
+ * Updates footer blocks configuration (both DRAFT and LIVE for immediate effect).
+ */
+export async function updateFooterBlocks(data: any) {
+    try {
+        const footerBlocks = JSON.stringify(data);
+
+        // Update both draft and live for immediate effect
+        await prisma.storeConfig.updateMany({
+            where: { id: { in: ["store-config", "store-config-draft"] } },
+            data: { footerBlocks }
+        });
+
+        revalidatePath("/admin/rodape");
+        revalidatePath("/", "layout");
+
+        return { success: true, message: "Layout do rodapé salvo!" };
+    } catch (error: any) {
+        console.error("Erro ao salvar blocos do rodapé:", error);
+        return { success: false, message: "Erro: " + (error.message || "Erro desconhecido") };
+    }
+}
+

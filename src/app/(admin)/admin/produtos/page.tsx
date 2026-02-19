@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getProducts } from "@/lib/actions/product";
+import { getAllBrands } from "@/lib/actions/brands-management";
 import { ProductsManager } from "@/components/admin/products/ProductsManager";
 
 export default async function ProductsPage() {
@@ -15,7 +16,9 @@ export default async function ProductsPage() {
         orderBy: { name: 'asc' }
     });
 
+    const brands = await getAllBrands();
+
     return (
-        <ProductsManager products={products} categories={categories} />
+        <ProductsManager products={products} categories={categories} brands={brands} />
     );
 }

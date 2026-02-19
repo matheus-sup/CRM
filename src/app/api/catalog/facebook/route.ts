@@ -6,14 +6,14 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
     const config = await getStoreConfig();
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://gutcosmeticosemakes.com.br"; // Fallback URL
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://minhaloja.com.br"; // Fallback URL
 
     const products = await prisma.product.findMany({
         where: {
             status: "ACTIVE",
             price: { gt: 0 }
         },
-        include: { images: true }
+        include: { images: true, brand: true }
     });
 
     const xmlItems = products.map(product => {
@@ -26,7 +26,7 @@ export async function GET() {
             <g:description>${sanitizeXml(product.description || product.name)}</g:description>
             <g:link>${baseUrl}/produtos/${product.slug}</g:link>
             <g:image_link>${image}</g:image_link>
-            <g:brand>${sanitizeXml(product.brand || config.storeName)}</g:brand>
+            <g:brand>${sanitizeXml(product.brand?.name || product.brandLegacy || config.storeName)}</g:brand>
             <g:condition>new</g:condition>
             <g:availability>${product.stock > 0 ? "in stock" : "out of stock"}</g:availability>
             <g:price>${formatCurrency(Number(product.price))}</g:price>

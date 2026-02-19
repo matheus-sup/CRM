@@ -14,6 +14,7 @@ interface Product {
     price: number;
     stock: number;
     sku?: string;
+    barcode?: string | null;
     images?: string[];
 }
 
@@ -24,22 +25,19 @@ interface CartItem {
     quantity: number;
 }
 
-interface PdvManagerProps {
-    initialProducts: Product[];
-}
-
-export function PdvManager({ initialProducts }: PdvManagerProps) {
+export function PdvManager({ initialProducts }: { initialProducts: Product[] }) {
     const [products] = useState<Product[]>(initialProducts);
     const [filteredProducts, setFilteredProducts] = useState<Product[]>(initialProducts);
-    const [cart, setCart] = useState<CartItem[]>([]);
     const [search, setSearch] = useState("");
+    const [cart, setCart] = useState<CartItem[]>([]);
     const { toast } = useToast();
 
     useEffect(() => {
         const lower = search.toLowerCase();
         const filtered = products.filter(p =>
             p.name.toLowerCase().includes(lower) ||
-            p.sku?.toLowerCase().includes(lower)
+            p.sku?.toLowerCase().includes(lower) ||
+            (p.barcode && p.barcode.includes(lower))
         );
         setFilteredProducts(filtered);
     }, [search, products]);

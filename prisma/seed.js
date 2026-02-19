@@ -8,22 +8,22 @@ async function main() {
     // Clean up existing if needed (optional)
     // await prisma.product.deleteMany({})
 
-    const gloss = await prisma.product.upsert({
-        where: { slug: 'gloss-volume-intenso-max-love' },
-        update: {},
-        create: {
-            name: 'Gloss Volume Intenso Max Love',
-            slug: 'gloss-volume-intenso-max-love',
-            description: 'O Gloss Volume Intenso da Max Love proporciona brilho espelhado e sensação de volume imediato. Fórmula hidratante com Ácido Hialurônico.',
-            price: 19.90,
-            compareAtPrice: 24.90,
-            stock: 50,
-            status: 'ACTIVE',
-            categoryId: null, // Can map to a category implementation later
-        },
-    })
+    // const gloss = await prisma.product.upsert({
+    //     where: { slug: 'gloss-volume-intenso-max-love' },
+    //     update: {},
+    //     create: {
+    //         name: 'Gloss Volume Intenso Max Love',
+    //         slug: 'gloss-volume-intenso-max-love',
+    //         description: 'O Gloss Volume Intenso da Max Love proporciona brilho espelhado e sensação de volume imediato. Fórmula hidratante com Ácido Hialurônico.',
+    //         price: 19.90,
+    //         compareAtPrice: 24.90,
+    //         stock: 50,
+    //         status: 'ACTIVE',
+    //         categoryId: null, // Can map to a category implementation later
+    //     },
+    // })
 
-    console.log('Created product:', gloss.name)
+    // console.log('Created product:', gloss.name)
 }
 
 main()

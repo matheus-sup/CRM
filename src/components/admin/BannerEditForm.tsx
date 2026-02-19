@@ -11,6 +11,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { ImagePicker } from "@/components/admin/media/ImagePicker";
 
 function SubmitButton() {
     const { pending } = useFormStatus();
@@ -24,12 +25,14 @@ function SubmitButton() {
 export default function BannerEditForm({ banner }: { banner: any }) {
     const router = useRouter();
     const [id] = useState(banner.id);
+    const [imageUrl, setImageUrl] = useState(banner.imageUrl || "");
+    const [mobileUrl, setMobileUrl] = useState(banner.mobileUrl || "");
 
     async function handleSubmit(formData: FormData) {
         const result = await updateBanner(id, formData);
         if (result.success) {
             toast.success("Banner atualizado!");
-            router.push("/admin/banners");
+            router.push("/admin/site"); // Redirect back to CMS Site which now holds banners
             router.refresh();
         } else {
             toast.error(result.error);
@@ -46,13 +49,23 @@ export default function BannerEditForm({ banner }: { banner: any }) {
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="imageUrl">URL da Imagem (Desktop)</Label>
-                        <Input id="imageUrl" name="imageUrl" defaultValue={banner.imageUrl} required />
+                        <Label>Imagem Desktop</Label>
+                        <ImagePicker
+                            value={imageUrl}
+                            onChange={setImageUrl}
+                            label="Selecionar Banner Desktop"
+                        />
+                        <input type="hidden" name="imageUrl" value={imageUrl} required />
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="mobileUrl">URL da Imagem (Mobile) - Opcional</Label>
-                        <Input id="mobileUrl" name="mobileUrl" defaultValue={banner.mobileUrl || ""} />
+                        <Label>Imagem Mobile</Label>
+                        <ImagePicker
+                            value={mobileUrl}
+                            onChange={setMobileUrl}
+                            label="Selecionar Banner Mobile (Opcional)"
+                        />
+                        <input type="hidden" name="mobileUrl" value={mobileUrl} />
                     </div>
 
                     <div className="space-y-2">
@@ -67,7 +80,7 @@ export default function BannerEditForm({ banner }: { banner: any }) {
 
                     <div className="pt-4 flex gap-2">
                         <SubmitButton />
-                        <Link href="/admin/banners">
+                        <Link href="/admin/site">
                             <Button variant="outline" type="button">Cancelar</Button>
                         </Link>
                     </div>

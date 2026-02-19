@@ -1,0 +1,459 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+generator client_temp {
+  provider = "prisma-client-js"
+  output   = "./generated-client"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// User & Auth
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          String    @default("USER") // ADMIN, USER
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// Store Configuration (CMS)
+model StoreConfig {
+  id          String  @id @default("store-config")
+  storeName   String  @default("Gut Cosméticos & Makes")
+  description String?
+  bannerUrl   String?
+  logoUrl     String?
+  faviconUrl  String?
+  // Legal Data
+  cnpj        String?
+  legalName   String?
+
+  // Global Colors
+  themeColor      String @default("#db2777") // Active/Button
+  accentColor     String @default("#db2777") // Secondary Highlights
+  priceColor      String @default("#db2777") // Specific for Product Prices
+  secondaryColor  String @default("#fce7f3")
+  backgroundColor String @default("#ffffff")
+
+  // Granular Typography & Colors
+  menuColor    String @default("#334155")
+  menuFont     String @default("Inter")
+  menuFontSize String @default("14px")
+
+  headerColor String @default("#ffffff")
+
+  // Specific Header Elements
+  cartCountBg     String @default("#22c55e") // Green default
+  cartCountText   String @default("#ffffff")
+  searchBtnBg     String @default("#db2777") // Pink default
+  searchIconColor String @default("#ffffff")
+
+  // Logo & Branding in Header
+  headerShowLogo          Boolean @default(true)
+  headerLogoWidth         Int     @default(120) // px
+  headerText              String? // Text alternative if logo is hidden
+  headerSubtext           String? // e.g. "Cosméticos • Makes"
+  headerSearchPlaceholder String  @default("O que você está buscando?")
+
+  headingColor      String @default("#111827")
+  sectionTitleColor String @default("#111827") // NEW: Specific for section headers
+  headingFont       String @default("Inter")
+  headingFontSize   String @default("2rem")
+
+  // Specific Button Colors
+  headerBtnBg   String @default("#db2777")
+  headerBtnText String @default("#ffffff")
+
+  productBtnBg   String @default("#db2777")
+  productBtnText String @default("#ffffff")
+
+  bodyColor    String @default("#334155")
+  bodyFont     String @default("Inter")
+  bodyFontSize String @default("1rem")
+
+  instagram      String?
+  instagramToken String? // For feed integration
+  facebook       String?
+  youtube        String?
+  tiktok         String?
+  twitter        String?
+  pinterest      String?
+  pinterestTag   String? // "Etiqueta do Pinterest"
+
+  // Analytics
+  facebookPixelId String? // Ex: 123456789
+  googleTagId     String? // Ex: G-XXXXXX or GT-XXXXXX
+
+  whatsapp           String?
+  phone              String? // Fixo ou principal
+  email              String?
+  address            String? // Endereço completo por extenso
+  mapUrl             String? // URL do Google Maps Embed
+  // Footer Configuration
+  footerBg           String  @default("#171717")
+  footerText         String  @default("#a3a3a3")
+  footerLogo         Boolean @default(true)
+  newsletterEnabled  Boolean @default(true)
+  showPaymentMethods Boolean @default(true)
+  showSocialIcons    Boolean @default(true)
+
+  // Product List Configuration
+  categoryDefaultImage String?
+  mobileColumns        Int     @default(2)
+  desktopColumns       Int     @default(4)
+  paginationType       String  @default("infinite") // infinite, pagination, button
+  showInstallments     Boolean @default(true)
+
+  enableQuickBuy      Boolean @default(true)
+  showColorVariations Boolean @default(false)
+  showHoverImage      Boolean @default(true)
+  showCardCarousel    Boolean @default(false)
+  showLowStockWarning Boolean @default(true)
+
+  // Product Detail Configuration
+  showProductSold        Boolean @default(true)
+  showPromoPrice         Boolean @default(true)
+  showDiscountPayment    Boolean @default(true)
+  showInstallmentsDetail Boolean @default(true) // "Informações das parcelas"
+  showVariations         Boolean @default(true)
+  showMeasurements       Boolean @default(false) // "Guia de medidas"
+  showSKU                Boolean @default(true)
+  showStockQuantity      Boolean @default(true)
+  showShippingSimulator  Boolean @default(true)
+  showBuyInfo            Boolean @default(true) // "Informação de compra"
+  showRelatedProducts    Boolean @default(true)
+
+  // Cart Configuration
+  minPurchaseValue        Decimal @default(0.00)
+  enableQuickCart         Boolean @default(true) // "Permitir... sem ir a outra página"
+  cartAction              String  @default("notification") // notification, modal, page
+  showCartRecommendations Boolean @default(true)
+  showShippingCalculator  Boolean @default(true)
+
+  homeLayout String @default("[{\"id\":\"hero\",\"label\":\"Banners Rotativos\",\"enabled\":true},{\"id\":\"new-arrivals\",\"label\":\"Produtos Novos\",\"enabled\":true},{\"id\":\"testimonials\",\"label\":\"Depoimentos\",\"enabled\":true},{\"id\":\"instagram\",\"label\":\"Instagram\",\"enabled\":true}]")
+
+  // Maintenance Mode
+  maintenanceMode     Boolean @default(false)
+  maintenanceMessage  String? @default("Estamos reformando a loja e está ficando incrível. Volte em alguns dias.")
+  maintenancePassword String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PaymentConfig {
+  id String @id @default("payment-config")
+
+  // Pagar.me
+  pagarmeEnabled       Boolean @default(false)
+  pagarmeApiKey        String? // Secret Key (sk_...)
+  pagarmeEncryptionKey String? // Public Key (pk_...) IF needed, usually secret is enough for backend
+
+  // Asaas
+  asaasEnabled  Boolean @default(false)
+  asaasApiKey   String? // $aact_...
+  asaasWalletId String? // Optional
+
+  // Manual Pix (Copy & Paste)
+  manualPixEnabled Boolean @default(false)
+  pixKey           String? // Chave Pix
+  pixHolder        String? // Nome do Titular
+  pixBank          String? // Banco
+
+  // Credit Card Config
+  maxInstallments     Int     @default(12)
+  minInstallmentValue Decimal @default(5.00)
+  interestRate        Decimal @default(0.00) // Juros ao mês (simples)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Media {
+  id        String  @id @default(cuid())
+  url       String
+  filename  String?
+  mimeType  String?
+  size      Int?
+  width     Int?
+  height    Int?
+  copyright String? // Rights/Attribution info
+  altText   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Banners for Home Carousel
+model Banner {
+  id        String   @id @default(cuid())
+  label     String? // Internal name or Alt text
+  imageUrl  String
+  mobileUrl String? // Optional mobile version
+  link      String? // Link when clicked
+  active    Boolean  @default(true)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Products
+model Product {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+  slug        String  @unique
+  status      String  @default("DRAFT") // DRAFT, ACTIVE, ARCHIVED
+
+  // Pricing & Costs
+  price          Decimal
+  compareAtPrice Decimal? // "De: R$ 50,00"
+  costPerItem    Decimal? // Custo do produto (para cálculo de lucro)
+
+  // Inventory & Logistics
+  sku           String?
+  barcode       String? // EAN/GTIN
+  trackQuantity Boolean  @default(true)
+  stock         Int      @default(0)
+  weight        Decimal? // em kg (0.5 = 500g)
+  length        Decimal? // cm
+  width         Decimal? // cm
+  height        Decimal? // cm
+
+  // Compliance & Details
+  expiresAt DateTime? // Data de validade
+
+  brandId     String?
+  brand       Brand?  @relation(fields: [brandId], references: [id])
+  brandLegacy String? @map("brand") // Marca/Fabricante (Legacy)
+  tags        String? // Tags separadas por vírgula (ex: "verão, natural, vegano")
+
+  // Media
+  videoUrl String? // Youtube/Vimeo
+  images   ProductImage[]
+
+  // SEO Fields
+  seoTitle       String?
+  seoDescription String?
+
+  // Organization
+  isNewArrival Boolean   @default(false)
+  isFeatured   Boolean   @default(false) // For Best Sellers or Highlights
+  categoryId   String?
+  category     Category? @relation(fields: [categoryId], references: [id])
+
+  variants  ProductVariant[]
+  cartItems CartItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ProductVariant {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  name  String // e.g., "Red", "Large"
+  price Decimal? // Override product price if different
+  stock Int      @default(0)
+  sku   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  url       String
+  alt       String?
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+// Collections / Categories
+model Category {
+  id          String     @id @default(cuid())
+  name        String
+  slug        String     @unique
+  description String?
+  imageUrl    String?
+  // Self-relation for subcategories
+  parentId    String?
+  parent      Category?  @relation("CategoryToSubcategory", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryToSubcategory")
+
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+// Brand Management
+model Brand {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  slug      String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  products  Product[]
+}
+
+// Customers (CRM)
+model Customer {
+  id       String  @id @default(cuid())
+  name     String
+  email    String? @unique
+  password String? // Hashed password
+  phone    String? // For WhatsApp integration
+  document String? // CPF/CNPJ
+
+  orders    Order[]
+  addresses Address[]
+  cart      Cart?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Cart {
+  id         String    @id @default(cuid())
+  customerId String?   @unique
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  // If no customer (guest), use cookie/session ID
+  sessionId String? @unique
+
+  items CartItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CartItem {
+  id     String @id @default(cuid())
+  cartId String
+  cart   Cart   @relation(fields: [cartId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  quantity Int @default(1)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Address {
+  id         String   @id @default(cuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  street     String
+  number     String
+  complement String?
+  district   String
+  city       String
+  state      String
+  zipCode    String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Orders
+model Order {
+  id   String @id @default(cuid())
+  code Int    @unique // Friendly ID: #1001 (Handle generation in code)
+
+  customerId    String?
+  customer      Customer? @relation(fields: [customerId], references: [id])
+  customerName  String // Snapshot
+  customerEmail String // Snapshot
+  customerPhone String? // Snapshot
+
+  status       String  @default("PENDING") // PENDING, PAID, FULFILLED, CANCELLED
+  total        Decimal
+  subtotal     Decimal
+  shippingCost Decimal
+  discount     Decimal @default(0)
+
+  paymentMethod String // CREDIT_CARD, PIX, CASH
+  paymentStatus String @default("PENDING") // PENDING, APPROVED, REJECTED
+
+  shippingTitle String? // e.g "Sedex"
+  shippingDays  Int?
+
+  // Addresses Snapshot (JSON or Fields)
+  addressStreet     String
+  addressNumber     String
+  addressComplement String?
+  addressDistrict   String
+  addressCity       String
+  addressState      String
+  addressZip        String
+
+  origin String @default("ONLINE") // ONLINE, STORE
+
+  items OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model OrderItem {
+  id      String @id @default(cuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  productId String
+  name      String // Snapshot of name
+  image     String? // Snapshot of image
+  price     Decimal // Snapshot of price
+  quantity  Int
+}
+
+// CMS Pages
+model Page {
+  id        String   @id @default(cuid())
+  title     String
+  slug      String   @unique
+  content   String? // HTML content (Legacy or simple text)
+  layout    String? // JSON for Page Builder Blocks
+  published Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Navigation Menus
+model Menu {
+  id        String     @id @default(cuid())
+  title     String
+  handle    String     @unique // 'main', 'footer'
+  items     MenuItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model MenuItem {
+  id     String @id @default(cuid())
+  menuId String
+  menu   Menu   @relation(fields: [menuId], references: [id], onDelete: Cascade)
+
+  label       String
+  url         String? // If type custom
+  type        String  @default("custom") // custom, page, category, link
+  referenceId String?
+  order       Int     @default(0)
+}

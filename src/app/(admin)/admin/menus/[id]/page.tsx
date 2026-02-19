@@ -15,9 +15,15 @@ export default async function EditMenuPage({ params }: { params: Promise<{ id: s
         }
     });
 
+    const categories = await (prisma as any).category.findMany({
+        orderBy: { name: 'asc' },
+        select: { id: true, name: true }
+    });
+
+
     if (!menu) {
         notFound();
     }
 
-    return <MenuEditor menu={menu} />;
+    return <MenuEditor menu={menu} categories={categories} />;
 }

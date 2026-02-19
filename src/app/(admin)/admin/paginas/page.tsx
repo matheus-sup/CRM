@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Plus, FileText, Pencil, Trash } from "lucide-react";
+import { Plus, FileText } from "lucide-react";
+import { PageListItem } from "./PageListItem";
 
 export default async function PagesPage() {
     const pages = await prisma.page.findMany({
@@ -26,7 +27,7 @@ export default async function PagesPage() {
                 <div className="p-4 border-b bg-slate-50 font-medium text-sm text-slate-500 flex">
                     <div className="flex-1">Título</div>
                     <div className="w-48">URL (Slug)</div>
-                    <div className="w-32">Status</div>
+                    <div className="w-32 text-center">Status</div>
                     <div className="w-24 text-right">Ações</div>
                 </div>
                 {pages.length === 0 ? (
@@ -36,28 +37,7 @@ export default async function PagesPage() {
                     </div>
                 ) : (
                     pages.map(page => (
-                        <div key={page.id} className="p-4 border-b last:border-0 flex items-center hover:bg-slate-50 transition-colors">
-                            <div className="flex-1 font-medium flex items-center gap-2 text-slate-700">
-                                <FileText className="h-4 w-4 text-slate-400" />
-                                {page.title}
-                            </div>
-                            <div className="w-48 text-sm text-slate-500 truncate">/{page.slug}</div>
-                            <div className="w-32">
-                                <span className={`text-xs px-2 py-1 rounded-full font-medium ${page.published ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'}`}>
-                                    {page.published ? 'Publicado' : 'Rascunho'}
-                                </span>
-                            </div>
-                            <div className="w-24 flex justify-end gap-1">
-                                <Button size="icon" variant="ghost" className="h-8 w-8 text-blue-600" asChild>
-                                    <Link href={`/admin/paginas/${page.id}`}>
-                                        <Pencil className="h-4 w-4" />
-                                    </Link>
-                                </Button>
-                                <Button size="icon" variant="ghost" className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50">
-                                    <Trash className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        </div>
+                        <PageListItem key={page.id} page={page} />
                     ))
                 )}
             </div>

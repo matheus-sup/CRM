@@ -7,13 +7,16 @@ import Link from "next/link";
 import { InventoryList } from "@/components/admin/inventory/InventoryList";
 import { ProductListTable } from "./ProductListTable";
 import { CategoriesList } from "./CategoriesList";
+import { BrandsList } from "./BrandsList";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog"; // Ensure these exist in your UI lib
 import { Label } from "@/components/ui/label"; // Ensure these exist
 import { Input } from "@/components/ui/input"; // Ensure these exist
 import { createCategory } from "@/lib/actions/category"; // Ensure this action exists
 
-export function ProductsManager({ products, categories = [] }: { products: any[], categories?: any[] }) {
-    const [view, setView] = useState<"list" | "inventory" | "categories">("list");
+import { Tag } from "lucide-react";
+
+export function ProductsManager({ products, categories = [], brands = [] }: { products: any[], categories?: any[], brands?: any[] }) {
+    const [view, setView] = useState<"list" | "inventory" | "categories" | "brands">("list");
     const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
     const [isCreatingCategory, setIsCreatingCategory] = useState(false);
 
@@ -58,16 +61,31 @@ export function ProductsManager({ products, categories = [] }: { products: any[]
                             <FolderTree className="h-4 w-4" />
                             Categorias
                         </button>
+                        <button
+                            onClick={() => setView("brands")}
+                            className={`px-3 py-1 text-sm font-medium rounded-md transition-all flex items-center gap-2 ${view === "brands" ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                                }`}
+                        >
+                            <Tag className="h-4 w-4" />
+                            Marcas
+                        </button>
                     </div>
                 </div>
 
                 {view === "list" && (
-                    <Button className="font-bold bg-blue-600 hover:bg-blue-700 text-white" asChild>
-                        <Link href="/admin/produtos/novo">
-                            <Plus className="mr-2 h-4 w-4" />
-                            Adicionar produto
-                        </Link>
-                    </Button>
+                    <div className="flex gap-2">
+                        <Button variant="outline" asChild>
+                            <Link href="/admin/produtos/importar">
+                                Importar/Exportar
+                            </Link>
+                        </Button>
+                        <Button className="font-bold bg-blue-600 hover:bg-blue-700 text-white" asChild>
+                            <Link href="/admin/produtos/novo">
+                                <Plus className="mr-2 h-4 w-4" />
+                                Adicionar produto
+                            </Link>
+                        </Button>
+                    </div>
                 )}
 
                 <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
@@ -93,6 +111,7 @@ export function ProductsManager({ products, categories = [] }: { products: any[]
             {view === "list" && <ProductListTable products={products} />}
             {view === "inventory" && <InventoryList initialProducts={products} />}
             {view === "categories" && <CategoriesList categories={categories} onCreateClick={() => setIsCategoryDialogOpen(true)} />}
+            {view === "brands" && <BrandsList brands={brands} />}
         </div>
     );
 }

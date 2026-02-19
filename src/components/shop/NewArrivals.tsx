@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
-export function NewArrivals({ products }: { products: any[] }) {
+export function NewArrivals({ products, title, subtitle }: { products: any[], title?: string, subtitle?: string }) {
     if (!products) return null;
 
     return (
@@ -11,8 +11,12 @@ export function NewArrivals({ products }: { products: any[] }) {
             {/* Optional Edit Trigger for Admin could go here */}
             <div className="mb-8 flex items-end justify-between border-b pb-4">
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-800">Lançamentos</h2>
-                    <p className="text-gray-500">Confira as novidades que acabaram de chegar</p>
+                    <h2 className="text-2xl font-bold text-gray-800">{title || "Lançamentos"}</h2>
+                    {subtitle ? (
+                        <p className="text-gray-500">{subtitle}</p>
+                    ) : (
+                        !title && <p className="text-gray-500">Confira as novidades que acabaram de chegar</p>
+                    )}
                 </div>
                 <Button variant="ghost" className="text-pink-600 hover:text-pink-700 hover:bg-pink-50" asChild>
                     <Link href="/lancamentos">Ver todos &rarr;</Link>

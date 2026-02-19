@@ -14,12 +14,25 @@ export default async function FullscreenEditorPage() {
     const config = await getDraftStoreConfig();
     const banners = await getBanners();
     const products = await prisma.product.findMany({
-        take: 4,
+        take: 8,
         orderBy: { createdAt: 'desc' },
         include: { images: true }
     });
     const menus = await prisma.menu.findMany({
         include: { items: true }
+    });
+
+    // Fetch categories for preview
+    const categories = await prisma.category.findMany({
+        where: { parentId: null },
+        orderBy: { name: 'asc' },
+        take: 8,
+    });
+
+    // Fetch brands for preview
+    const brands = await prisma.brand.findMany({
+        orderBy: { name: 'asc' },
+        take: 6,
     });
 
     // Serialize Decimal types for Client Components
@@ -47,7 +60,14 @@ export default async function FullscreenEditorPage() {
 
             {/* Main Editor Area - Fill remaining space */}
             <div className="flex-1 overflow-hidden relative">
-                <SiteEditorLayout config={serializedConfig} banners={banners as any} products={JSON.parse(JSON.stringify(products))} />
+                <SiteEditorLayout
+                    config={serializedConfig}
+                    banners={banners as any}
+                    products={JSON.parse(JSON.stringify(products))}
+                    categories={categories}
+                    brands={brands}
+                    menus={menus}
+                />
             </div>
         </div>
     );

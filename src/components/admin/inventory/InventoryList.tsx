@@ -57,9 +57,8 @@ export function InventoryList({ initialProducts }: { initialProducts: any[] }) {
                     ) : (
                         filtered.map((item) => {
                             // Calculate images safely
-                            const imageUrl = item.images && item.images.length > 0
-                                ? JSON.parse(item.images)[0]
-                                : null;
+                            const firstImage = item.images && item.images[0];
+                            const imageUrl = typeof firstImage === 'string' ? firstImage : firstImage?.url || null;
 
                             return (
                                 <div key={item.id} className="flex items-center p-4 border-b last:border-0 hover:bg-muted/30 transition-colors">

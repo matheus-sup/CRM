@@ -4,12 +4,11 @@ import { prisma } from "@/lib/prisma";
 
 export async function getDistinctBrands() {
     try {
-        const brands = await prisma.product.findMany({
-            select: { brand: true },
-            where: { brand: { not: "" } },
-            distinct: ['brand']
+        const brands = await prisma.brand.findMany({
+            where: { products: { some: {} } },
+            orderBy: { name: 'asc' }
         });
-        return brands.map(b => b.brand).filter(Boolean) as string[];
+        return brands.map(b => b.name);
     } catch (error) {
         console.error("Error fetching brands:", error);
         return [];

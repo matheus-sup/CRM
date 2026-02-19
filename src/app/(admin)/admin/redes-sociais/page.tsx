@@ -1,22 +1,16 @@
 import { getStoreConfig } from "@/lib/actions/settings";
-import { SiteContactForm } from "@/components/admin/site/SiteContactForm";
+import { SocialLinksForm } from "@/components/admin/settings/SocialLinksForm";
 
-export default async function SocialMediaPage() {
+export default async function SocialLinksPage() {
     const config = await getStoreConfig();
-
-    // Ensure serializable
-    const serializedConfig = {
-        ...config,
-        minPurchaseValue: config?.minPurchaseValue ? Number(config.minPurchaseValue) : 0,
-    };
 
     return (
         <div className="p-6 space-y-6">
             <div>
-                <h1 className="text-2xl font-bold text-slate-800">Links de redes sociais & Contato</h1>
-                <p className="text-slate-500 text-sm">Gerencie seus canais de comunicação.</p>
+                <h1 className="text-2xl font-bold text-slate-800">Redes Sociais</h1>
+                <p className="text-slate-500 text-sm">Gerencie os links das redes sociais da sua loja.</p>
             </div>
-            <SiteContactForm config={serializedConfig} />
+            <SocialLinksForm config={config} />
         </div>
     );
 }

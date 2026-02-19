@@ -30,6 +30,7 @@ model StoreConfig {
   description String?
   bannerUrl   String?
   logoUrl     String?
+  faviconUrl  String?
   // Legal Data
   cnpj        String?
   legalName   String?
@@ -53,6 +54,13 @@ model StoreConfig {
   cartCountText   String   @default("#ffffff")
   searchBtnBg     String   @default("#db2777") // Pink default
   searchIconColor String   @default("#ffffff")
+
+  // Logo & Branding in Header
+  headerShowLogo    Boolean  @default(true)
+  headerLogoWidth   Int      @default(120) // px
+  headerText        String?  // Text alternative if logo is hidden
+  headerSubtext     String?  // e.g. "Cosméticos • Makes"
+  headerSearchPlaceholder String @default("O que você está buscando?")
   
   headingColor    String   @default("#111827")
   sectionTitleColor String @default("#111827") // NEW: Specific for section headers
@@ -70,9 +78,7 @@ model StoreConfig {
   bodyFont        String   @default("Inter")
   bodyFontSize    String   @default("1rem")
 
-  // Deprecated/Legacy (Keep for safety during migration)
-  textColor       String   @default("#334155") 
-  fontFamily      String   @default("Inter")
+
 
   instagram       String?
   instagramToken  String? // For feed integration
@@ -100,6 +106,16 @@ model StoreConfig {
   showPaymentMethods Boolean @default(true)
   showSocialIcons Boolean @default(true)
   
+  // Footer Block Editor Configuration
+  footerBlocks    String?  // JSON array of block configurations
+  paymentText     String?  // Custom payment methods text
+  creditsText     String?  // Custom footer credits text
+
+  // Component Style Variants
+  headerStyle     String   @default("classic") // classic, centered, minimal
+  cardStyle       String   @default("standard") // standard, compact, detailed, horizontal
+  footerStyle     String   @default("full") // full, minimal, modern
+
   // Product List Configuration
   categoryDefaultImage String?
   mobileColumns        Int      @default(2)
@@ -140,6 +156,15 @@ model StoreConfig {
   maintenanceMessage   String? @default("Estamos reformando a loja e está ficando incrível. Volte em alguns dias.")
   maintenancePassword  String? 
 
+  // Social Login Configuration
+  googleClientId    String?
+  googleClientSecret String?
+  
+  appleClientId     String?
+  appleKeyId        String?
+  appleTeamId       String?
+  applePrivateKey   String? 
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
@@ -157,16 +182,35 @@ model PaymentConfig {
   asaasApiKey     String?  // $aact_...
   asaasWalletId   String?  // Optional
 
+  // Mercado Pago
+  mercadoPagoEnabled Boolean @default(false)
+  mercadoPagoAccessToken String? // Access Token (APP_USR-...)
+  mercadoPagoPublicKey   String? // Public Key (APP_USR-...)
+
   // Manual Pix (Copy & Paste)
   manualPixEnabled Boolean @default(false)
   pixKey          String?  // Chave Pix
   pixHolder       String?  // Nome do Titular
-  pixBank         String?  // Banco
+  pixBank         String?  // Nome do Banco
   
   // Credit Card Config
   maxInstallments Int      @default(12)
   minInstallmentValue Decimal @default(5.00)
   interestRate    Decimal  @default(0.00) // Juros ao mês (simples)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model ShippingConfig {
+  id String @id @default("shipping-config")
+
+  // Melhor Envio
+  melhorEnvioEnabled Boolean @default(false)
+  melhorEnvioToken   String? // Access Token
+  melhorEnvioClientId String? // Client ID
+  melhorEnvioEmail   String? // Email de cadastro
+  melhorEnvioSandbox Boolean @default(true)
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -226,7 +270,10 @@ model Product {
   
   // Compliance & Details
   expiresAt      DateTime? // Data de validade
-  brand          String?   // Marca/Fabricante
+  
+  brandId        String?
+  brand          Brand?    @relation(fields: [brandId], references: [id])
+  brandLegacy    String?   @map("brand") // Marca/Fabricante (Legacy)
   tags           String?   // Tags separadas por vírgula (ex: "verão, natural, vegano")
 
   // Media
@@ -287,6 +334,16 @@ model Category {
   products    Product[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+}
+
+// Brand Management
+model Brand {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  products  Product[]
 }
 
 // Customers (CRM)
@@ -408,7 +465,8 @@ model Page {
   id        String   @id @default(cuid())
   title     String
   slug      String   @unique
-  content   String   // HTML content
+  content   String?  // HTML content (Legacy or simple text)
+  layout    String?  // JSON for Page Builder Blocks
   published Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -434,4 +492,21 @@ model MenuItem {
   type      String   @default("custom") // custom, page, category, link
   referenceId String? 
   order     Int      @default(0)
+}
+
+// Coupons & Promos
+model Coupon {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  type      String   @default("PERCENTAGE") // PERCENTAGE, FIXED
+  value     Decimal
+  minOrderValue Decimal? @default(0)
+  active    Boolean  @default(true)
+  usageCount Int     @default(0)
+  maxUsage   Int?    // Null = unlimited
+  
+  endDate    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

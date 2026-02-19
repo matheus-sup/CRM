@@ -33,7 +33,15 @@ interface CreateOrderParams {
         price: number;
         quantity: number;
     }[];
+    cardInfo?: {
+        holderName: string;
+        number: string;
+        expiryMonth: string;
+        expiryYear: string;
+        ccv: string;
+    };
     total: number;
+    discount?: number;
 }
 
 export async function createOrder(data: CreateOrderParams) {
@@ -71,51 +79,74 @@ export async function createOrder(data: CreateOrderParams) {
             }
         }
 
-        // 3. Create Order
-        const order = await prisma.order.create({
-            data: {
-                code: nextCode,
-                customerId: customerId,
-                customerName: data.customer.name,
-                customerEmail: data.customer.email || "guest@store.com",
-                customerPhone: data.customer.phone,
+        // 3. Create Order & Update Stock Transaction
+        const order = await prisma.$transaction(async (tx) => {
+            // Check and Decrement Stock
+            for (const item of data.items) {
+                const product = await tx.product.findUnique({
+                    where: { id: item.id }
+                });
 
-                status: "PENDING",
-                total: data.total,
-                subtotal: data.items.reduce((acc, item) => acc + (item.price * item.quantity), 0),
-                shippingCost: data.shipping.price,
-                shippingTitle: data.shipping.title,
-                shippingDays: data.shipping.days,
-
-                paymentMethod: data.paymentMethod,
-                origin: "ONLINE",
-
-                // Address Snapshot
-                addressZip: data.address.zip,
-                addressStreet: data.address.street,
-                addressNumber: data.address.number,
-                addressComplement: data.address.complement,
-                addressDistrict: data.address.district,
-                addressCity: data.address.city,
-                addressState: data.address.state,
-
-                // Create Items
-                items: {
-                    create: data.items.map(item => ({
-                        productId: item.id,
-                        name: item.name,
-                        image: item.image,
-                        price: item.price,
-                        quantity: item.quantity
-                    }))
+                if (!product) {
+                    throw new Error(`Produto não encontrado: ${item.name}`);
                 }
+
+                if (product.stock < item.quantity) {
+                    throw new Error(`Estoque insuficiente para: ${item.name}. Disponível: ${product.stock}`);
+                }
+
+                await tx.product.update({
+                    where: { id: item.id },
+                    data: { stock: { decrement: item.quantity } }
+                });
             }
+            return await tx.order.create({
+                data: {
+                    code: nextCode,
+                    customerId: customerId,
+                    customerName: data.customer.name,
+                    customerEmail: data.customer.email || "guest@store.com",
+                    customerPhone: data.customer.phone,
+
+                    status: "PENDING",
+                    total: data.total,
+                    subtotal: data.items.reduce((acc, item) => acc + (item.price * item.quantity), 0),
+                    shippingCost: data.shipping.price,
+                    shippingTitle: data.shipping.title,
+                    shippingDays: data.shipping.days,
+                    discount: data.discount || 0,
+
+                    paymentMethod: data.paymentMethod,
+                    origin: "ONLINE",
+
+                    // Address Snapshot
+                    addressZip: data.address.zip,
+                    addressStreet: data.address.street,
+                    addressNumber: data.address.number,
+                    addressComplement: data.address.complement,
+                    addressDistrict: data.address.district,
+                    addressCity: data.address.city,
+                    addressState: data.address.state,
+
+                    // Create Items
+                    items: {
+                        create: data.items.map(item => ({
+                            productId: item.id,
+                            name: item.name,
+                            image: item.image,
+                            price: item.price,
+                            quantity: item.quantity
+                        }))
+                    }
+                }
+            });
         });
 
-        // 4. Process Payment (Mock)
+        // 4. Process Payment (Mock or Real)
         const paymentResult = await processPayment(
             { id: order.id, code: order.code, total: data.total, customer: data.customer },
-            data.paymentMethod
+            data.paymentMethod,
+            data.cardInfo
         );
 
         // 5. Update Order with Payment Result
@@ -137,8 +168,8 @@ export async function createOrder(data: CreateOrderParams) {
             payment: paymentResult
         };
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error creating order:", error);
-        return { success: false, message: "Erro ao criar pedido." };
+        return { success: false, message: "Erro ao criar pedido. " + error.message };
     }
 }

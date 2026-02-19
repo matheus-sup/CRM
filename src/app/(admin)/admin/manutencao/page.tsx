@@ -1,17 +1,11 @@
 import { getStoreConfig } from "@/lib/actions/settings";
-import { MaintenanceForm } from "@/components/admin/site/MaintenanceForm";
+import { MaintenanceForm } from "@/components/admin/settings/MaintenanceForm";
 import { Hammer } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { serializeForClient } from "@/lib/utils";
 
 export default async function MaintenancePage() {
     const config = await getStoreConfig();
-
-    // Cast to any to avoid TS errors if prisma client is stale
-    const serializedConfig = {
-        ...config,
-        // Ensure decimals are serialized if needed, though getStoreConfig usually returns plain objects or we handle it
-        minPurchaseValue: config?.minPurchaseValue ? Number(config.minPurchaseValue) : 0,
-    } as any;
 
     return (
         <div className="p-6 space-y-6">
@@ -30,7 +24,7 @@ export default async function MaintenancePage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <MaintenanceForm config={serializedConfig} />
+                    <MaintenanceForm config={serializeForClient(config)} />
                 </CardContent>
             </Card>
         </div>

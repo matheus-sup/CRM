@@ -50,7 +50,7 @@ export default function AdminLayout({
                     <h1 className="text-lg font-semibold md:text-xl text-slate-800">Admin</h1>
                     <div className="ml-auto text-sm text-slate-500">
                         {/* Right side header content if needed */}
-                        Gut Cosméticos
+                        Painel Admin
                     </div>
                 </header>
                 <main className="flex-1 overflow-auto p-4 md:p-6 bg-slate-50/50 pb-20 md:pb-6">

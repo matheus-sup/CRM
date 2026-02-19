@@ -1,10 +1,27 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Plus, GripVertical, MoreVertical, ExternalLink } from "lucide-react";
+import { Plus, GripVertical, MoreVertical, ExternalLink, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { deleteCategory } from "@/lib/actions/category";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function CategoriesList({ categories, onCreateClick }: { categories: any[], onCreateClick: () => void }) {
+
+    async function handleDelete(id: string, productCount: number) {
+        if (productCount > 0) {
+            if (!confirm(`Tem certeza? Existem ${productCount} produtos nesta categoria. Eles ficarão sem categoria se você continuar.`)) return;
+        } else {
+            if (!confirm("Tem certeza que deseja excluir esta categoria?")) return;
+        }
+
+        await deleteCategory(id);
+    }
 
     return (
         <div className="space-y-6">
@@ -27,9 +44,19 @@ export function CategoriesList({ categories, onCreateClick }: { categories: any[
 
                         {/* Actions Top Right */}
                         <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600">
-                                <MoreVertical className="h-4 w-4" />
-                            </Button>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600">
+                                        <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    <DropdownMenuItem className="text-red-600 cursor-pointer" onClick={() => handleDelete(cat.id, cat._count?.products || 0)}>
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Excluir
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </div>
 
                         {/* Drag Handle Top Left */}

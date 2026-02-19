@@ -3,6 +3,8 @@
 
 import { useState, useEffect, useTransition, useRef } from "react";
 import { publishStoreConfig, discardDraft, saveDraftConfig } from "@/lib/actions/settings";
+import { moveMenuItem } from "@/lib/actions/menu-reorder";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 
 import { SiteBrandingForm } from "@/components/admin/site/sections/SiteBrandingForm";
 import { SiteColorsForm } from "@/components/admin/site/sections/SiteColorsForm";
@@ -13,15 +15,29 @@ import { SiteFooterForm } from "@/components/admin/site/sections/SiteFooterForm"
 import { SiteProductListForm } from "@/components/admin/site/sections/SiteProductListForm";
 import { SiteProductDetailForm } from "@/components/admin/site/sections/SiteProductDetailForm";
 import { SiteCartForm } from "@/components/admin/site/sections/SiteCartForm";
+import { SiteStylesForm } from "@/components/admin/site/sections/SiteStylesForm";
+import { SiteSectionEditor } from "@/components/admin/site/sections/SiteSectionEditor";
+import { BlockPropertyEditor } from "@/components/admin/site/BlockPropertyEditor";
+import { BlockLayerList } from "@/components/admin/site/BlockLayerList"; // New Layer List
+import { BlockRenderer } from "@/components/shop/pbuilder/BlockRenderer";
+import { SiteBlockSidebar } from "@/components/admin/site/SiteBlockSidebar";
+import { BlockType, PageBlock } from "@/types/page-builder";
+import { cn } from "@/lib/utils";
 
 import { SiteContactForm } from "./SiteContactForm";
 import { SiteBanners } from "./SiteBanners";
 import { MockCategoryNav } from "./MockCategoryNav";
 import { Header } from "@/components/shop/Header";
 import { Footer } from "@/components/shop/Footer";
+import { EditableFooter } from "@/components/admin/footer/EditableFooter";
+import { TemplateSelector } from "@/components/admin/site/TemplateSelector";
 import { Button } from "@/components/ui/button";
-import { Eye, Check, ChevronLeft, ChevronRight, LayoutTemplate, Palette, Type, PanelTop, Home, Grid, ShoppingBag, ShoppingCart, PanelBottom, Code, Share2, List, FileText, Smartphone } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Eye, Check, ChevronLeft, ChevronRight, LayoutTemplate, Palette, Type, PanelTop, Home, Grid, ShoppingBag, ShoppingCart, PanelBottom, Share2, List, FileText, Smartphone, Plus, Layers, MapPin } from "lucide-react";
+
+// Simple ID generator to avoid 'uuid' package dependency issues
+const uuidv4 = () => {
+    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+};
 
 // Helper for Sidebar Menu Item
 const SidebarMenuItem = ({ label, icon: Icon, onClick, disabled }: { label: string, icon: any, onClick: () => void, disabled?: boolean }) => (
@@ -45,6 +61,7 @@ const getSectionLabel = (key: string) => {
         "branding": "Imagem da sua marca",
         "colors": "Cores da sua marca",
         "typography": "Tipo de Letra",
+        "styles": "Estilos dos Componentes",
         "header": "Cabeçalho",
         "home": "Página inicial",
         "products-list": "Lista de produtos",
@@ -55,21 +72,187 @@ const getSectionLabel = (key: string) => {
     return labels[key] || key;
 };
 
+import { ModernHome } from "@/components/shop/modern/ModernHome";
+import { ThemeInjector } from "@/components/theme-injector";
+
 interface SiteEditorLayoutProps {
     config: any;
     banners: any[];
     products?: any[];
+    categories?: any[];
+    brands?: any[];
+    menus?: any[];
 }
 
-export function SiteEditorLayout({ config, banners, products }: SiteEditorLayoutProps) {
-    const [activeSection, setActiveSection] = useState<string | null>(null);
+export function SiteEditorLayout({ config, banners, products, categories = [], brands = [], menus = [] }: SiteEditorLayoutProps) {
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const pathname = usePathname();
+    const activeSection = searchParams.get("section");
+
+    // Previous section storage for better navigation flow (e.g. Home -> Banner -> Back to Home)
+    const [prevSection, setPrevSection] = useState<string | null>(null);
+
+    const setSection = (section: string | null, isSubNavigation = false) => {
+        const params = new URLSearchParams(searchParams.toString());
+        if (section) {
+            if (activeSection === "home" && isSubNavigation) {
+                setPrevSection("home");
+            } else if (!section) {
+                setPrevSection(null);
+            }
+            params.set("section", section);
+        } else {
+            params.delete("section");
+            setPrevSection(null);
+        }
+
+        // Use shallow routing / replace to avoid server re-fetch while editing
+        // But Next.js App Router doesn't support "shallow" in the same way.
+        // However, updating the URL is just for bookmarking. 
+        // We can just rely on ensuring activeConfig is NOT reset.
+        router.push(`${pathname}?${params.toString()}`);
+    };
+
+    const handleBack = () => {
+        if (prevSection) {
+            setSection(prevSection);
+            setPrevSection(null); // Consume the back state
+        } else {
+            setSection(null);
+        }
+    };
+
     // Local state for Live Preview
     const [activeConfig, setActiveConfig] = useState(config);
 
     // Sync with server state on load/save
+    // Sync with server state on load/save
+    // CRITICAL FIX: Do NOT reset activeConfig on every prop update, 
+    // because navigation (url params) triggers server re-render with OLD data, wiping changes.
+    /*
     useEffect(() => {
         setActiveConfig(config);
     }, [config]);
+    */
+
+    // --- Block Editor State ---
+    const [blocks, setBlocks] = useState<PageBlock[]>([]);
+    const [isBlockSidebarOpen, setIsBlockSidebarOpen] = useState(false);
+    const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null); // New state
+    const [selectedField, setSelectedField] = useState<{ field: string; timestamp: number } | null>(null); // Track which field was clicked with timestamp for re-triggers
+
+    // --- Header Editor State ---
+    const [selectedHeaderField, setSelectedHeaderField] = useState<{ field: string; timestamp: number } | null>(null);
+
+    // --- Footer Block Editor State ---
+    const [footerBlocks, setFooterBlocks] = useState<any[]>([]);
+    const [footerBottomBlocks, setFooterBottomBlocks] = useState<any[]>([]);
+    const [footerBottomAlignment, setFooterBottomAlignment] = useState<"left" | "center" | "right">("center");
+    const [selectedFooterBlockId, setSelectedFooterBlockId] = useState<string | null>(null);
+
+    // Initialize footer blocks from config
+    useEffect(() => {
+        try {
+            if (activeConfig?.footerBlocks) {
+                const parsed = JSON.parse(activeConfig.footerBlocks);
+                if (Array.isArray(parsed)) {
+                    setFooterBlocks(parsed);
+                } else {
+                    setFooterBlocks(parsed.blocks || []);
+                    setFooterBottomBlocks(parsed.bottomBlocks || []);
+                    setFooterBottomAlignment(parsed.bottomAlignment || "center");
+                }
+            }
+        } catch (e) {
+            console.error("Error parsing footerBlocks:", e);
+        }
+    }, [activeConfig?.footerBlocks]);
+
+    // Initialize blocks from config
+    useEffect(() => {
+        try {
+            const parsed = JSON.parse(activeConfig.homeLayout || "[]");
+            // Check if it's the new PageBuilder format (has 'type' property)
+            const isPageBuilderFormat = Array.isArray(parsed) && parsed.length > 0 && parsed[0].type;
+
+            if (isPageBuilderFormat) {
+                // Use existing PageBuilder blocks
+                setBlocks(parsed);
+            } else {
+                // Keep legacy format - don't auto-migrate
+                // Set blocks to empty so ModernHome is used
+                setBlocks([]);
+            }
+        } catch (e) {
+            console.error("Error initializing blocks:", e);
+            // Keep blocks empty to use ModernHome fallback
+            setBlocks([]);
+        }
+    }, [activeConfig.homeLayout]);
+
+    const handleAddBlock = (type: BlockType, variant?: string) => {
+        const newBlock: PageBlock = {
+            id: uuidv4(),
+            type,
+            variant,
+            content: type === "html" ? { code: "<!-- Insira seu código aqui -->\n<div class='p-10 bg-blue-100 text-blue-800 rounded'>\n  <h2 class='text-2xl font-bold'>Olá Mundo!</h2>\n  <p>Edite este HTML livremente.</p>\n</div>" } :
+                type === "hero" ? { title: "Novo Banner", subtitle: "Subtítulo do banner", buttonText: "Ver Mais" } :
+                    type === "text" ? { html: "<div class='text-center'><h2>Título da Seção</h2><p>Escreva seu texto aqui...</p></div>" } :
+                        type === "instagram" ? { username: "loja_exemplo" } :
+                            type === "map" ? { embedUrl: "" } :
+                                type === "promo" ? { title: "Super Promoção", subtitle: "Desconto de 50% em toda a loja!" } :
+                                    type === "product-grid" ? { collectionType: "new" } :
+                                        type === "columns" ? { columns: variant === "4-cols" ? 4 : variant === "3-cols" ? 3 : 2 } : {},
+            styles: {
+                paddingTop: "2rem",
+                paddingBottom: "2rem",
+                ...(type === "promo" ? { backgroundColor: "#db2777", textColor: "#ffffff" } : {})
+            }
+        };
+
+        const newBlocks = [...blocks, newBlock];
+        setBlocks(newBlocks);
+
+        // Update Config Immediately (Draft)
+        handleConfigChange("homeLayout", JSON.stringify(newBlocks));
+    };
+
+    const handleUpdateBlock = (updatedBlock: PageBlock) => {
+        const newBlocks = blocks.map(b => b.id === updatedBlock.id ? updatedBlock : b);
+        setBlocks(newBlocks);
+        handleConfigChange("homeLayout", JSON.stringify(newBlocks));
+    };
+
+    const handleDeleteBlock = (blockId: string) => {
+        if (!confirm("Tem certeza que deseja remover este bloco?")) return;
+        const newBlocks = blocks.filter(b => b.id !== blockId);
+        setBlocks(newBlocks);
+        setSelectedBlockId(null);
+        handleConfigChange("homeLayout", JSON.stringify(newBlocks));
+    };
+
+    const handleMoveBlock = (blockId: string, direction: 'up' | 'down') => {
+        const index = blocks.findIndex(b => b.id === blockId);
+        if (index === -1) return;
+
+        const newBlocks = [...blocks];
+        if (direction === 'up' && index > 0) {
+            [newBlocks[index], newBlocks[index - 1]] = [newBlocks[index - 1], newBlocks[index]];
+        } else if (direction === 'down' && index < newBlocks.length - 1) {
+            [newBlocks[index], newBlocks[index + 1]] = [newBlocks[index + 1], newBlocks[index]];
+        } else {
+            return; // No move possible
+        }
+
+        setBlocks(newBlocks);
+        handleConfigChange("homeLayout", JSON.stringify(newBlocks));
+    };
+
+    const handleReorder = (newBlocks: PageBlock[]) => {
+        setBlocks(newBlocks);
+        handleConfigChange("homeLayout", JSON.stringify(newBlocks));
+    };
 
     const handleConfigChange = (key: string, value: any) => {
         setActiveConfig((prev: any) => ({
@@ -112,89 +295,296 @@ export function SiteEditorLayout({ config, banners, products }: SiteEditorLayout
 
     const previewRef = useRef<HTMLDivElement>(null);
 
-    // Intercept clicks in Preview to prevent navigation
+    // Highlight a specific block by its ID
+    const highlightBlockById = (blockId: string) => {
+        const container = previewRef.current;
+        if (!container) return;
+
+        // Find element with data-block-id attribute matching the blockId
+        const targetElement = container.querySelector(`[data-block-id="${blockId}"]`) as HTMLElement;
+
+        if (targetElement) {
+            // Scroll into view smoothly
+            targetElement.scrollIntoView({ behavior: "smooth", block: "center" });
+
+            // Add highlight animation
+            targetElement.classList.add("component-highlight");
+
+            // Remove highlight after animation (2 pulses = 2 seconds)
+            setTimeout(() => {
+                targetElement?.classList.remove("component-highlight");
+            }, 2000);
+        }
+    };
+
+    // Highlight component in preview when style is changed
+    const highlightComponent = (componentType: string) => {
+        const container = previewRef.current;
+        if (!container) return;
+
+        let targetElement: HTMLElement | null = null;
+
+        // Find the element based on component type
+        switch (componentType) {
+            case "header":
+                targetElement = container.querySelector('[data-section="header"]') ||
+                               container.querySelector("header");
+                break;
+            case "footer":
+                targetElement = container.querySelector('[data-section="footer"]') ||
+                               container.querySelector("footer");
+                break;
+            case "home":
+                // Scroll to the home/content area
+                targetElement = container.querySelector('[data-section="home"]') ||
+                               container.querySelector('.min-h-screen');
+                break;
+            case "hero":
+                // Try multiple selectors for hero blocks
+                targetElement = container.querySelector('section[id*="hero"]') ||
+                               container.querySelector('[data-block-id*="hero"]');
+                break;
+            case "categories":
+                targetElement = container.querySelector('section[id*="categories"]') ||
+                               container.querySelector('[data-block-id*="categories"]');
+                break;
+            case "newsletter":
+                targetElement = container.querySelector('section[id*="newsletter"]') ||
+                               container.querySelector('[data-block-id*="newsletter"]');
+                break;
+            case "product-grid":
+                // Product grid can be the first grid in the home section
+                targetElement = container.querySelector('section[id*="products"]') ||
+                               container.querySelector('[data-block-id*="products"]') ||
+                               container.querySelector('[data-section="home"] .grid');
+                break;
+            default:
+                // Try to find by block type in id or data-block-id
+                targetElement = container.querySelector(`section[id*="${componentType}"]`) ||
+                               container.querySelector(`[data-block-id*="${componentType}"]`);
+        }
+
+        if (targetElement) {
+            // Scroll into view smoothly
+            targetElement.scrollIntoView({ behavior: "smooth", block: "start" });
+
+            // Add highlight animation
+            targetElement.classList.add("component-highlight");
+
+            // Remove highlight after animation
+            setTimeout(() => {
+                targetElement?.classList.remove("component-highlight");
+            }, 2000);
+        }
+    };
+
+    // Intercept clicks in Preview to prevent navigation AND enable Click-to-Edit
     useEffect(() => {
         const container = previewRef.current;
         if (!container) return;
 
-        const handleLinkClick = (e: MouseEvent) => {
+        const handlePreviewClick = (e: MouseEvent) => {
+            // 1. Prevent Default Navigation
             const target = e.target as HTMLElement;
             const link = target.closest("a");
 
+            console.log('[SiteEditorLayout] Click target:', target.tagName, 'data-field:', target.dataset?.field, 'data-section:', target.dataset?.section);
+
             if (link) {
-                const href = link.getAttribute("href");
-                // Allow hash links (anchors) if needed, or mostly block all
-                if (href && !href.startsWith("#")) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    alert(`Modo de Edição: O clique neste link levaria para "${href}". A navegação foi bloqueada para não sair do editor.`);
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            // 2. Detect Click-to-Edit Areas
+            // Traverse up from the target to find elements with data attributes
+            let current: HTMLElement | null = target;
+            let foundSection = null;
+            let foundBlockId = null;
+            let foundFooterBlockId = null;
+            let foundField = null;
+
+            while (current && current !== container) {
+                // Priority 0: Specific Field (title, subtitle, button)
+                if (current.dataset.field && !foundField) {
+                    foundField = current.dataset.field;
+                    console.log('[SiteEditorLayout] Found field:', foundField, 'on element:', current.tagName);
                 }
+
+                // Priority 1: Specific Blocks (Home or Footer)
+                if (current.dataset.blockId) {
+                    foundBlockId = current.dataset.blockId;
+                }
+                if (current.dataset.footerBlockId) {
+                    foundFooterBlockId = current.dataset.footerBlockId;
+                }
+
+                // Priority 2: Sections (Header, Footer, Home Wrapper)
+                if (current.dataset.section) {
+                    foundSection = current.dataset.section;
+                }
+
+                // Stop if we found specific stuff to avoid bubbling too far up if nested
+                if (foundBlockId || foundFooterBlockId || foundSection) {
+                    break;
+                }
+
+                current = current.parentElement;
+            }
+
+            // 3. Trigger Navigation Logic
+            if (foundFooterBlockId) {
+                setSection("footer");
+                setSelectedFooterBlockId(foundFooterBlockId);
+                setSelectedField(null);
+                return;
+            }
+
+            if (foundBlockId) {
+                // If it's a home block, ensure we are in home section and select it
+                setSection("home");
+                // Need to find the block in current 'blocks' state to select it
+                // We assume blocks state is up to date
+                setSelectedBlockId(foundBlockId);
+                setSelectedField(foundField ? { field: foundField, timestamp: Date.now() } : null); // Pass the field that was clicked with timestamp
+                return;
+            }
+
+            if (foundSection) {
+                // Clear selected block when switching to a different section
+                setSelectedBlockId(null);
+                setSelectedField(null);
+
+                console.log('[SiteEditorLayout] Click detected - foundSection:', foundSection, 'foundField:', foundField);
+
+                // If navigating to header section with a specific field, set it
+                if (foundSection === "header" && foundField) {
+                    console.log('[SiteEditorLayout] Setting header field:', foundField);
+                    setSelectedHeaderField({ field: foundField, timestamp: Date.now() });
+                } else if (foundSection !== "header") {
+                    // Clear header field when switching away from header
+                    setSelectedHeaderField(null);
+                }
+
+                setSection(foundSection);
+                return;
+            }
+
+            // If clicked on a link but no section detected, show the alert (or just block)
+            if (link) {
+                // Optional: Only alert if NOT Click-to-Edit
+                // alert(`Modo de Edição: Navegação bloqueada.`);
             }
         };
 
         // Capture phase ensures we get it before Next.js Link or other handlers
-        container.addEventListener("click", handleLinkClick, { capture: true });
+        container.addEventListener("click", handlePreviewClick, { capture: true });
 
         return () => {
-            container.removeEventListener("click", handleLinkClick, { capture: true });
+            container.removeEventListener("click", handlePreviewClick, { capture: true });
         };
-    }, []);
+    }, [blocks, footerBlocks]); // Add dependencies to ensure state setting works if needed (though setters are stable)
+
+
+
+
 
     const renderContent = () => {
         const props = { config: activeConfig, onConfigChange: handleConfigChange };
 
+        // Handle Dynamic Section Editing (home-edit:SECTION_ID)
+        if (activeSection?.startsWith("home-edit:")) {
+            const sectionId = activeSection.split(":")[1];
+
+            // Parse Layout to get current settings
+            let layout: any[] = [];
+            try {
+                const parsed = JSON.parse(activeConfig.homeLayout || "[]");
+                if (Array.isArray(parsed)) layout = parsed;
+            } catch (e) {
+                console.error("Layout parse error", e);
+            }
+
+            const currentSection = layout.find((s: any) => s.id === sectionId) || { id: sectionId, label: "Seção", settings: {} };
+
+            return (
+                <SiteSectionEditor
+                    sectionId={sectionId}
+                    currentLabel={currentSection.label}
+                    settings={currentSection.settings || {}}
+                    allProducts={products || []}
+                    onBack={() => setSection("home")}
+                    onSave={(newSettings) => {
+                        // Update settings in layout array
+                        const newLayout = layout.map((s: any) => {
+                            if (s.id === sectionId) {
+                                return { ...s, settings: { ...s.settings, ...newSettings } };
+                            }
+                            return s;
+                        });
+
+                        // Update Config
+                        handleConfigChange("homeLayout", JSON.stringify(newLayout));
+
+                        // Notify user or go back?
+                        alert("Configurações da seção atualizadas! Salve o rascunho para persistir.");
+                        setSection("home");
+                    }}
+                />
+            );
+        }
+
         // Pass onConfigChange only to forms that support it
         switch (activeSection) {
 
-            case "branding": return <SiteBrandingForm config={activeConfig} onConfigChange={handleConfigChange} />;
-            case "colors": return <SiteColorsForm config={activeConfig} onConfigChange={handleConfigChange} />;
-            case "typography": return <SiteTypographyForm config={activeConfig} onConfigChange={handleConfigChange} />;
-            case "header": return <SiteHeaderForm config={activeConfig} onConfigChange={handleConfigChange} />;
-            case "home": return <SiteHomeForm
-                config={activeConfig}
-                onEdit={(sectionId) => {
-                    // Mapping to internal sections or alerts for external pages
-                    const mapping: Record<string, string> = {
-                        "hero": "banners",
-                        "categories-main": "products-list", // Fallback for now? Or alert. Categories are external.
-                        "products-new": "products-list",
-                        "products-featured": "products-list",
-                        "products-offers": "products-list",
-                        "brands": "branding",
-                        "instagram": "contact", // Social Links usually here
-                        "info-shipping": "footer",
-                        "newsletter": "footer",
-                        "testimonials": "contact", // Simplification
-                        "banners-promo": "banners",
-                        "banners-categories": "banners"
-                    };
-
-                    if (sectionId === "categories-main") {
-                        if (confirm("As categorias são gerenciadas no menu 'Categorias'. Deseja ir para lá?")) {
-                            window.open("/admin/categorias", "_blank");
-                        }
-                        return;
-                    }
-
-                    if (mapping[sectionId]) {
-                        setActiveSection(mapping[sectionId] as any);
-                    } else {
-                        alert("Configuração rápida desta seção em breve. Use o menu lateral.");
-                    }
-                }}
-            />;
+            case "branding": return <SiteBrandingForm config={activeConfig} onConfigChange={handleConfigChange} onHighlightComponent={highlightComponent} />;
+            case "colors": return <SiteColorsForm config={activeConfig} onConfigChange={handleConfigChange} onHighlightComponent={highlightComponent} />;
+            case "typography": return <SiteTypographyForm config={activeConfig} onConfigChange={handleConfigChange} onHighlightComponent={highlightComponent} />;
+            case "styles": return <SiteStylesForm config={activeConfig} onConfigChange={handleConfigChange} onHighlightComponent={highlightComponent} />;
+            case "header": return <SiteHeaderForm config={activeConfig} onConfigChange={handleConfigChange} menus={menus} onHighlightComponent={highlightComponent} focusField={selectedHeaderField} />;
+            case "home":
+                // REPLACED Legacy Form with Block Layer List
+                return (
+                    <div className="space-y-4">
+                        <div className="bg-blue-50 p-3 rounded-lg text-xs text-blue-800 mb-2">
+                            Gerencie a ordem dos blocos da sua página inicial.
+                        </div>
+                        <BlockLayerList
+                            blocks={blocks}
+                            selectedBlockId={selectedBlockId}
+                            onSelect={(id) => setSelectedBlockId(id)}
+                            onHighlightBlock={highlightBlockById}
+                            onMoveUp={(id) => handleMoveBlock(id, 'up')}
+                            onMoveDown={(id) => handleMoveBlock(id, 'down')}
+                            onReorder={handleReorder}
+                            onDelete={handleDeleteBlock}
+                        />
+                        <Button
+                            variant="outline"
+                            className="w-full border-dashed gap-2"
+                            onClick={() => setIsBlockSidebarOpen(true)}
+                        >
+                            <Plus className="h-4 w-4" /> Adicionar Novo Bloco
+                        </Button>
+                    </div>
+                );
             case "banners": return <SiteBanners banners={banners} />;
             case "products-list": return <SiteProductListForm config={activeConfig} />;
             case "products-detail": return <SiteProductDetailForm config={activeConfig} />;
             case "cart": return <SiteCartForm config={activeConfig} />;
-            case "footer": return <SiteFooterForm config={activeConfig} />;
-            case "contact": return <SiteContactForm config={activeConfig} />;
+            case "footer": return <SiteFooterForm config={activeConfig} menus={menus} categories={categories} onConfigChange={handleConfigChange} onHighlightComponent={highlightComponent} selectedBlockId={selectedFooterBlockId} />;
+            case "contact": return <SiteContactForm config={activeConfig} onConfigChange={handleConfigChange} onHighlightComponent={highlightComponent} />;
             default: return <SiteBrandingForm config={activeConfig} />;
         }
     };
 
     return (
         <div className="flex h-full bg-white overflow-hidden relative">
+            <SiteBlockSidebar
+                isOpen={isBlockSidebarOpen}
+                onClose={() => setIsBlockSidebarOpen(false)}
+                onAddBlock={handleAddBlock}
+            />
+
 
             {/* Mobile Fab to Toggle Edit Mode */}
             <div className="md:hidden fixed bottom-6 right-6 z-50">
@@ -228,7 +618,7 @@ export function SiteEditorLayout({ config, banners, products }: SiteEditorLayout
                                     variant="ghost"
                                     size="sm"
                                     className="-ml-2 gap-1 text-slate-500 hover:text-slate-900 font-normal"
-                                    onClick={() => setActiveSection(null as any)}
+                                    onClick={handleBack}
                                 >
                                     <ChevronLeft className="h-4 w-4" />
                                     Voltar
@@ -249,7 +639,27 @@ export function SiteEditorLayout({ config, banners, products }: SiteEditorLayout
                     {/* Content Area */}
                     <div className="flex-1 overflow-y-auto bg-white sidebar-scroll">
 
-                        {activeSection ? (
+                        {selectedBlockId ? (
+                            (() => {
+                                const selectedBlock = blocks.find(b => b.id === selectedBlockId);
+                                if (!selectedBlock) return <div>Bloco não encontrado</div>;
+                                return (
+                                    <BlockPropertyEditor
+                                        block={selectedBlock}
+                                        onUpdate={handleUpdateBlock}
+                                        onDelete={handleDeleteBlock}
+                                        onBack={() => {
+                                            setSelectedBlockId(null);
+                                            setSelectedField(null);
+                                        }}
+                                        focusField={selectedField}
+                                        products={products}
+                                        categories={categories}
+                                        brands={brands}
+                                    />
+                                );
+                            })()
+                        ) : activeSection ? (
                             /* Active Form View */
                             <div className="p-4">
                                 <div className="mb-4 pb-2 border-b">
@@ -268,22 +678,27 @@ export function SiteEditorLayout({ config, banners, products }: SiteEditorLayout
                                     <SidebarMenuItem
                                         label="Imagem da sua marca"
                                         icon={LayoutTemplate}
-                                        onClick={() => setActiveSection("branding")}
+                                        onClick={() => setSection("branding")}
                                     />
                                     <SidebarMenuItem
                                         label="Cores da sua marca"
                                         icon={Palette}
-                                        onClick={() => setActiveSection("colors")}
+                                        onClick={() => setSection("colors")}
                                     />
                                     <SidebarMenuItem
                                         label="Tipo de Letra"
                                         icon={Type}
-                                        onClick={() => setActiveSection("typography")}
+                                        onClick={() => setSection("typography")}
                                     />
                                     <SidebarMenuItem
-                                        label="Contatos & Redes Sociais"
-                                        icon={Share2}
-                                        onClick={() => setActiveSection("contact")}
+                                        label="Contato e Localização"
+                                        icon={MapPin}
+                                        onClick={() => setSection("contact")}
+                                    />
+                                    <SidebarMenuItem
+                                        label="Estilos dos Componentes"
+                                        icon={Layers}
+                                        onClick={() => setSection("styles")}
                                     />
                                 </div>
 
@@ -294,12 +709,18 @@ export function SiteEditorLayout({ config, banners, products }: SiteEditorLayout
                                     <SidebarMenuItem
                                         label="Cabeçalho"
                                         icon={PanelTop}
-                                        onClick={() => setActiveSection("header")}
+                                        onClick={() => {
+                                            setSection("header");
+                                            setTimeout(() => highlightComponent("header"), 100);
+                                        }}
                                     />
                                     <SidebarMenuItem
                                         label="Página inicial"
                                         icon={Home}
-                                        onClick={() => setActiveSection("home")}
+                                        onClick={() => {
+                                            setSection("home");
+                                            setTimeout(() => highlightComponent("home"), 100);
+                                        }}
                                     />
                                     <SidebarMenuItem
                                         label="Menus de Navegação"
@@ -314,33 +735,25 @@ export function SiteEditorLayout({ config, banners, products }: SiteEditorLayout
                                     <SidebarMenuItem
                                         label="Lista de produtos"
                                         icon={Grid}
-                                        onClick={() => setActiveSection("products-list")}
+                                        onClick={() => setSection("products-list")}
                                     />
                                     <SidebarMenuItem
                                         label="Detalhe do produto"
                                         icon={ShoppingBag}
-                                        onClick={() => setActiveSection("products-detail")}
+                                        onClick={() => setSection("products-detail")}
                                     />
                                     <SidebarMenuItem
                                         label="Carrinho de compras"
                                         icon={ShoppingCart}
-                                        onClick={() => setActiveSection("cart")}
+                                        onClick={() => setSection("cart")}
                                     />
                                     <SidebarMenuItem
                                         label="Rodapé da página"
                                         icon={PanelBottom}
-                                        onClick={() => setActiveSection("footer")}
-                                    />
-                                </div>
-
-                                <div className="border-t my-1"></div>
-
-                                <div className="px-4 py-3">
-                                    <SidebarMenuItem
-                                        label="Edição de CSS avançada"
-                                        icon={Code}
-                                        onClick={() => {/* TODO */ }}
-                                        disabled
+                                        onClick={() => {
+                                            setSection("footer");
+                                            setTimeout(() => highlightComponent("footer"), 100);
+                                        }}
                                     />
                                 </div>
                             </div>
@@ -431,22 +844,48 @@ export function SiteEditorLayout({ config, banners, products }: SiteEditorLayout
                 <div
                     ref={previewRef}
                     className={cn(
-                        "bg-white shadow-2xl overflow-hidden border border-slate-200 origin-top transform transition-all duration-500",
-                        fullScreenPreview ? "w-full h-full rounded-none scale-100 border-0" : "min-h-[800px] rounded-lg scale-[0.9]",
+                        "shadow-2xl overflow-auto border border-slate-200 origin-top transform transition-all duration-500",
+                        fullScreenPreview ? "w-full h-full rounded-none scale-100 border-0" : "min-h-[800px] max-h-[90vh] rounded-lg scale-[0.9]",
                         /* Width override based on device */
                         !fullScreenPreview && previewDevice === 'mobile' ? "w-[375px] border-slate-300 border-8 rounded-[3rem]" : (!fullScreenPreview && "w-full max-w-[1200px]")
                     )}
                 >
                     {/* Preview Styles Injection */}
                     <style jsx global>{`
+                            /* Component Highlight Animation */
+                            @keyframes highlightPulse {
+                                0% {
+                                    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7);
+                                    outline: 3px solid rgba(99, 102, 241, 0.9);
+                                    outline-offset: 0px;
+                                }
+                                50% {
+                                    box-shadow: 0 0 0 15px rgba(99, 102, 241, 0);
+                                    outline: 3px solid rgba(99, 102, 241, 0.5);
+                                    outline-offset: 4px;
+                                }
+                                100% {
+                                    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+                                    outline: 3px solid rgba(99, 102, 241, 0);
+                                    outline-offset: 0px;
+                                }
+                            }
+
+                            .component-highlight {
+                                animation: highlightPulse 1s ease-out 2;
+                                position: relative;
+                                z-index: 50;
+                            }
+
                             .preview-scope {
                                 --background: ${activeConfig.backgroundColor || "#ffffff"};
                                 --foreground: ${activeConfig.bodyColor || "#334155"};
                                 --primary: ${activeConfig.themeColor || "#db2777"};
+                                --secondary: ${activeConfig.secondaryColor || "#fce7f3"};
+                                --ring: ${activeConfig.themeColor || "#db2777"};
+                                
                                 --brand-accent: ${(activeConfig as any).accentColor || (activeConfig as any).themeColor || "#db2777"};
                                 --price-color: ${(activeConfig as any).priceColor || (activeConfig as any).accentColor || (activeConfig as any).themeColor || "#db2777"};
-                                --primary-foreground: #ffffff; 
-
                                 --primary-foreground: #ffffff; 
 
                                 --color-section-title: ${(activeConfig as any).sectionTitleColor || activeConfig.headingColor || "#111827"};
@@ -470,6 +909,7 @@ export function SiteEditorLayout({ config, banners, products }: SiteEditorLayout
 
                                 --font-heading: ${activeConfig.headingFont || "Inter"}, sans-serif;
                                 --font-body: ${activeConfig.bodyFont || "Inter"}, sans-serif;
+                                --font-sans: ${activeConfig.bodyFont || "Inter"}, sans-serif;
                                 --size-heading: ${activeConfig.headingFontSize || "32px"};
                                 --size-body: ${activeConfig.bodyFontSize || "16px"};
                             }
@@ -486,123 +926,93 @@ export function SiteEditorLayout({ config, banners, products }: SiteEditorLayout
                     {/* Dynamic Font Loader (Simple version) */}
                     <link href={`https://fonts.googleapis.com/css2?family=${(activeConfig.headingFont || "Inter").replace(' ', '+')}:wght@400;700&family=${(activeConfig.bodyFont || "Inter").replace(' ', '+')}:wght@400;500;700&display=swap`} rel="stylesheet" />
 
-                    <div className="preview-scope min-h-full font-sans antialiased text-foreground h-full overflow-y-auto" style={{ backgroundColor: "var(--background)", color: "var(--foreground)" }}>
+                    <div className="preview-scope font-sans antialiased text-foreground" style={{ color: "var(--foreground)" }}>
 
 
 
                         {/* Header Preview */}
-                        <Header config={activeConfig} />
+                        <Header
+                            config={activeConfig}
+                            categories={categories}
+                            editorMode={activeSection === "header"}
+                            onFieldClick={(field) => setSelectedHeaderField({ field, timestamp: Date.now() })}
+                        />
 
-                        {/* Category Nav Mock (Always visible or controlled by layout? Usually part of layout in page.tsx but here separated. Let's keep it separated for now or move it if needed) */}
-                        {/* Actually page.tsx has categories-main as a section. Let's respect that. */}
-
-                        {/* Dynamic Layout Rendering */}
-                        <div className="pb-20">
+                        {/* Page Content Preview - Use BlockRenderer for PageBuilder blocks, ModernHome for legacy */}
+                        <div className="min-h-screen" data-section="home">
                             {(() => {
-                                let layout = [];
-                                try {
-                                    layout = activeConfig.homeLayout ? JSON.parse(activeConfig.homeLayout) : [];
-                                    // Fallback if empty array
-                                    if (layout.length === 0) layout = [
-                                        { id: "hero", enabled: true },
-                                        { id: "products-new", enabled: true }
-                                    ];
-                                } catch (e) {
-                                    layout = [
-                                        { id: "hero", enabled: true },
-                                        { id: "products-new", enabled: true }
-                                    ];
-                                }
+                                const useBlockRenderer = blocks && blocks.length > 0 && blocks[0] && typeof blocks[0].type === 'string';
+                                console.log('Preview Mode:', { useBlockRenderer, blocksCount: blocks.length, firstBlock: blocks[0] });
 
-                                return layout
-                                    .filter((section: any) => section.enabled)
-                                    .map((section: any, index: number) => {
-                                        switch (section.id) {
-                                            case "categories-main":
-                                                return <MockCategoryNav key={index} config={activeConfig} />;
-
-                                            case "hero":
-                                                return (
-                                                    <div key={index} className="container mx-auto px-4 py-6">
-                                                        <div className="bg-slate-50 rounded-2xl h-[400px] flex items-center justify-center relative overflow-hidden group">
-                                                            {activeConfig.bannerUrl ? (
-                                                                <img src={activeConfig.bannerUrl} className="absolute inset-0 w-full h-full object-cover" alt="Banner" />
-                                                            ) : (
-                                                                <div className="text-center space-y-4 relative z-10">
-                                                                    <h2 className="text-4xl font-bold tracking-tight text-slate-900" style={{ color: "var(--color-hero-text)" }}>
-                                                                        {activeConfig.storeName || "Sua Loja Incrível"}
-                                                                    </h2>
-                                                                    <p className="text-lg text-slate-600 max-w-xl mx-auto">
-                                                                        {activeConfig.description || "Os melhores produtos de beleza você encontra aqui."}
-                                                                    </p>
-                                                                    <Button className="mt-4" style={{ backgroundColor: "var(--primary)" }}>Comprar Agora</Button>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                );
-
-                                            case "products-new":
-                                            case "products-featured":
-                                            case "products-offers":
-                                                // Generic Product Grid for Preview
-                                                return (
-                                                    <div key={index} className="container mx-auto px-4 py-8">
-                                                        <h3 className="text-2xl font-bold mb-6" style={{ color: activeConfig.headingColor }}>
-                                                            {section.id === "products-new" ? "Lançamentos" :
-                                                                section.id === "products-offers" ? "Ofertas" : "Destaques"}
-                                                        </h3>
-                                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                                                            {(products && products.length > 0 ? products : [1, 2, 3, 4]).slice(0, 4).map((p: any, i) => {
-                                                                const isMock = typeof p === 'number';
-                                                                const name = isMock ? `Produto Exemplo ${p}` : p.name;
-                                                                const price = isMock ? 129.90 : Number(p.price);
-                                                                const image = isMock ? null : p.images?.[0]?.url;
-
-                                                                return (
-                                                                    <div key={i} className="space-y-3 group cursor-pointer">
-                                                                        <div className="aspect-square bg-slate-100 rounded-xl relative overflow-hidden flex items-center justify-center">
-                                                                            {image ? (
-                                                                                <img src={image} alt={name} className="w-full h-full object-cover" />
-                                                                            ) : (
-                                                                                <div className="text-slate-300 bg-slate-200 w-full h-full flex items-center justify-center">
-                                                                                    {isMock ? `Produto ${p}` : "Sem Imagem"}
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                        <div>
-                                                                            <div className="text-sm text-muted-foreground">Categoria</div>
-                                                                            <div className="font-medium truncate">{name}</div>
-                                                                            <div className="font-bold mt-1" style={{ color: "var(--price-color)" }}>
-                                                                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(price)}
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    </div>
-                                                );
-
-                                            case "instagram":
-                                                return (
-                                                    <div key={index} className="container mx-auto px-4 py-8 text-center border-2 border-dashed rounded-xl m-4">
-                                                        <h3 className="text-xl text-slate-400">Feed do Instagram</h3>
-                                                    </div>
-                                                );
-
-                                            default:
-                                                return null;
-                                        }
-                                    });
+                                return useBlockRenderer ? (
+                                    <BlockRenderer
+                                        blocks={blocks}
+                                        isAdmin={true}
+                                        products={products || []}
+                                        categories={categories || []}
+                                        brands={brands || []}
+                                        config={activeConfig}
+                                    />
+                                ) : (
+                                    <ModernHome
+                                        products={products || []}
+                                        banners={banners}
+                                        categories={categories || []}
+                                        brands={brands || []}
+                                        config={activeConfig}
+                                    />
+                                );
                             })()}
                         </div>
 
-                        {/* Footer Preview */}
-                        <Footer config={activeConfig} />
+                        {/* Footer Preview - Use EditableFooter when editing footer section */}
+                        {activeSection === "footer" ? (
+                            <EditableFooter
+                                config={activeConfig}
+                                menus={menus}
+                                blocks={footerBlocks}
+                                bottomBlocks={footerBottomBlocks}
+                                selectedBlockId={selectedFooterBlockId}
+                                onBlockSelect={(id) => setSelectedFooterBlockId(id)}
+                                onBlocksReorder={(newBlocks) => {
+                                    setFooterBlocks(newBlocks);
+                                    // Update activeConfig.footerBlocks for persistence
+                                    handleConfigChange("footerBlocks", JSON.stringify({ blocks: newBlocks, bottomBlocks: footerBottomBlocks }));
+                                }}
+                                onBlockUpdate={(block) => {
+                                    const updated = footerBlocks.map(b => b.id === block.id ? block : b);
+                                    setFooterBlocks(updated);
+                                    handleConfigChange("footerBlocks", JSON.stringify({ blocks: updated, bottomBlocks: footerBottomBlocks }));
+                                }}
+                                onBlockDelete={(id) => {
+                                    const filtered = footerBlocks.filter(b => b.id !== id).map((b, i) => ({ ...b, order: i }));
+                                    setFooterBlocks(filtered);
+                                    setSelectedFooterBlockId(null);
+                                    handleConfigChange("footerBlocks", JSON.stringify({ blocks: filtered, bottomBlocks: footerBottomBlocks }));
+                                }}
+                                onBottomBlocksChange={(newBottomBlocks) => {
+                                    setFooterBottomBlocks(newBottomBlocks);
+                                    handleConfigChange("footerBlocks", JSON.stringify({ blocks: footerBlocks, bottomBlocks: newBottomBlocks, bottomAlignment: footerBottomAlignment }));
+                                }}
+                                bottomAlignment={footerBottomAlignment}
+                                onBottomAlignmentChange={(alignment) => {
+                                    setFooterBottomAlignment(alignment);
+                                    handleConfigChange("footerBlocks", JSON.stringify({ blocks: footerBlocks, bottomBlocks: footerBottomBlocks, bottomAlignment: alignment }));
+                                }}
+                                onMenuItemReorder={async (menuId, itemId, direction) => {
+                                    const result = await moveMenuItem(menuId, itemId, direction);
+                                    if (result.success) {
+                                        // Force refresh to get updated menu order
+                                        router.refresh();
+                                    }
+                                }}
+                            />
+                        ) : (
+                            <Footer config={activeConfig} menus={menus} />
+                        )}
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }

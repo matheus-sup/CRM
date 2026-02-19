@@ -14,8 +14,22 @@ const initialState = { success: false, message: "" };
 
 import { ColorPickerInput } from "@/components/admin/site/ColorPickerInput";
 
-export function SiteTypographyForm({ config, onConfigChange }: { config: any, onConfigChange?: (key: string, value: string) => void }) {
+interface SiteTypographyFormProps {
+    config: any;
+    onConfigChange?: (key: string, value: string) => void;
+    onHighlightComponent?: (component: string) => void;
+}
+
+export function SiteTypographyForm({ config, onConfigChange, onHighlightComponent }: SiteTypographyFormProps) {
     const [state, formAction, isPending] = useActionState(updateStoreConfig, initialState);
+    const [hasHighlighted, setHasHighlighted] = useState(false);
+
+    const handleFocus = () => {
+        if (!hasHighlighted) {
+            onHighlightComponent?.("home");
+            setHasHighlighted(true);
+        }
+    };
 
     // Helper for Font Select
     const FontSelect = ({ name, defaultValue, configKey }: { name: string, defaultValue: string, configKey: string }) => (
@@ -36,7 +50,7 @@ export function SiteTypographyForm({ config, onConfigChange }: { config: any, on
     );
 
     return (
-        <Card>
+        <Card onFocus={handleFocus}>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <Type className="h-5 w-5" /> Tipo de Letra
@@ -48,7 +62,10 @@ export function SiteTypographyForm({ config, onConfigChange }: { config: any, on
 
                     {/* Títulos */}
                     <div className="space-y-4">
-                        <Label className="text-base font-semibold">Títulos</Label>
+                        <div>
+                            <Label className="text-base font-semibold">Títulos</Label>
+                            <p className="text-xs text-muted-foreground mt-1">Aplicado em nomes de seções, títulos de produtos e cabeçalhos.</p>
+                        </div>
 
                         <div className="space-y-3">
                             <div className="space-y-1.5">
@@ -92,7 +109,10 @@ export function SiteTypographyForm({ config, onConfigChange }: { config: any, on
 
                     {/* Textos */}
                     <div className="space-y-4">
-                        <Label className="text-base font-semibold">Textos (Corpo)</Label>
+                        <div>
+                            <Label className="text-base font-semibold">Textos (Corpo)</Label>
+                            <p className="text-xs text-muted-foreground mt-1">Aplicado em descrições, menus, botões e textos gerais.</p>
+                        </div>
                         <div className="space-y-3">
                             <div className="space-y-1.5">
                                 <Label className="text-xs text-muted-foreground uppercase">Fonte</Label>

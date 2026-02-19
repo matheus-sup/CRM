@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Inter } from "next/font/google";
-import { cn } from "@/lib/utils";
+import { cn, serializeForClient } from "@/lib/utils";
 import { ThemeInjector } from "@/components/theme-injector";
 import { getStoreConfig } from "@/lib/actions/settings";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -12,10 +12,19 @@ import { AnalyticsScripts } from "@/components/shop/AnalyticsScripts";
 
 const inter = Inter({ subsets: ["latin"] });
 
-export const metadata: Metadata = {
-  title: "Gut Cosméticos & Makes",
-  description: "Sua loja de cosméticos favorita",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const config = await getStoreConfig();
+
+  return {
+    title: config.storeName || "Minha Loja",
+    description: config.description || "Sua loja de cosméticos favorita",
+    icons: {
+      icon: (config.faviconUrl || "/favicon.ico") + "?v=" + Date.now(),
+      shortcut: (config.faviconUrl || "/favicon.ico") + "?v=" + Date.now(),
+      apple: (config.faviconUrl || "/favicon.ico") + "?v=" + Date.now(),
+    }
+  };
+}
 
 export default async function RootLayout({
   children,
@@ -33,7 +42,7 @@ export default async function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <ThemeInjector config={config} />
+
           <CartSync />
           <AnalyticsScripts />
           {children}

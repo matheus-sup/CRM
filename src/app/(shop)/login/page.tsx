@@ -27,7 +27,7 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="container mx-auto px-4 py-20 flex justify-center">
+        <div className="container mx-auto px-4 pt-32 pb-20 flex justify-center">
             <div className="w-full max-w-md bg-white p-8 rounded-xl border border-slate-100 shadow-sm">
                 <div className="text-center mb-8">
                     <h1 className="text-2xl font-bold text-slate-800">Faça seu Login</h1>

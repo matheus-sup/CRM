@@ -12,13 +12,27 @@ import { ImagePicker } from "@/components/admin/media/ImagePicker";
 
 const initialState = { success: false, message: "" };
 
-export function SiteBrandingForm({ config, onConfigChange }: { config: any, onConfigChange?: (key: string, value: string) => void }) {
+interface SiteBrandingFormProps {
+    config: any;
+    onConfigChange?: (key: string, value: string) => void;
+    onHighlightComponent?: (component: string) => void;
+}
+
+export function SiteBrandingForm({ config, onConfigChange, onHighlightComponent }: SiteBrandingFormProps) {
     const [state, formAction, isPending] = useActionState(updateStoreConfig, initialState);
     const [logoUrl, setLogoUrl] = useState(config.logoUrl || "");
+    const [hasHighlighted, setHasHighlighted] = useState(false);
 
     useEffect(() => {
         setLogoUrl(config.logoUrl || "");
     }, [config.logoUrl]);
+
+    const handleFocus = (target: "header" | "footer") => {
+        if (!hasHighlighted) {
+            onHighlightComponent?.(target);
+            setHasHighlighted(true);
+        }
+    };
 
     return (
         <Card>
@@ -31,7 +45,7 @@ export function SiteBrandingForm({ config, onConfigChange }: { config: any, onCo
             <CardContent>
                 <form action={formAction} className="space-y-6">
                     <div className="space-y-4">
-                        <div className="space-y-2">
+                        <div className="space-y-2" onFocus={() => handleFocus("header")}>
                             <Label htmlFor="storeName">Nome da Loja</Label>
                             <Input
                                 id="storeName"
@@ -40,9 +54,12 @@ export function SiteBrandingForm({ config, onConfigChange }: { config: any, onCo
                                 onChange={(e) => onConfigChange?.("storeName", e.target.value)}
                                 required
                             />
+                            <p className="text-xs text-muted-foreground">
+                                Aparece no cabeçalho (se não tiver logo), rodapé e título da página.
+                            </p>
                         </div>
 
-                        <div className="space-y-2">
+                        <div className="space-y-2" onFocus={() => handleFocus("footer")}>
                             <Label htmlFor="description">Descrição (Bio)</Label>
                             <Textarea
                                 id="description"
@@ -52,19 +69,41 @@ export function SiteBrandingForm({ config, onConfigChange }: { config: any, onCo
                                 placeholder="Uma breve descrição da sua loja..."
                                 className="resize-none"
                             />
+                            <p className="text-xs text-muted-foreground">
+                                Aparece no bloco "Sobre a Loja" do rodapé e na descrição SEO do site.
+                            </p>
                         </div>
 
-                        <div className="space-y-2">
+                        <div className="space-y-2" onFocus={() => handleFocus("header")}>
                             <Label>Logo da Loja</Label>
                             <ImagePicker
                                 value={logoUrl}
                                 onChange={(url) => {
                                     setLogoUrl(url);
                                     onConfigChange?.("logoUrl", url);
+                                    handleFocus("header");
                                 }}
                                 label="Selecionar Logo"
                             />
                             <input type="hidden" name="logoUrl" value={logoUrl} />
+                            <p className="text-xs text-muted-foreground">
+                                Aparece no cabeçalho do site. Substitui o nome da loja quando configurado.
+                            </p>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Favicon (Ícone da Aba)</Label>
+                            <ImagePicker
+                                value={config.faviconUrl || ""}
+                                onChange={(url) => {
+                                    onConfigChange?.("faviconUrl", url);
+                                }}
+                                label="Selecionar Favicon"
+                            />
+                            <input type="hidden" name="faviconUrl" value={config.faviconUrl || ""} />
+                            <p className="text-xs text-muted-foreground">
+                                Aparece na aba do navegador. Recomendado: imagem quadrada (32x32px).
+                            </p>
                         </div>
                     </div>
 

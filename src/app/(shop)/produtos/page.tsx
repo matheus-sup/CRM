@@ -4,6 +4,7 @@ import { ProductFilters } from "@/components/shop/ProductFilters";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { Button } from "@/components/ui/button";
 import { Filter, SlidersHorizontal } from "lucide-react";
+import { getStoreConfig } from "@/lib/actions/settings";
 import {
     Sheet,
     SheetContent,
@@ -18,8 +19,10 @@ export const dynamic = 'force-dynamic';
 export default async function ProductsPage({
     searchParams,
 }: {
-    searchParams: { [key: string]: string | string[] | undefined };
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
+    // Requirements for Next.js 15: await params
+    const resolvedParams = await searchParams;
     // 1. Get Categories for sidebar
     const categories = await prisma.category.findMany({
         include: {
@@ -30,34 +33,28 @@ export default async function ProductsPage({
         orderBy: { name: 'asc' }
     });
 
-    // 2. Get Distinct Brands
-    const brandResults = await prisma.product.groupBy({
-        by: ['brand'],
-        where: {
-            brand: { not: null }
-        },
-        orderBy: { brand: 'asc' }
+    // 2. Get Available Brands (from Brand entity)
+    const brands = await prisma.brand.findMany({
+        where: { products: { some: {} } }, // Only brands with products? Or all? Let's show all for now or filters.
+        orderBy: { name: 'asc' }
     });
-    // Filter out nulls explicitly if needed, though query handles it mostly. 
-    // groupBy returns objects { brand: "Name" }, map it to string[].
-    const allBrands = brandResults.map(b => b.brand).filter((b): b is string => b !== null);
-
+    const allBrands = brands.map(b => b.name);
 
     // 3. Parse Filter Params
-    const categoryIds = typeof searchParams.category === 'string'
-        ? [searchParams.category]
-        : Array.isArray(searchParams.category)
-            ? searchParams.category
+    const categoryIds = typeof resolvedParams.category === 'string'
+        ? [resolvedParams.category]
+        : Array.isArray(resolvedParams.category)
+            ? resolvedParams.category
             : [];
 
-    const selectedBrands = typeof searchParams.brand === 'string'
-        ? [searchParams.brand]
-        : Array.isArray(searchParams.brand)
-            ? searchParams.brand
+    const selectedBrands = typeof resolvedParams.brand === 'string'
+        ? [resolvedParams.brand]
+        : Array.isArray(resolvedParams.brand)
+            ? resolvedParams.brand
             : [];
 
-    const minPrice = Number(searchParams.minPrice) || 0;
-    const maxPriceParam = Number(searchParams.maxPrice) || 10000;
+    const minPrice = Number(resolvedParams.minPrice) || 0;
+    const maxPriceParam = Number(resolvedParams.maxPrice) || 10000;
 
     // 4. Build Product Query
     const where: any = {};
@@ -67,7 +64,8 @@ export default async function ProductsPage({
     }
 
     if (selectedBrands.length > 0) {
-        where.brand = { in: selectedBrands };
+        // Filter by brand name via relation
+        where.brand = { name: { in: selectedBrands } };
     }
 
     where.price = {
@@ -80,7 +78,8 @@ export default async function ProductsPage({
         where,
         include: {
             category: true,
-            images: true
+            images: true,
+            brand: true // Make sure to fetch the relation
         },
         orderBy: {
             createdAt: 'desc'
@@ -93,8 +92,11 @@ export default async function ProductsPage({
     });
     const globalMaxPrice = Number(priceAggr._max.price) || 1000;
 
+    // 7. Get Store Config for component styles
+    const config = await getStoreConfig();
+
     return (
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 pt-32 pb-8">
             <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-slate-800">Nossos Produtos</h1>
@@ -144,7 +146,7 @@ export default async function ProductsPage({
                     {products.length > 0 ? (
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                             {products.map((product) => (
-                                <ProductCard key={product.id} product={product} />
+                                <ProductCard key={product.id} product={product} config={config} />
                             ))}
                         </div>
                     ) : (

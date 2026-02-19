@@ -1,12 +1,17 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, Monitor, Lock, Share2, Palette } from "lucide-react";
-import { getStoreConfig } from "@/lib/actions/settings";
+import { Monitor, Share2, Palette } from "lucide-react";
+import { getDraftStoreConfig } from "@/lib/actions/settings";
+import { getActiveBanners } from "@/lib/actions/banner";
+import { getProducts } from "@/lib/actions/product";
+import { prisma } from "@/lib/prisma";
+import { SiteEditorLayout } from "@/components/admin/site/SiteEditorLayout";
 import { SiteContactForm } from "@/components/admin/site/SiteContactForm";
+import { TemplateGallery } from "@/components/admin/site/TemplateGallery";
 
 export default async function SitePage() {
-    const config = await getStoreConfig();
+    const config = await getDraftStoreConfig();
 
     // Serialize Decimal types for Client Components
     const serializedConfig = {
@@ -52,20 +57,15 @@ export default async function SitePage() {
                 </div>
                 <div className="p-6 flex items-center justify-between border-t border-slate-100">
                     <div className="flex items-center gap-3">
-                        <h2 className="text-xl font-bold text-slate-900">{"Tema Personalizado"}</h2>
+                        <h2 className="text-xl font-bold text-slate-900">{"Tema Personalizado Premium"}</h2>
                         <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-green-200 rounded-full px-3">Ativo</Badge>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <Button asChild className="bg-blue-600 hover:bg-blue-700 font-medium shadow-md">
-                            <Link href="/admin/editor">
-                                <Palette className="mr-2 h-4 w-4" />
-                                Editar site (Tela Cheia)
-                            </Link>
-                        </Button>
-                        <Button variant="outline" size="icon">
-                            <MoreHorizontal className="h-5 w-5 text-slate-500" />
-                        </Button>
-                    </div>
+                    <Button asChild className="bg-blue-600 hover:bg-blue-700 font-medium shadow-md">
+                        <Link href="/admin/editor">
+                            <Palette className="mr-2 h-4 w-4" />
+                            Editar site (Tela Cheia)
+                        </Link>
+                    </Button>
                 </div>
             </div>
 
@@ -82,35 +82,32 @@ export default async function SitePage() {
                             <p className="text-sm text-slate-500">Configure seus links de contato.</p>
                         </div>
                     </div>
-                    {/* We can embed the form here or link to it. Embedding is nice for "Dashboard" feel. */}
                     <div className="scale-95 origin-top-left">
                         <SiteContactForm config={serializedConfig} />
                     </div>
                 </div>
 
-                {/* Theme Store Banner */}
-                <div className="rounded-xl border border-purple-100 bg-linear-to-r from-indigo-50 via-purple-50 to-pink-50 p-6 flex flex-col justify-between overflow-hidden relative">
-                    <div className="relative z-10 space-y-3">
+                {/* Templates Gallery */}
+                <div className="rounded-xl border border-purple-100 bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 p-6 overflow-hidden relative">
+                    <div className="relative z-10 space-y-4">
                         <div>
-                            <h2 className="text-xl font-bold text-slate-900">Temas Premium</h2>
-                            <p className="text-slate-600 text-sm">
-                                Explore nossa galeria de temas para dar uma nova cara à sua loja.
+                            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                                <Palette className="h-6 w-6 text-purple-600" />
+                                Temas Premium
+                            </h2>
+                            <p className="text-slate-600 text-sm mt-1">
+                                Escolha um template e transforme sua loja em segundos.
                             </p>
                         </div>
-                        <Badge variant="secondary" className="bg-white/80 text-purple-700 backdrop-blur-sm border-purple-200 self-start">
-                            Em breve
-                        </Badge>
-                    </div>
-                    <div className="relative z-10 mt-6">
-                        <Button variant="outline" className="w-full bg-white/80 hover:bg-white text-slate-700 border-white/50 backdrop-blur-sm gap-2 shadow-sm" disabled>
-                            <Lock className="h-4 w-4" /> Ver galeria
-                        </Button>
+
+                        <TemplateGallery currentConfig={serializedConfig} />
                     </div>
 
                     {/* Decorative Elements */}
-                    <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-purple-200/20 rounded-full blur-3xl"></div>
+                    <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-purple-200/20 rounded-full blur-3xl pointer-events-none"></div>
                 </div>
             </div>
         </div>
     );
 }
+

@@ -100,3 +100,19 @@ export async function deleteMenuItem(itemId: string, menuId: string) {
         return { success: false, message: "Erro ao remover item." };
     }
 }
+
+export async function updateMenuItem(itemId: string, menuId: string, data: { label: string; url: string }) {
+    try {
+        await prisma.menuItem.update({
+            where: { id: itemId },
+            data: {
+                label: data.label,
+                url: data.url,
+            },
+        });
+        revalidatePath(`/admin/menus/${menuId}`);
+        return { success: true, message: "Item atualizado!" };
+    } catch (error) {
+        return { success: false, message: "Erro ao atualizar item." };
+    }
+}

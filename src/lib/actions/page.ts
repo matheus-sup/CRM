@@ -70,3 +70,23 @@ export async function deletePage(id: string) {
 export async function getPage(id: string) {
     return await prisma.page.findUnique({ where: { id } });
 }
+
+export async function togglePagePublished(id: string) {
+    try {
+        const page = await prisma.page.findUnique({ where: { id } });
+        if (!page) {
+            return { success: false, message: "Página não encontrada." };
+        }
+
+        await prisma.page.update({
+            where: { id },
+            data: { published: !page.published }
+        });
+
+        revalidatePath("/admin/paginas");
+        revalidatePath(`/${page.slug}`);
+        return { success: true, published: !page.published };
+    } catch (error) {
+        return { success: false, message: "Erro ao alterar status da página." };
+    }
+}

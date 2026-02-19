@@ -24,7 +24,7 @@ const DEFAULT_SECTIONS: HomeSection[] = [
     { id: "products-featured", label: "Em Destaque", enabled: true },
     { id: "brands", label: "Marcas", enabled: true },
     { id: "products-offers", label: "Ofertas", enabled: true },
-    { id: "instagram", label: "Instagram", enabled: true },
+    { id: "instagram", label: "Dados de Contato / Instagram", enabled: true },
     { id: "info-shipping", label: "Barra de Info", enabled: true },
     { id: "newsletter", label: "Newsletter", enabled: true },
     { id: "banners-promo", label: "Banners Promo", enabled: true },
@@ -99,7 +99,7 @@ export function SiteHomeForm({ config, onEdit }: SiteHomeFormProps) {
                 <CardTitle className="flex items-center gap-2">
                     <Home className="h-5 w-5" /> Organização da Página Inicial
                 </CardTitle>
-                <CardDescription>Arraste para reordenar ou oculte seções.</CardDescription>
+                <CardDescription>Organize as seções da página inicial. Arraste para reordenar ou clique no olho para ocultar.</CardDescription>
             </CardHeader>
             <CardContent>
                 <form action={formAction} className="space-y-6">

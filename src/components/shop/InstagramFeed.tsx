@@ -19,7 +19,7 @@ export function InstagramFeed() {
                 <div className="bg-pink-50 p-3 rounded-full mb-2">
                     <Instagram className="h-8 w-8 text-primary" />
                 </div>
-                <h2 className="text-3xl font-bold text-slate-800 tracking-tight">@gutcosmeticos</h2>
+                <h2 className="text-3xl font-bold text-slate-800 tracking-tight">@minhaloja</h2>
                 <p className="text-slate-500 max-w-md">
                     Siga nosso Instagram e fique por dentro das novidades, tutoriais de make e promoções exclusivas!
                 </p>
