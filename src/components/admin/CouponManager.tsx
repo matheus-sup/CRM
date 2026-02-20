@@ -457,8 +457,8 @@ export function CouponManager({
                                     <TableHead>Desconto</TableHead>
                                     <TableHead>Estoque Promo</TableHead>
                                     <TableHead>Vendidos</TableHead>
-                                    <TableHead className="text-center">Status</TableHead>
-                                    <TableHead className="text-right">Acoes</TableHead>
+                                    <TableHead className="text-center w-[120px]">Status</TableHead>
+                                    <TableHead className="text-right w-[80px]">Acoes</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
