@@ -1,5 +1,5 @@
 param(
-    [int]$IntervalSeconds = 30
+    [int]$IntervalSeconds = 3
 )
 
 $projectPath = Get-Location
