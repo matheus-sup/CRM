@@ -386,8 +386,8 @@ export function CouponManager({
                             <TableHead>Valor</TableHead>
                             <TableHead>Mínimo</TableHead>
                             <TableHead>Uso</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead className="text-right">Ações</TableHead>
+                            <TableHead className="text-center w-[120px]">Status</TableHead>
+                            <TableHead className="text-right w-[80px]">Ações</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -417,10 +417,12 @@ export function CouponManager({
                                         {coupon.usageCount} {coupon.maxUsage ? `/ ${coupon.maxUsage}` : ''}
                                     </TableCell>
                                     <TableCell>
-                                        <Switch
-                                            checked={coupon.active}
-                                            onCheckedChange={() => handleToggle(coupon.id, coupon.active)}
-                                        />
+                                        <div className="flex justify-center">
+                                            <Switch
+                                                checked={coupon.active}
+                                                onCheckedChange={() => handleToggle(coupon.id, coupon.active)}
+                                            />
+                                        </div>
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <Button
@@ -455,7 +457,7 @@ export function CouponManager({
                                     <TableHead>Desconto</TableHead>
                                     <TableHead>Estoque Promo</TableHead>
                                     <TableHead>Vendidos</TableHead>
-                                    <TableHead>Status</TableHead>
+                                    <TableHead className="text-center">Status</TableHead>
                                     <TableHead className="text-right">Acoes</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -475,10 +477,12 @@ export function CouponManager({
                                             {discount.soldCount} / {discount.promoStock}
                                         </TableCell>
                                         <TableCell>
-                                            <Switch
-                                                checked={discount.active}
-                                                onCheckedChange={() => handleToggleItemDiscount(discount.id, discount.active)}
-                                            />
+                                            <div className="flex justify-center">
+                                                <Switch
+                                                    checked={discount.active}
+                                                    onCheckedChange={() => handleToggleItemDiscount(discount.id, discount.active)}
+                                                />
+                                            </div>
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <Button
