@@ -382,12 +382,12 @@ export function CouponManager({
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>Código</TableHead>
-                            <TableHead>Valor</TableHead>
-                            <TableHead>Mínimo</TableHead>
-                            <TableHead>Uso</TableHead>
-                            <TableHead className="text-center w-[120px]">Status</TableHead>
-                            <TableHead className="text-right w-[80px]">Ações</TableHead>
+                            <TableHead className="w-[25%]">Código</TableHead>
+                            <TableHead className="w-[15%]">Valor</TableHead>
+                            <TableHead className="w-[15%]">Mínimo</TableHead>
+                            <TableHead className="w-[15%]">Uso</TableHead>
+                            <TableHead className="text-center w-[15%]">Status</TableHead>
+                            <TableHead className="text-right w-[15%]">Ações</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
