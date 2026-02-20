@@ -102,7 +102,7 @@ call :log "Intervalo: %INTERVALO%s"
     echo.
 
 :wait
-    timeout /t %INTERVALO% /nobreak >nul
+    ping -n %INTERVALO% 127.0.0.1 >nul
     goto :loop
 
 REM === Funcao de log ===
