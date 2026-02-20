@@ -453,12 +453,12 @@ export function CouponManager({
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Produto</TableHead>
-                                    <TableHead>Desconto</TableHead>
-                                    <TableHead>Estoque Promo</TableHead>
-                                    <TableHead>Vendidos</TableHead>
-                                    <TableHead className="text-center w-[120px]">Status</TableHead>
-                                    <TableHead className="text-right w-[80px]">Acoes</TableHead>
+                                    <TableHead className="w-[25%]">Produto</TableHead>
+                                    <TableHead className="w-[15%]">Desconto</TableHead>
+                                    <TableHead className="w-[15%]">Estoque Promo</TableHead>
+                                    <TableHead className="w-[15%]">Vendidos</TableHead>
+                                    <TableHead className="text-center w-[15%]">Status</TableHead>
+                                    <TableHead className="text-right w-[15%]">Acoes</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
