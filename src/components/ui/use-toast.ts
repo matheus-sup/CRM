@@ -14,11 +14,8 @@ type ToasterToast = any
 
 export const useToast = () => {
     // Mock implementation
-    const toast = ({ title, description }: { title?: string; description?: string }) => {
-        console.log("Toast:", title, description)
-        // If we want real toasts, we'd need the Toaster provider.
-        // Assuming for now user just wants the error gone and functionality can be minimal or console based until installed properly.
-        // But wait, user might have 'sonner' or other lib.
+    const toast = ({ title, description, variant }: { title?: string; description?: string; variant?: "default" | "destructive" }) => {
+        console.log("Toast:", title, description, variant)
     }
     return { toast }
 }

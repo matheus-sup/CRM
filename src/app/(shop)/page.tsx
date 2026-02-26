@@ -40,7 +40,7 @@ export default async function HomePage() {
             category: p.category ? {
                 id: p.category.id,
                 name: p.category.name,
-                slug: p.category.slug
+                slug: (p.category as any).slug
             } : null
         }));
 
@@ -71,7 +71,7 @@ export default async function HomePage() {
             category: p.category ? {
                 id: p.category.id,
                 name: p.category.name,
-                slug: p.category.slug
+                slug: (p.category as any).slug
             } : null
         }));
 

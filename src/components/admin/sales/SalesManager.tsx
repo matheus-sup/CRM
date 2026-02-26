@@ -10,7 +10,9 @@ interface SellerStats {
     name: string;
     email: string | null;
     phone: string | null;
+    cpf: string | null;
     isActive: boolean;
+    createdAt: Date;
     totalSales: number;
     salesCount: number;
     totalItems: number;

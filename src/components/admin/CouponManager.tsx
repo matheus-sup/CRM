@@ -141,7 +141,7 @@ export function CouponManager({
         setLoadingProducts(true);
         const res = await getProductsForDiscount();
         if (res.success && res.products) {
-            setProducts(res.products as ProductOption[]);
+            setProducts(res.products.map((p: any) => ({ ...p, price: Number(p.price) })) as ProductOption[]);
         }
         setLoadingProducts(false);
     };

@@ -55,9 +55,9 @@ export default async function ProductDetailsPage({
     const iconColor = config?.productIconColor || config?.themeColor || "#6366f1";
 
     // Layout from config
-    const btnStyle = config?.productBtnStyle || "rounded";
+    const btnStyle = (config?.productBtnStyle || "rounded") as "square" | "rounded" | "pill";
     const btnRoundedClass = btnStyle === "pill" ? "rounded-full" : btnStyle === "square" ? "rounded-none" : "rounded-lg";
-    const galleryLayout = config?.productGalleryLayout || "bottom";
+    const galleryLayout = (config?.productGalleryLayout || "bottom") as "grid" | "side" | "bottom";
 
     const discountPercentage = product.compareAtPrice
         ? Math.round(((Number(product.compareAtPrice) - Number(product.price)) / Number(product.compareAtPrice)) * 100)
@@ -295,7 +295,7 @@ export default async function ProductDetailsPage({
             {showRelatedProducts && (
                 <>
                     <Separator className="my-16" />
-                    <RelatedProducts categoryId={product.categoryId} currentProductId={product.id} />
+                    <RelatedProducts categoryId={product.categoryId || undefined} currentProductId={product.id} />
                 </>
             )}
         </div>

@@ -14,7 +14,7 @@ import { useState, useTransition } from "react";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 
 const maintenanceSchema = z.object({
-    maintenanceMode: z.boolean().default(false),
+    maintenanceMode: z.boolean(),
     maintenanceMessage: z.string().optional(),
     maintenancePassword: z.string().optional(),
 });

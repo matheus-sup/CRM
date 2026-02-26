@@ -578,8 +578,9 @@ export function ProductForm({ categories = [], initialData }: { categories?: any
 
                             async function handleCreateCategory() {
                                 if (!newCategoryName.trim()) return;
-                                const res = await createCategory(new FormData(), newCategoryName.trim()); // Small hack: adapt createCategory to accept string or FormData if needed, but here we need to fix the call. 
-                                // Actually createCategory expects FormData. Let's fix usage.
+                                const formData = new FormData();
+                                formData.append("name", newCategoryName.trim());
+                                const res = await createCategory(formData);
                             }
 
                             // Correction: We need to define the handlers properly inside the component or outside if possible.
