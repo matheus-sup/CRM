@@ -10,6 +10,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { CartSync } from "@/components/shop/CartSync";
 import { WhatsAppButton } from "@/components/whatsapp-button";
 import { AnalyticsScripts } from "@/components/shop/AnalyticsScripts";
+import { Suspense } from "react";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -50,7 +51,9 @@ export default async function RootLayout({
         >
 
           <CartSync />
-          <AnalyticsScripts />
+          <Suspense fallback={null}>
+            <AnalyticsScripts />
+          </Suspense>
           {children}
           <WhatsAppButton />
           <Toaster />
