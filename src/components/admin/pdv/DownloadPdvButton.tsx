@@ -1,14 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Download, Check } from "lucide-react";
+import { Download, Check, Lock } from "lucide-react";
 
 interface BeforeInstallPromptEvent extends Event {
     prompt(): Promise<void>;
     userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
-export function DownloadPdvButton() {
+interface DownloadPdvButtonProps {
+    isProfessional?: boolean;
+}
+
+export function DownloadPdvButton({ isProfessional = false }: DownloadPdvButtonProps) {
     const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
     const [installed, setInstalled] = useState(false);
 
@@ -46,6 +50,18 @@ export function DownloadPdvButton() {
         } else {
             window.open("/pdv", "_blank");
         }
+    }
+
+    if (!isProfessional) {
+        return (
+            <span
+                className="inline-flex items-center gap-2 px-4 py-2 bg-slate-400 text-white rounded-lg text-sm font-medium cursor-not-allowed"
+                title="Disponível apenas no plano Profissional"
+            >
+                <Lock className="h-4 w-4" />
+                Download PDV
+            </span>
+        );
     }
 
     if (installed) {
