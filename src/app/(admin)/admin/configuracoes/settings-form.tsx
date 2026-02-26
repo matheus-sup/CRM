@@ -237,7 +237,7 @@ export function SettingsForm({ config, menu, footerPopulares, categories = [] }:
                             <div
                                 className="pointer-events-none select-none"
                             >
-                                <Footer config={previewConfig} menu={menu} popularMenu={footerPopulares} />
+                                <Footer config={previewConfig} menus={[menu, footerPopulares].filter(Boolean)} />
                             </div>
                         </div>
 
