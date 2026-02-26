@@ -76,7 +76,7 @@ export function CardapioClient({ settings, categories, zones }: Props) {
   const [itemNotes, setItemNotes] = useState("");
   const [orderSuccess, setOrderSuccess] = useState<string | null>(null);
 
-  const categoryRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+  const categoryRefs = useRef<{ [key: string]: HTMLElement | null }>({});
 
   // Checkout form
   const [checkoutForm, setCheckoutForm] = useState({
