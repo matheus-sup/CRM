@@ -33,7 +33,7 @@ export default async function HomePage() {
         const serializedProducts = products.map(p => ({
             id: p.id,
             name: p.name,
-            description: p.description,
+            description: (p as any).description || "",
             price: Number(p.price),
             images: p.images?.map(img => img.url) || [],
             categoryId: p.categoryId,
@@ -64,7 +64,7 @@ export default async function HomePage() {
         const serializedProducts = products.map(p => ({
             id: p.id,
             name: p.name,
-            description: p.description,
+            description: (p as any).description || "",
             price: Number(p.price),
             images: p.images?.map(img => img.url) || [],
             categoryId: p.categoryId,
