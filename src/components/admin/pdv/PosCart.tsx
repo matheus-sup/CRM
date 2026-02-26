@@ -36,7 +36,7 @@ export function PosCart({ items, onRemoveItem, onUpdateQuantity, onCheckout, onC
         <div className="flex flex-col h-full bg-white dark:bg-zinc-900 border-l border-zinc-200 dark:border-zinc-800 w-[400px] shadow-2xl">
             <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/50">
                 <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2 text-pink-600">
+                    <div className="flex items-center gap-2 text-primary">
                         <ShoppingCart className="w-6 h-6" />
                         <h2 className="text-xl font-bold text-zinc-900 dark:text-white">Carrinho</h2>
                     </div>
@@ -134,14 +134,14 @@ export function PosCart({ items, onRemoveItem, onUpdateQuantity, onCheckout, onC
                     </div>
                     <div className="flex justify-between text-3xl font-bold text-zinc-900 dark:text-white mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-800">
                         <span>Total</span>
-                        <span className="text-pink-600">{formatCurrency(total)}</span>
+                        <span className="text-primary">{formatCurrency(total)}</span>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 gap-2">
                     <Button
                         size="lg"
-                        className="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold text-lg h-14"
+                        className="w-full bg-primary hover:bg-primary/90 text-white font-bold text-lg h-14"
                         disabled={items.length === 0}
                         onClick={onCheckout}
                     >
