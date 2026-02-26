@@ -21,7 +21,7 @@ export default async function DashboardLayout({
                 {/* Sidebar */}
                 <aside className="w-full md:w-64 shrink-0 space-y-6">
                     <div className="bg-slate-50 p-6 rounded-xl border border-slate-100">
-                        <div className="font-bold text-slate-800 mb-1">Olá, {user.name.split(" ")[0]}!</div>
+                        <div className="font-bold text-slate-800 mb-1">Olá, {user.name?.split(" ")[0] || "Usuário"}!</div>
                         <div className="text-xs text-slate-500 truncate">{user.email}</div>
                     </div>
 
