@@ -113,7 +113,7 @@ export default function FerramentasPage() {
 
       // Carrega ferramentas já ativadas (TEMPORÁRIO: usuário de teste)
       const userTools = await getTestUserTools();
-      setPurchasedTools(userTools.map((ut) => ut.toolId));
+      setPurchasedTools(userTools.map((ut: any) => ut.toolId));
     } catch (error) {
       console.error(error);
       toast.error("Erro ao carregar ferramentas");
