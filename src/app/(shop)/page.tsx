@@ -36,7 +36,7 @@ export default async function HomePage() {
             description: (p as any).description || "",
             price: Number(p.price),
             images: p.images?.map(img => img.url) || [],
-            categoryId: p.categoryId,
+            categoryId: (p as any).categoryId,
             category: p.category ? {
                 id: p.category.id,
                 name: p.category.name,
@@ -67,7 +67,7 @@ export default async function HomePage() {
             description: (p as any).description || "",
             price: Number(p.price),
             images: p.images?.map(img => img.url) || [],
-            categoryId: p.categoryId,
+            categoryId: (p as any).categoryId,
             category: p.category ? {
                 id: p.category.id,
                 name: p.category.name,
