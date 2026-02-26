@@ -292,7 +292,7 @@ export function PdvManager({ initialProducts, sellers = [] }: PdvManagerProps) {
 
                             {/* Seller Select */}
                             <div className="flex items-center gap-2">
-                                <User className={`w-5 h-5 ${!selectedSellerId ? "text-red-500" : "text-zinc-400"}`} />
+                                <User className="w-5 h-5 text-black dark:text-white" />
                                 {sellers.length > 0 ? (
                                     <Select value={selectedSellerId} onValueChange={setSelectedSellerId}>
                                         <SelectTrigger className={`w-[180px] h-14 bg-zinc-50 dark:bg-zinc-800 ${
