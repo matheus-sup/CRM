@@ -129,7 +129,7 @@ export default async function OrderDetailsPage({ params }: { params: { id: strin
                             <div className="font-medium flex items-center gap-2">
                                 <Truck className="h-4 w-4" />
                                 {order.shippingTitle || "Entrega Padrão"}
-                                {order.shippingCost > 0 && ` - ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(order.shippingCost))}`}
+                                {Number(order.shippingCost) > 0 && ` - ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(order.shippingCost))}`}
                             </div>
                         </div>
                         <Separator />
