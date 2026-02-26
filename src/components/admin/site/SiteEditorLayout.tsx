@@ -74,6 +74,8 @@ const getSectionLabel = (key: string) => {
 
 import { ModernHome } from "@/components/shop/modern/ModernHome";
 import { ThemeInjector } from "@/components/theme-injector";
+import { CardapioPreview } from "@/components/admin/site/CardapioPreview";
+import { ProductDetailPreview } from "@/components/admin/site/ProductDetailPreview";
 
 interface SiteEditorLayoutProps {
     config: any;
@@ -82,9 +84,10 @@ interface SiteEditorLayoutProps {
     categories?: any[];
     brands?: any[];
     menus?: any[];
+    deliveryCategories?: any[];
 }
 
-export function SiteEditorLayout({ config, banners, products, categories = [], brands = [], menus = [] }: SiteEditorLayoutProps) {
+export function SiteEditorLayout({ config, banners, products, categories = [], brands = [], menus = [], deliveryCategories = [] }: SiteEditorLayoutProps) {
     const searchParams = useSearchParams();
     const router = useRouter();
     const pathname = usePathname();
@@ -264,17 +267,28 @@ export function SiteEditorLayout({ config, banners, products, categories = [], b
     const [fullScreenPreview, setFullScreenPreview] = useState(false);
     const [mobileEditMode, setMobileEditMode] = useState(false);
     const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
+    const [previewPage, setPreviewPage] = useState<'home' | 'product' | 'products' | 'cart'>('home');
     const [isPublishing, startPublish] = useTransition();
     const [isDiscarding, startDiscard] = useTransition();
+
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error'; visible: boolean } | null>(null);
+
+    const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+        setToast({ message, type, visible: true });
+        setTimeout(() => {
+            setToast(prev => prev ? { ...prev, visible: false } : null);
+            setTimeout(() => setToast(null), 400);
+        }, 2000);
+    };
 
     const handlePublish = () => {
         startPublish(async () => {
             const res = await publishStoreConfig();
             if (res.success) {
-                alert("Site publicado com sucesso!");
-                window.location.reload();
+                showToast("Site publicado com sucesso!", "success");
+                setTimeout(() => window.location.reload(), 2400);
             } else {
-                alert("Erro ao publicar: " + res.message);
+                showToast("Erro ao publicar: " + res.message, "error");
             }
         });
     };
@@ -294,6 +308,18 @@ export function SiteEditorLayout({ config, banners, products, categories = [], b
     };
 
     const previewRef = useRef<HTMLDivElement>(null);
+
+    // Auto-switch preview page based on active section
+    useEffect(() => {
+        if (activeSection === "products-detail") {
+            setPreviewPage("product");
+        } else if (activeSection === "home" || activeSection === "branding" || activeSection === "colors" || activeSection === "typography" || activeSection === "styles") {
+            // Keep current page or default to home for general settings
+            if (previewPage !== "home" && previewPage !== "product") {
+                setPreviewPage("home");
+            }
+        }
+    }, [activeSection]);
 
     // Highlight a specific block by its ID
     const highlightBlockById = (blockId: string) => {
@@ -357,6 +383,11 @@ export function SiteEditorLayout({ config, banners, products, categories = [], b
                 targetElement = container.querySelector('section[id*="products"]') ||
                                container.querySelector('[data-block-id*="products"]') ||
                                container.querySelector('[data-section="home"] .grid');
+                break;
+            case "products-detail":
+                // Product detail page container
+                targetElement = container.querySelector('[data-section="products-detail"]') ||
+                               container.querySelector('.container');
                 break;
             default:
                 // Try to find by block type in id or data-block-id
@@ -568,9 +599,9 @@ export function SiteEditorLayout({ config, banners, products, categories = [], b
                     </div>
                 );
             case "banners": return <SiteBanners banners={banners} />;
-            case "products-list": return <SiteProductListForm config={activeConfig} />;
-            case "products-detail": return <SiteProductDetailForm config={activeConfig} />;
-            case "cart": return <SiteCartForm config={activeConfig} />;
+            case "products-list": return <SiteProductListForm config={activeConfig} onConfigChange={handleConfigChange} />;
+            case "products-detail": return <SiteProductDetailForm config={activeConfig} onConfigChange={handleConfigChange} />;
+            case "cart": return <SiteCartForm config={activeConfig} onConfigChange={handleConfigChange} />;
             case "footer": return <SiteFooterForm config={activeConfig} menus={menus} categories={categories} onConfigChange={handleConfigChange} onHighlightComponent={highlightComponent} selectedBlockId={selectedFooterBlockId} />;
             case "contact": return <SiteContactForm config={activeConfig} onConfigChange={handleConfigChange} onHighlightComponent={highlightComponent} />;
             default: return <SiteBrandingForm config={activeConfig} />;
@@ -579,6 +610,26 @@ export function SiteEditorLayout({ config, banners, products, categories = [], b
 
     return (
         <div className="flex h-full bg-white overflow-hidden relative">
+            {/* Toast Notification */}
+            {toast && (
+                <div
+                    className="fixed top-6 left-1/2 z-[9999] pointer-events-none"
+                    style={{
+                        transform: `translateX(-50%) translateY(${toast.visible ? '0' : '-20px'})`,
+                        opacity: toast.visible ? 1 : 0,
+                        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                    }}
+                >
+                    <div className={cn(
+                        "flex items-center gap-2 px-5 py-3 rounded-lg shadow-lg text-sm font-medium text-white",
+                        toast.type === 'success' ? "bg-slate-800" : "bg-red-600"
+                    )}>
+                        {toast.type === 'success' && <Check className="h-4 w-4 text-green-400" />}
+                        {toast.message}
+                    </div>
+                </div>
+            )}
+
             <SiteBlockSidebar
                 isOpen={isBlockSidebarOpen}
                 onClose={() => setIsBlockSidebarOpen(false)}
@@ -740,7 +791,11 @@ export function SiteEditorLayout({ config, banners, products, categories = [], b
                                     <SidebarMenuItem
                                         label="Detalhe do produto"
                                         icon={ShoppingBag}
-                                        onClick={() => setSection("products-detail")}
+                                        onClick={() => {
+                                            setSection("products-detail");
+                                            setPreviewPage("product");
+                                            setTimeout(() => highlightComponent("products-detail"), 100);
+                                        }}
                                     />
                                     <SidebarMenuItem
                                         label="Carrinho de compras"
@@ -803,10 +858,34 @@ export function SiteEditorLayout({ config, banners, products, categories = [], b
             {/* Right Panel: Live Preview */}
             <div className={cn(
                 "flex-1 bg-slate-100 overflow-y-auto flex items-start justify-center relative transition-all duration-300",
-                fullScreenPreview ? "p-0" : "p-8"
+                fullScreenPreview ? "p-0" : "p-4"
             )}>
                 {!fullScreenPreview && (
                     <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+                        {/* Page Selector */}
+                        <div className="bg-white/80 backdrop-blur rounded-lg border shadow-sm flex items-center p-1 gap-1">
+                            <Button
+                                variant={previewPage === 'home' ? 'secondary' : 'ghost'}
+                                size="sm"
+                                className="h-8 text-xs gap-1.5"
+                                onClick={() => setPreviewPage('home')}
+                                title="Página Inicial"
+                            >
+                                <Home className="h-3.5 w-3.5" />
+                                Início
+                            </Button>
+                            <Button
+                                variant={previewPage === 'product' ? 'secondary' : 'ghost'}
+                                size="sm"
+                                className="h-8 text-xs gap-1.5"
+                                onClick={() => setPreviewPage('product')}
+                                title="Página de Produto"
+                            >
+                                <ShoppingBag className="h-3.5 w-3.5" />
+                                Produto
+                            </Button>
+                        </div>
+
                         {/* Device Toggles */}
                         <div className="bg-white/80 backdrop-blur rounded-lg border shadow-sm flex items-center p-1 gap-1">
                             <Button
@@ -845,9 +924,9 @@ export function SiteEditorLayout({ config, banners, products, categories = [], b
                     ref={previewRef}
                     className={cn(
                         "shadow-2xl overflow-auto border border-slate-200 origin-top transform transition-all duration-500",
-                        fullScreenPreview ? "w-full h-full rounded-none scale-100 border-0" : "min-h-[800px] max-h-[90vh] rounded-lg scale-[0.9]",
+                        fullScreenPreview ? "w-full h-full rounded-none scale-100 border-0" : "min-h-[800px] max-h-[90vh] rounded-lg",
                         /* Width override based on device */
-                        !fullScreenPreview && previewDevice === 'mobile' ? "w-[375px] border-slate-300 border-8 rounded-[3rem]" : (!fullScreenPreview && "w-full max-w-[1200px]")
+                        !fullScreenPreview && previewDevice === 'mobile' ? "w-[375px] border-slate-300 border-8 rounded-[3rem]" : (!fullScreenPreview && "w-full")
                     )}
                 >
                     {/* Preview Styles Injection */}
@@ -930,43 +1009,56 @@ export function SiteEditorLayout({ config, banners, products, categories = [], b
 
 
 
-                        {/* Header Preview */}
-                        <Header
-                            config={activeConfig}
-                            categories={categories}
-                            editorMode={activeSection === "header"}
-                            onFieldClick={(field) => setSelectedHeaderField({ field, timestamp: Date.now() })}
-                        />
+                        {/* Check if Cardápio theme - render CardapioPreview instead */}
+                        {activeConfig?.siteType === "cardapio" ? (
+                            <CardapioPreview config={activeConfig} deliveryCategories={deliveryCategories} />
+                        ) : (
+                            <>
+                                {/* Header Preview */}
+                                <Header
+                                    config={activeConfig}
+                                    categories={categories}
+                                    editorMode={activeSection === "header"}
+                                    onFieldClick={(field) => setSelectedHeaderField({ field, timestamp: Date.now() })}
+                                />
 
-                        {/* Page Content Preview - Use BlockRenderer for PageBuilder blocks, ModernHome for legacy */}
-                        <div className="min-h-screen" data-section="home">
-                            {(() => {
-                                const useBlockRenderer = blocks && blocks.length > 0 && blocks[0] && typeof blocks[0].type === 'string';
-                                console.log('Preview Mode:', { useBlockRenderer, blocksCount: blocks.length, firstBlock: blocks[0] });
+                                {/* Page Content Preview - Based on selected preview page */}
+                                <div className="min-h-screen" data-section={previewPage === 'product' ? 'products-detail' : 'home'}>
+                                    {previewPage === 'product' ? (
+                                        <ProductDetailPreview
+                                            config={activeConfig}
+                                            product={products?.[0]}
+                                            onSectionClick={(section) => setSection(section)}
+                                        />
+                                    ) : (
+                                        (() => {
+                                            const useBlockRenderer = blocks && blocks.length > 0 && blocks[0] && typeof blocks[0].type === 'string';
+                                            console.log('Preview Mode:', { useBlockRenderer, blocksCount: blocks.length, firstBlock: blocks[0] });
 
-                                return useBlockRenderer ? (
-                                    <BlockRenderer
-                                        blocks={blocks}
-                                        isAdmin={true}
-                                        products={products || []}
-                                        categories={categories || []}
-                                        brands={brands || []}
-                                        config={activeConfig}
-                                    />
-                                ) : (
-                                    <ModernHome
-                                        products={products || []}
-                                        banners={banners}
-                                        categories={categories || []}
-                                        brands={brands || []}
-                                        config={activeConfig}
-                                    />
-                                );
-                            })()}
-                        </div>
+                                            return useBlockRenderer ? (
+                                                <BlockRenderer
+                                                    blocks={blocks}
+                                                    isAdmin={true}
+                                                    products={products || []}
+                                                    categories={categories || []}
+                                                    brands={brands || []}
+                                                    config={activeConfig}
+                                                />
+                                            ) : (
+                                                <ModernHome
+                                                    products={products || []}
+                                                    banners={banners}
+                                                    categories={categories || []}
+                                                    brands={brands || []}
+                                                    config={activeConfig}
+                                                />
+                                            );
+                                        })()
+                                    )}
+                                </div>
 
-                        {/* Footer Preview - Use EditableFooter when editing footer section */}
-                        {activeSection === "footer" ? (
+                                {/* Footer Preview - Use EditableFooter when editing footer section */}
+                                {activeSection === "footer" ? (
                             <EditableFooter
                                 config={activeConfig}
                                 menus={menus}
@@ -1009,6 +1101,8 @@ export function SiteEditorLayout({ config, banners, products, categories = [], b
                             />
                         ) : (
                             <Footer config={activeConfig} menus={menus} />
+                        )}
+                            </>
                         )}
                     </div>
                 </div>

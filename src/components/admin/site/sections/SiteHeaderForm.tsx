@@ -187,10 +187,13 @@ export function SiteHeaderForm({ config, onConfigChange, menus = [], onHighlight
                                         ref={headerLogoWidthRef}
                                         name="headerLogoWidth"
                                         type="number"
-                                        defaultValue={config.headerLogoWidth || 120}
-                                        onChange={(e) => onConfigChange?.("headerLogoWidth", e.target.value)}
+                                        min={20}
+                                        max={80}
+                                        value={Math.min(80, Math.max(20, config.headerLogoWidth || 55))}
+                                        onChange={(e) => onConfigChange?.("headerLogoWidth", Math.min(80, Math.max(20, parseInt(e.target.value) || 55)))}
                                         className="transition-all rounded"
                                     />
+                                    <input type="range" min={20} max={80} value={Math.min(80, Math.max(20, config.headerLogoWidth || 55))} onChange={(e) => onConfigChange?.("headerLogoWidth", parseInt(e.target.value))} className="w-full h-1.5 accent-blue-600 cursor-pointer" />
                                 </div>
                                 <div className="space-y-1">
                                     <Label>Texto Alternativo (Se logo oculto)</Label>
@@ -249,19 +252,6 @@ export function SiteHeaderForm({ config, onConfigChange, menus = [], onHighlight
                                         onChange={(val) => onConfigChange?.("menuColor", val)}
                                     />
                                 </div>
-                                <ColorPickerInput
-                                    id="headerBtnBg"
-                                    label="Botão de Destaque (Fundo)"
-                                    value={(config as any).headerBtnBg || config.themeColor || "#db2777"}
-                                    onChange={(val) => onConfigChange?.("headerBtnBg", val)}
-                                />
-                                <ColorPickerInput
-                                    id="headerBtnText"
-                                    label="Botão de Destaque (Texto)"
-                                    value={(config as any).headerBtnText || "#ffffff"}
-                                    onChange={(val) => onConfigChange?.("headerBtnText", val)}
-                                />
-
                                 <div className="border-t my-2 pt-2">
                                     <Label className="text-xs text-slate-500 mb-2 block">Links do Menu</Label>
                                     <div className="grid gap-2">
@@ -279,42 +269,6 @@ export function SiteHeaderForm({ config, onConfigChange, menus = [], onHighlight
                                         />
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-
-                        {/* Cores Secundárias */}
-                        <div className="space-y-3">
-                            <Label className="font-semibold text-slate-700 flex items-center gap-2">
-                                <span className="h-2 w-2 rounded-full bg-pink-500" />
-                                Elementos (Busca & Carrinho)
-                            </Label>
-                            <div className="grid gap-3 p-3 bg-white rounded-lg border shadow-sm">
-                                <div ref={cartCountBgRef} className="transition-all rounded">
-                                    <ColorPickerInput
-                                        id="cartCountBg"
-                                        label="Fundo Badge Carrinho"
-                                        value={config.cartCountBg || "#22c55e"}
-                                        onChange={(val) => onConfigChange?.("cartCountBg", val)}
-                                    />
-                                </div>
-                                <ColorPickerInput
-                                    id="cartCountText"
-                                    label="Texto Badge Carrinho"
-                                    value={config.cartCountText || "#ffffff"}
-                                    onChange={(val) => onConfigChange?.("cartCountText", val)}
-                                />
-                                <ColorPickerInput
-                                    id="searchBtnBg"
-                                    label="Fundo Botão Pesquisa"
-                                    value={config.searchBtnBg || "#db2777"}
-                                    onChange={(val) => onConfigChange?.("searchBtnBg", val)}
-                                />
-                                <ColorPickerInput
-                                    id="searchIconColor"
-                                    label="Ícone Botão Pesquisa"
-                                    value={config.searchIconColor || "#ffffff"}
-                                    onChange={(val) => onConfigChange?.("searchIconColor", val)}
-                                />
                             </div>
                         </div>
 

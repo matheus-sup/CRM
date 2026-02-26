@@ -1,5 +1,7 @@
 import { PdvManager } from "@/components/admin/pdv/PdvManager";
+import { DownloadPdvButton } from "@/components/admin/pdv/DownloadPdvButton";
 import { getProducts } from "@/lib/actions/product";
+import { getSellers } from "@/lib/actions/seller";
 
 export default async function PdvPage() {
     // Fetch products for PDV
@@ -17,15 +19,16 @@ export default async function PdvPage() {
         console.error("Failed to load products for PDV", error);
     }
 
+    // Fetch sellers
+    const sellers = await getSellers();
+
     return (
-        <div className="p-6">
-            <div className="flex items-center gap-4 mb-6">
-                <h1 className="text-2xl font-bold text-slate-800">PDV (Frente de Caixa)</h1>
-                <a href="/pdv" target="_blank" className="inline-flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors text-sm font-medium">
-                    Download PDV
-                </a>
+        <div className="p-4">
+            <div className="flex items-center gap-4 mb-4">
+                <h1 className="text-xl font-bold text-slate-800">PDV (Frente de Caixa)</h1>
+                <DownloadPdvButton />
             </div>
-            <PdvManager initialProducts={products} />
+            <PdvManager initialProducts={products} sellers={sellers} />
         </div>
     );
 }

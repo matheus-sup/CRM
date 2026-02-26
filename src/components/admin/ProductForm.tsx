@@ -19,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { upsertProduct, deleteProduct } from "@/lib/actions/product"; // Server Action
 import React, { useState, useTransition } from "react";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Upload, AlertCircle, Plus, Trash2 } from "lucide-react";
+import { Loader2, Upload, Plus, Trash2 } from "lucide-react";
 import { StatusFeedback } from "@/components/admin/StatusFeedback";
 import { createCategory, deleteCategory } from "@/lib/actions/category";
 import { createBrand, deleteBrand, getAllBrands } from "@/lib/actions/brands-management";
@@ -27,6 +27,119 @@ import { Check, ChevronsUpDown } from "lucide-react";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { X } from "lucide-react";
+
+// Tipo para uma medida individual
+interface Measurement {
+    id: string;
+    title: string;
+    value: string;
+    unit: "cm" | "mm";
+}
+
+// Componente para gerenciar medidas
+function MeasurementsField({ value, onChange }: { value?: string; onChange: (value: string) => void }) {
+    const [measurements, setMeasurements] = useState<Measurement[]>(() => {
+        if (!value) return [];
+        try {
+            return JSON.parse(value);
+        } catch {
+            return [];
+        }
+    });
+
+    const addMeasurement = () => {
+        const newMeasurement: Measurement = {
+            id: Date.now().toString(),
+            title: "",
+            value: "",
+            unit: "cm",
+        };
+        const updated = [...measurements, newMeasurement];
+        setMeasurements(updated);
+        onChange(JSON.stringify(updated));
+    };
+
+    const updateMeasurement = (id: string, field: keyof Measurement, newValue: string) => {
+        const updated = measurements.map((m) =>
+            m.id === id ? { ...m, [field]: newValue } : m
+        );
+        setMeasurements(updated);
+        onChange(JSON.stringify(updated));
+    };
+
+    const removeMeasurement = (id: string) => {
+        const updated = measurements.filter((m) => m.id !== id);
+        setMeasurements(updated);
+        onChange(JSON.stringify(updated));
+    };
+
+    return (
+        <div className="space-y-4">
+            {measurements.length > 0 && (
+                <div className="space-y-3">
+                    {measurements.map((measurement) => (
+                        <div
+                            key={measurement.id}
+                            className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border"
+                        >
+                            <Input
+                                placeholder="Título (ex: Busto, Cintura)"
+                                value={measurement.title}
+                                onChange={(e) => updateMeasurement(measurement.id, "title", e.target.value)}
+                                className="flex-1 bg-white"
+                            />
+                            <Input
+                                type="number"
+                                placeholder="0"
+                                value={measurement.value}
+                                onChange={(e) => updateMeasurement(measurement.id, "value", e.target.value)}
+                                className="w-24 bg-white"
+                            />
+                            <Select
+                                value={measurement.unit}
+                                onValueChange={(v) => updateMeasurement(measurement.id, "unit", v)}
+                            >
+                                <SelectTrigger className="w-20 bg-white">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="cm">cm</SelectItem>
+                                    <SelectItem value="mm">mm</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => removeMeasurement(measurement.id)}
+                                className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                            >
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            <Button
+                type="button"
+                variant="outline"
+                onClick={addMeasurement}
+                className="w-full border-dashed"
+            >
+                <Plus className="h-4 w-4 mr-2" />
+                Adicionar Medida
+            </Button>
+
+            {measurements.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center">
+                    Clique em "Adicionar Medida" para incluir as medidas do produto.
+                </p>
+            )}
+        </div>
+    );
+}
 
 const formSchema = z.object({
     name: z.string().min(2, "Nome obrigatório"),
@@ -37,7 +150,7 @@ const formSchema = z.object({
     stock: z.coerce.number().min(0, "Estoque inválido"),
     sku: z.string().optional(),
     barcode: z.string().optional(),
-    categoryId: z.string().optional(),
+    categoryId: z.string().min(1, "Categoria obrigatória"),
     isNewArrival: z.boolean().default(false),
     brandId: z.string().optional(),
     videoUrl: z.string().optional().or(z.literal("")),
@@ -45,9 +158,9 @@ const formSchema = z.object({
     length: z.string().optional(),
     width: z.string().optional(),
     height: z.string().optional(),
+    measurements: z.string().optional(),
     seoTitle: z.string().optional(),
     seoDescription: z.string().optional(),
-    expiresAt: z.string().optional(),
 });
 
 type ProductFormValues = z.infer<typeof formSchema>;
@@ -75,33 +188,40 @@ export function ProductForm({ categories = [], initialData }: { categories?: any
             length: initialData?.length ? String(initialData.length) : "",
             width: initialData?.width ? String(initialData.width) : "",
             height: initialData?.height ? String(initialData.height) : "",
+            measurements: initialData?.measurements || "",
             seoTitle: initialData?.seoTitle || "",
             seoDescription: initialData?.seoDescription || "",
-            expiresAt: initialData?.expiresAt ? new Date(initialData.expiresAt).toISOString().split("T")[0] : "",
         },
     });
 
     // Image Handling State
     const fileInputRef = React.useRef<HTMLInputElement>(null);
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-    const [previewUrls, setPreviewUrls] = useState<string[]>(
-        initialData?.images?.map((img: any) => img.url) || []
+    // Track existing images separately (id + url)
+    const [existingImages, setExistingImages] = useState<{ id: string; url: string }[]>(
+        initialData?.images?.map((img: any) => ({ id: img.id, url: img.url })) || []
     );
+    // Preview URLs for new files only
+    const [newFilePreviewUrls, setNewFilePreviewUrls] = useState<string[]>([]);
 
     function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
         if (e.target.files && e.target.files.length > 0) {
             const newFiles = Array.from(e.target.files);
             setSelectedFiles((prev) => [...prev, ...newFiles]);
 
-            // Create previews
+            // Create previews for new files
             const newUrls = newFiles.map(file => URL.createObjectURL(file));
-            setPreviewUrls((prev) => [...prev, ...newUrls]);
+            setNewFilePreviewUrls((prev) => [...prev, ...newUrls]);
         }
     }
 
-    function removeFile(index: number) {
+    function removeExistingImage(imageId: string) {
+        setExistingImages((prev) => prev.filter((img) => img.id !== imageId));
+    }
+
+    function removeNewFile(index: number) {
         setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
-        setPreviewUrls((prev) => prev.filter((_, i) => i !== index));
+        setNewFilePreviewUrls((prev) => prev.filter((_, i) => i !== index));
     }
 
     // Brand State
@@ -146,9 +266,14 @@ export function ProductForm({ categories = [], initialData }: { categories?: any
                         }
                     });
 
-                    // Append Images
+                    // Append new images
                     selectedFiles.forEach((file) => {
                         formData.append("images", file);
+                    });
+
+                    // Append IDs of existing images to keep
+                    existingImages.forEach((img) => {
+                        formData.append("keepImageIds", img.id);
                     });
 
                     if (initialData?.id) {
@@ -256,7 +381,7 @@ export function ProductForm({ categories = [], initialData }: { categories?: any
                         name="name"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Nome</FormLabel>
+                                <FormLabel>Nome *</FormLabel>
                                 <FormControl>
                                     <Input placeholder="Ex: Batom Matte Vermelho" {...field} />
                                 </FormControl>
@@ -278,9 +403,6 @@ export function ProductForm({ categories = [], initialData }: { categories?: any
                                         {...field}
                                     />
                                 </FormControl>
-                                <FormDescription className="text-xs text-right">
-                                    Gerar com IA (Simulado)
-                                </FormDescription>
                                 <FormMessage />
                             </FormItem>
                         )}
@@ -313,15 +435,29 @@ export function ProductForm({ categories = [], initialData }: { categories?: any
                         <span className="text-xs text-muted-foreground">Clique para selecionar fotos do produto</span>
                     </div>
 
-                    {/* Previews */}
-                    {previewUrls.length > 0 && (
+                    {/* Previews - Existing Images */}
+                    {(existingImages.length > 0 || newFilePreviewUrls.length > 0) && (
                         <div className="grid grid-cols-4 gap-4 mt-4">
-                            {previewUrls.map((url, index) => (
-                                <div key={index} className="relative aspect-square border rounded-lg overflow-hidden bg-gray-100 group">
-                                    <img src={url} alt={`Preview ${index}`} className="w-full h-full object-cover" />
+                            {/* Existing images */}
+                            {existingImages.map((img) => (
+                                <div key={img.id} className="relative aspect-square border rounded-lg overflow-hidden bg-gray-100 group">
+                                    <img src={img.url} alt="Imagem existente" className="w-full h-full object-cover" />
                                     <button
                                         type="button"
-                                        onClick={() => removeFile(index)}
+                                        onClick={() => removeExistingImage(img.id)}
+                                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                        <div className="h-3 w-3 flex items-center justify-center">x</div>
+                                    </button>
+                                </div>
+                            ))}
+                            {/* New file previews */}
+                            {newFilePreviewUrls.map((url, index) => (
+                                <div key={`new-${index}`} className="relative aspect-square border rounded-lg overflow-hidden bg-gray-100 group">
+                                    <img src={url} alt={`Nova imagem ${index + 1}`} className="w-full h-full object-cover" />
+                                    <button
+                                        type="button"
+                                        onClick={() => removeNewFile(index)}
                                         className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                                     >
                                         <div className="h-3 w-3 flex items-center justify-center">x</div>
@@ -423,6 +559,15 @@ export function ProductForm({ categories = [], initialData }: { categories?: any
                     </div>
                 </div>
 
+                {/* Medidas da Peça */}
+                <div className="bg-white p-6 rounded-lg border shadow-sm space-y-6">
+                    <h2 className="font-bold text-lg mb-4">Medidas da Peça</h2>
+                    <MeasurementsField
+                        value={form.watch("measurements")}
+                        onChange={(value) => form.setValue("measurements", value)}
+                    />
+                </div>
+
                 {/* Organization & Media Extra */}
                 <div className="bg-white p-6 rounded-lg border shadow-sm space-y-6">
                     <h2 className="font-bold text-lg mb-4">Organização e Mídia</h2>
@@ -444,7 +589,7 @@ export function ProductForm({ categories = [], initialData }: { categories?: any
 
                             return (
                                 <FormItem>
-                                    <FormLabel>Categoria</FormLabel>
+                                    <FormLabel>Categoria *</FormLabel>
                                     <div className="flex gap-2">
                                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                                             <FormControl><SelectTrigger className="flex-1"><SelectValue placeholder="Selecione..." /></SelectTrigger></FormControl>
@@ -622,7 +767,13 @@ export function ProductForm({ categories = [], initialData }: { categories?: any
                     </div>
                 </div>
 
-
+                {/* Bottom Save Button */}
+                <div className="flex justify-end py-4 border-t">
+                    <Button type="submit" disabled={isPending}>
+                        {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {initialData ? "Salvar Alterações" : "Criar Produto"}
+                    </Button>
+                </div>
 
             </form>
         </Form>

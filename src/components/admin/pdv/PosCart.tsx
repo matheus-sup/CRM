@@ -1,5 +1,5 @@
 import { formatCurrency } from "@/lib/utils";
-import { Trash2, ShoppingCart, CreditCard, Banknote, QrCode } from "lucide-react";
+import { Trash2, ShoppingCart, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -11,15 +11,25 @@ interface CartItem {
     image?: string;
 }
 
+interface Seller {
+    id: string;
+    name: string;
+    email: string | null;
+    phone: string | null;
+    isActive: boolean;
+}
+
 interface PosCartProps {
     items: CartItem[];
     onRemoveItem: (index: number) => void;
     onUpdateQuantity: (index: number, delta: number) => void;
     onCheckout: () => void;
     onClearCart: () => void;
+    selectedSeller?: Seller | null;
+    customerName?: string;
 }
 
-export function PosCart({ items, onRemoveItem, onUpdateQuantity, onCheckout, onClearCart }: PosCartProps) {
+export function PosCart({ items, onRemoveItem, onUpdateQuantity, onCheckout, onClearCart, selectedSeller, customerName }: PosCartProps) {
     const total = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
     return (
@@ -46,9 +56,9 @@ export function PosCart({ items, onRemoveItem, onUpdateQuantity, onCheckout, onC
                 {items.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-64 text-zinc-400 gap-4 mt-20">
                         <ShoppingCart className="w-16 h-16 opacity-20" />
-                        <p className="text-lg">Seu carrinho está vazio</p>
+                        <p className="text-lg">Carrinho vazio</p>
                         <p className="text-sm text-center max-w-[200px] opacity-60">
-                            Selecione produtos na grade ou use o leitor de código de barras.
+                            Digite o código do produto ou escaneie o código de barras
                         </p>
                     </div>
                 ) : (
@@ -92,7 +102,27 @@ export function PosCart({ items, onRemoveItem, onUpdateQuantity, onCheckout, onC
                 )}
             </ScrollArea>
 
-            <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/50 space-y-4">
+            <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/50 space-y-3">
+                {/* Customer Name */}
+                {customerName && (
+                    <div className="flex items-center gap-2 p-2 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-100 dark:border-green-800">
+                        <User className="w-4 h-4 text-green-600" />
+                        <span className="text-sm font-medium text-green-700 dark:text-green-300">
+                            Cliente: {customerName}
+                        </span>
+                    </div>
+                )}
+
+                {/* Selected Seller */}
+                {selectedSeller && (
+                    <div className="flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
+                        <User className="w-4 h-4 text-blue-600" />
+                        <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                            Vendedor: {selectedSeller.name}
+                        </span>
+                    </div>
+                )}
+
                 <div className="space-y-2">
                     <div className="flex justify-between text-sm text-zinc-500">
                         <span>Subtotal</span>

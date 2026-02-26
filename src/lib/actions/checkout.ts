@@ -3,6 +3,8 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { processPayment } from "@/lib/gateways/payment";
+import { recordSaleMovement } from "./stock-movement";
+import { consumeBatchesFEFO } from "./batch";
 
 interface CreateOrderParams {
     customer: {
@@ -81,10 +83,16 @@ export async function createOrder(data: CreateOrderParams) {
 
         // 3. Create Order & Update Stock Transaction
         const order = await prisma.$transaction(async (tx) => {
-            // Check and Decrement Stock
+            // Check and Decrement Stock (with FEFO for perishable products)
             for (const item of data.items) {
                 const product = await tx.product.findUnique({
-                    where: { id: item.id }
+                    where: { id: item.id },
+                    include: {
+                        batches: {
+                            where: { quantity: { gt: 0 } },
+                            orderBy: { expiresAt: "asc" }
+                        }
+                    }
                 });
 
                 if (!product) {
@@ -95,10 +103,42 @@ export async function createOrder(data: CreateOrderParams) {
                     throw new Error(`Estoque insuficiente para: ${item.name}. Disponível: ${product.stock}`);
                 }
 
-                await tx.product.update({
-                    where: { id: item.id },
-                    data: { stock: { decrement: item.quantity } }
-                });
+                if (product.isPerishable && product.batches.length > 0) {
+                    // FEFO: Consume from oldest expiring batches first
+                    let remaining = item.quantity;
+                    const consumedBatches: { batchId: string; qty: number; expiresAt: Date }[] = [];
+
+                    for (const batch of product.batches) {
+                        if (remaining <= 0) break;
+
+                        const consume = Math.min(batch.quantity, remaining);
+
+                        await tx.productBatch.update({
+                            where: { id: batch.id },
+                            data: { quantity: { decrement: consume } }
+                        });
+
+                        consumedBatches.push({
+                            batchId: batch.id,
+                            qty: consume,
+                            expiresAt: batch.expiresAt
+                        });
+
+                        remaining -= consume;
+                    }
+
+                    // Decrement total product stock
+                    await tx.product.update({
+                        where: { id: item.id },
+                        data: { stock: { decrement: item.quantity } }
+                    });
+                } else {
+                    // Non-perishable: just decrement stock
+                    await tx.product.update({
+                        where: { id: item.id },
+                        data: { stock: { decrement: item.quantity } }
+                    });
+                }
             }
             return await tx.order.create({
                 data: {
@@ -142,14 +182,26 @@ export async function createOrder(data: CreateOrderParams) {
             });
         });
 
-        // 4. Process Payment (Mock or Real)
+        // 4. Record Stock Movement History
+        await recordSaleMovement(
+            data.items.map((item) => ({
+                productId: item.id,
+                quantity: item.quantity,
+                price: item.price,
+                name: item.name,
+            })),
+            order.id,
+            order.code
+        );
+
+        // 5. Process Payment (Mock or Real)
         const paymentResult = await processPayment(
             { id: order.id, code: order.code, total: data.total, customer: data.customer },
             data.paymentMethod,
             data.cardInfo
         );
 
-        // 5. Update Order with Payment Result
+        // 6. Update Order with Payment Result
         await prisma.order.update({
             where: { id: order.id },
             data: {

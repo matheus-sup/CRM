@@ -1,20 +1,39 @@
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { format, subDays } from "date-fns";
+import { format, parse, startOfDay, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { DollarSign, ShoppingBag, Package, Users, Store, Globe, Trophy, CheckCircle2, Circle } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { TopCustomers } from "@/components/admin/dashboard/top-customers";
+import { DashboardHeader } from "@/components/admin/dashboard/DashboardHeader";
+import { SellersCard } from "@/components/admin/dashboard/SellersCard";
 
-export default async function AdminDashboardPage() {
+interface PageProps {
+    searchParams: Promise<{ from?: string; to?: string }>;
+}
+
+export default async function AdminDashboardPage({ searchParams }: PageProps) {
+    const params = await searchParams;
+    const fromDate = params.from ? parse(params.from, "yyyy-MM-dd", new Date()) : null;
+    const toDate = params.to ? parse(params.to, "yyyy-MM-dd", new Date()) : null;
+
+    // Build date filter
+    const dateFilter = fromDate && toDate ? {
+        createdAt: {
+            gte: startOfDay(fromDate),
+            lte: endOfDay(toDate)
+        }
+    } : {};
+
     // 1. Fetch Data
-    const totalOrders = await prisma.order.count();
+    const totalOrders = await prisma.order.count({ where: dateFilter });
     const activeProducts = await prisma.product.count({ where: { status: "ACTIVE" } });
 
-    // Fetch all orders
+    // Fetch all orders with date filter
     const allOrders = await prisma.order.findMany({
-        include: { customer: true },
+        where: dateFilter,
+        include: { customer: true, seller: true },
         orderBy: { createdAt: 'desc' },
         take: 1000
     });
@@ -55,35 +74,45 @@ export default async function AdminDashboardPage() {
         .sort((a, b) => b.totalSpent - a.totalSpent)
         .slice(0, 5);
 
-    // 4. Recommendations Logic (Mocked for now)
+    // 4. Sellers Logic
+    const sellerMap = new Map<string, { id: string; name: string; total: number }>();
+    validOrders.forEach(order => {
+        if (!order.sellerId || !order.seller) return;
+        const sid = order.sellerId;
+        if (!sellerMap.has(sid)) {
+            sellerMap.set(sid, {
+                id: sid,
+                name: order.seller.name,
+                total: 0
+            });
+        }
+        const s = sellerMap.get(sid)!;
+        s.total += Number(order.total);
+    });
+
+    const sellerSales = Array.from(sellerMap.values())
+        .sort((a, b) => b.total - a.total)
+        .slice(0, 5);
+
+    // 5. Recommendations Logic (Mocked for now)
     const recommendations = [
-        { id: 1, title: "Configure o domínio personalizado", completed: false, link: "/admin/configuracoes" },
+        { id: 1, title: "Preferência de login", completed: false, link: "/admin/configuracoes" },
         { id: 2, title: "Adicione seu primeiro produto", completed: activeProducts > 0, link: "/admin/produtos/novo" },
-        { id: 3, title: "Conecte o Instagram Shopping", completed: false, link: "/admin/site" },
-        { id: 4, title: "Defina os métodos de envio", completed: false, link: "/admin/envios" },
     ];
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold text-slate-800">Dashboard</h1>
-                    <p className="text-slate-500">Acompanhe suas vendas online e física.</p>
-                </div>
-                <div className="flex gap-2">
-                    <Button variant="outline" size="sm">Últimos 30 dias</Button>
-                </div>
-            </div>
+            <DashboardHeader />
 
             {/* KPI Cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <div className="p-8 bg-linear-to-br from-blue-600 to-indigo-700 text-white rounded-3xl shadow-xl mb-10 relative overflow-hidden">
+                <div className="p-8 bg-linear-to-br from-gray-200 to-gray-300 text-gray-800 rounded-3xl shadow-xl mb-10 relative overflow-hidden">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-blue-700">Receita Total</CardTitle>
-                        <DollarSign className="h-4 w-4 text-blue-500" />
+                        <CardTitle className="text-sm font-medium text-gray-600">Receita Total</CardTitle>
+                        <DollarSign className="h-4 w-4 text-gray-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-blue-900">
+                        <div className="text-2xl font-bold text-gray-900">
                             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalRevenue)}
                         </div>
                         <div className="flex justify-between text-xs mt-2 text-muted-foreground">
@@ -107,7 +136,7 @@ export default async function AdminDashboardPage() {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Ticket Médio</CardTitle>
-                        <Users className="h-4 w-4 text-muted-foreground" />
+                        <DollarSign className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">
@@ -115,18 +144,7 @@ export default async function AdminDashboardPage() {
                         </div>
                     </CardContent>
                 </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Clientes Ativos</CardTitle>
-                        <Trophy className="h-4 w-4 text-yellow-500" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{customerMap.size}</div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                            Compraram este mês
-                        </p>
-                    </CardContent>
-                </Card>
+                <SellersCard sellers={sellerSales} />
             </div>
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">

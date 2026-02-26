@@ -152,6 +152,12 @@
     font-family: var(--font-menu, var(--font-sans));
     color: var(--color-menu, var(--foreground));
   }
+
+  /* Remove outline from header nav links */
+  [data-section="header"] a,
+  [data-section="header"] button {
+    outline: none !important;
+  }
 }
 
 /* Rich Text Editor Styles */

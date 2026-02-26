@@ -2,125 +2,158 @@
 
 import { PageBlock } from "@/types/page-builder";
 import { HtmlBlock } from "./blocks/HtmlBlock";
+import { SchedulingBlock } from "./blocks/SchedulingBlock";
 import { cn } from "@/lib/utils";
 import { Instagram, MapPin, Megaphone, ChevronLeft, ChevronRight } from "lucide-react";
 import { ProductCard } from "@/components/shop/ProductCard";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import Image from "next/image";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 // =============================================================================
 // HERO BLOCK - Multiple variants
 // =============================================================================
 const HeroBlock = ({ content, styles, variant }: { content: any, styles: any, variant?: string }) => {
-    const blockVariant = variant || styles.variant || "default"; // default, minimal, split, video
+    const blockVariant = variant || styles.variant || "default";
 
     switch (blockVariant) {
         case "minimal":
             return <HeroMinimal content={content} styles={styles} />;
         case "split":
             return <HeroSplit content={content} styles={styles} />;
-        case "video":
-            return <HeroVideo content={content} styles={styles} />;
+        case "restaurant":
+            return <HeroRestaurant content={content} styles={styles} />;
         case "default":
         default:
             return <HeroDefault content={content} styles={styles} />;
     }
 };
 
-// Shared hook for carousel
+// Shared hook for carousel with smooth transitions
 function useHeroCarousel(content: any) {
     const slides = content.slides || [{ id: "default", title: content.title || "Banner", subtitle: content.subtitle, buttonText: content.buttonText, buttonLink: content.buttonLink || "/produtos" }];
     const [currentSlide, setCurrentSlide] = useState(0);
+    const [isTransitioning, setIsTransitioning] = useState(false);
+    const [slideDirection, setSlideDirection] = useState<"next" | "prev">("next");
     const autoplay = content.autoplay || false;
     const autoplayInterval = (content.autoplayInterval || 5) * 1000;
+    const transition = content.transition || "fade";
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    const goToSlide = useCallback((i: number, direction?: "next" | "prev") => {
+        if (isTransitioning || i === currentSlide) return;
+        setSlideDirection(direction || (i > currentSlide ? "next" : "prev"));
+        setIsTransitioning(true);
+        timeoutRef.current = setTimeout(() => {
+            setCurrentSlide(i);
+            setTimeout(() => setIsTransitioning(false), 50);
+        }, transition === "none" ? 0 : 300);
+    }, [currentSlide, isTransitioning, transition]);
+
+    const nextSlide = useCallback(() => {
+        const next = (currentSlide + 1) % slides.length;
+        goToSlide(next, "next");
+    }, [currentSlide, slides.length, goToSlide]);
+
+    const prevSlide = useCallback(() => {
+        const prev = (currentSlide - 1 + slides.length) % slides.length;
+        goToSlide(prev, "prev");
+    }, [currentSlide, slides.length, goToSlide]);
 
     useEffect(() => {
         if (!autoplay || slides.length <= 1) return;
-        const interval = setInterval(() => setCurrentSlide((prev) => (prev + 1) % slides.length), autoplayInterval);
+        const interval = setInterval(nextSlide, autoplayInterval);
         return () => clearInterval(interval);
-    }, [autoplay, autoplayInterval, slides.length]);
+    }, [autoplay, autoplayInterval, slides.length, nextSlide]);
+
+    useEffect(() => {
+        return () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); };
+    }, []);
 
     return {
         slides,
         currentSlide,
         currentSlideData: slides[currentSlide],
-        nextSlide: () => setCurrentSlide((prev) => (prev + 1) % slides.length),
-        prevSlide: () => setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length),
-        goToSlide: (i: number) => setCurrentSlide(i)
+        nextSlide,
+        prevSlide,
+        goToSlide: (i: number) => goToSlide(i),
+        isTransitioning,
+        slideDirection,
+        transition,
     };
 }
 
-// DEFAULT - Classic centered/aligned hero with carousel support
-function HeroDefault({ content, styles }: any) {
-    const { slides, currentSlide, currentSlideData, nextSlide, prevSlide, goToSlide } = useHeroCarousel(content);
-    const alignClass = styles.textAlign === 'left' ? 'items-start text-left' : styles.textAlign === 'right' ? 'items-end text-right' : 'items-center text-center';
+// Transition wrapper component
+function SlideTransition({ isTransitioning, transition, slideDirection, children }: { isTransitioning: boolean; transition: string; slideDirection: string; children: React.ReactNode }) {
+    if (transition === "none") return <>{children}</>;
 
-    return (
-        <div className="w-full relative">
-            <div className={cn("w-full flex flex-col justify-center pt-24 md:pt-32 pb-12 transition-all duration-500", alignClass)}>
-                <h1
-                    data-field="title"
-                    className="text-4xl md:text-6xl font-extrabold tracking-tight mb-4 drop-shadow-sm cursor-pointer hover:opacity-80 transition-opacity"
-                    style={{ color: styles.titleColor || styles.textColor || "#000000" }}
-                >
-                    {currentSlideData.title}
-                </h1>
-                {currentSlideData.subtitle && (
-                    <p
-                        data-field="subtitle"
-                        className="text-lg md:text-xl opacity-90 max-w-2xl font-medium cursor-pointer hover:opacity-70 transition-opacity"
-                        style={{ color: styles.textColor || "#000000" }}
-                    >
-                        {currentSlideData.subtitle}
-                    </p>
-                )}
-                {currentSlideData.buttonText && (
-                    <Link href={currentSlideData.buttonLink || "/produtos"}>
-                        <button
-                            data-field="buttonText"
-                            className="mt-8 px-8 py-3 rounded-full font-bold transition-transform hover:scale-105 shadow-lg cursor-pointer"
-                            style={{ backgroundColor: styles.buttonColor || "#ffffff", color: styles.buttonTextColor || "#000000" }}
-                        >
-                            {currentSlideData.buttonText}
-                        </button>
-                    </Link>
-                )}
+    if (transition === "slide") {
+        const transform = isTransitioning
+            ? (slideDirection === "next" ? "translateX(-30px)" : "translateX(30px)")
+            : "translateX(0)";
+        return (
+            <div style={{
+                opacity: isTransitioning ? 0 : 1,
+                transform,
+                transition: "opacity 0.4s ease, transform 0.4s ease",
+            }}>
+                {children}
             </div>
-            {slides.length > 1 && (
-                <>
-                    <button onClick={prevSlide} className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-black rounded-full p-3 shadow-lg z-10"><ChevronLeft className="h-6 w-6" /></button>
-                    <button onClick={nextSlide} className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-black rounded-full p-3 shadow-lg z-10"><ChevronRight className="h-6 w-6" /></button>
-                    <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2 z-10">
-                        {slides.map((_: any, i: number) => (
-                            <button key={i} onClick={() => goToSlide(i)} className={cn("h-2 rounded-full transition-all", i === currentSlide ? "w-8 bg-white" : "w-2 bg-white/50")} />
-                        ))}
-                    </div>
-                </>
-            )}
+        );
+    }
+
+    // Default: fade
+    return (
+        <div style={{
+            opacity: isTransitioning ? 0 : 1,
+            transition: "opacity 0.5s ease",
+        }}>
+            {children}
         </div>
     );
 }
 
-// MINIMAL - Compact, typography-focused, no carousel controls visible
-function HeroMinimal({ content, styles }: any) {
-    const { currentSlideData } = useHeroCarousel(content);
+// DEFAULT - Classic centered/aligned hero with carousel support
+function HeroDefault({ content, styles }: any) {
+    const { slides, currentSlide, currentSlideData, nextSlide, prevSlide, goToSlide, isTransitioning, slideDirection, transition } = useHeroCarousel(content);
+    const alignClass = styles.textAlign === 'left' ? 'items-start text-left' : styles.textAlign === 'right' ? 'items-end text-right' : 'items-center text-center';
+    const hasImage = !!currentSlideData.imageUrl;
 
     return (
-        <div className="w-full py-16 md:py-24">
-            <div className="container mx-auto px-4">
-                <div className="max-w-3xl">
+        <div className="w-full relative overflow-hidden">
+            {/* Background Image */}
+            {hasImage && (
+                <Image
+                    src={currentSlideData.imageUrl}
+                    alt={currentSlideData.title || "Banner"}
+                    fill
+                    sizes="100vw"
+                    className={cn(
+                        "object-cover transition-opacity duration-500",
+                        isTransitioning ? "opacity-0" : "opacity-100"
+                    )}
+                    priority
+                />
+            )}
+
+            <SlideTransition isTransitioning={isTransitioning} transition={transition} slideDirection={slideDirection}>
+                <div className={cn(
+                    "w-full flex flex-col justify-center px-4 sm:px-6 pt-16 sm:pt-20 md:pt-32 pb-10 sm:pb-12 relative z-[1]",
+                    alignClass,
+                    hasImage && "min-h-[300px] sm:min-h-[400px] md:min-h-[500px]"
+                )}>
                     <h1
                         data-field="title"
-                        className="text-3xl md:text-5xl font-light tracking-tight mb-4 leading-tight cursor-pointer hover:opacity-80 transition-opacity"
-                        style={{ color: styles.titleColor || "#000000" }}
+                        className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-2 sm:mb-4 drop-shadow-sm cursor-pointer hover:opacity-80 transition-opacity"
+                        style={{ color: styles.titleColor || styles.textColor || (hasImage ? "#ffffff" : "#000000") }}
                     >
                         {currentSlideData.title}
                     </h1>
                     {currentSlideData.subtitle && (
                         <p
                             data-field="subtitle"
-                            className="text-base md:text-lg opacity-70 mb-6 max-w-xl cursor-pointer hover:opacity-50 transition-opacity"
-                            style={{ color: styles.textColor || "#666666" }}
+                            className="text-sm sm:text-base md:text-lg lg:text-xl opacity-90 max-w-2xl font-medium cursor-pointer hover:opacity-70 transition-opacity px-2"
+                            style={{ color: styles.textColor || (hasImage ? "#ffffff" : "#000000") }}
                         >
                             {currentSlideData.subtitle}
                         </p>
@@ -129,68 +162,267 @@ function HeroMinimal({ content, styles }: any) {
                         <Link href={currentSlideData.buttonLink || "/produtos"}>
                             <button
                                 data-field="buttonText"
-                                className="px-6 py-2.5 text-sm font-medium rounded border transition-colors hover:opacity-80 cursor-pointer"
-                                style={{ borderColor: styles.buttonColor || "#000000", backgroundColor: styles.buttonColor || "#000000", color: styles.buttonTextColor || "#ffffff" }}
+                                className="mt-4 sm:mt-6 md:mt-8 px-5 sm:px-6 md:px-8 py-2 sm:py-2.5 md:py-3 rounded-full font-bold text-sm sm:text-base transition-transform hover:scale-105 shadow-lg cursor-pointer"
+                                style={{ backgroundColor: styles.buttonColor || "#ffffff", color: styles.buttonTextColor || "#000000" }}
                             >
                                 {currentSlideData.buttonText}
                             </button>
                         </Link>
                     )}
                 </div>
-            </div>
+            </SlideTransition>
+            {slides.length > 1 && (
+                <>
+                    <button onClick={prevSlide} className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-black rounded-full p-2 sm:p-3 shadow-lg z-10"><ChevronLeft className="h-4 w-4 sm:h-6 sm:w-6" /></button>
+                    <button onClick={nextSlide} className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-black rounded-full p-2 sm:p-3 shadow-lg z-10"><ChevronRight className="h-4 w-4 sm:h-6 sm:w-6" /></button>
+                    <div className="absolute bottom-4 sm:bottom-8 left-1/2 -translate-x-1/2 flex gap-1.5 sm:gap-2 z-10">
+                        {slides.map((_: any, i: number) => (
+                            <button key={i} onClick={() => goToSlide(i)} className={cn("h-1.5 sm:h-2 rounded-full transition-all", i === currentSlide ? "w-6 sm:w-8 bg-white" : "w-1.5 sm:w-2 bg-white/50")} />
+                        ))}
+                    </div>
+                </>
+            )}
+        </div>
+    );
+}
+
+// MINIMAL - Compact, typography-focused
+function HeroMinimal({ content, styles }: any) {
+    const { slides, currentSlide, currentSlideData, goToSlide, isTransitioning, slideDirection, transition } = useHeroCarousel(content || {});
+    const slide = currentSlideData || { title: "Banner", subtitle: "", buttonText: "", buttonLink: "/produtos" };
+    const hasImage = !!slide.imageUrl;
+
+    return (
+        <div className="w-full relative">
+            {hasImage ? (
+                /* Com imagem: altura fixa 840px, width 100% */
+                <div className="relative w-full overflow-hidden" style={{ height: 840 }}>
+                    {/* Background image */}
+                    <div className="absolute inset-0 z-0" style={{ opacity: isTransitioning ? 0 : 1, transition: "opacity 0.5s ease" }}>
+                        <Image src={slide.imageUrl} alt={slide.title} fill sizes="100vw" className="object-cover" priority />
+                        <div className="absolute inset-0 bg-black/30" />
+                    </div>
+
+                    {/* Content overlay */}
+                    <div className="absolute inset-0 z-10 flex items-center">
+                        <div className="container mx-auto px-4">
+                            <SlideTransition isTransitioning={isTransitioning} transition={transition} slideDirection={slideDirection}>
+                                <div className="max-w-3xl">
+                                    <h1
+                                        data-field="title"
+                                        className="text-3xl md:text-5xl font-light tracking-tight mb-4 leading-tight cursor-pointer hover:opacity-80 transition-opacity"
+                                        style={{ color: "#ffffff" }}
+                                    >
+                                        {slide.title}
+                                    </h1>
+                                    {slide.subtitle && (
+                                        <p
+                                            data-field="subtitle"
+                                            className="text-base md:text-lg opacity-80 mb-6 max-w-xl cursor-pointer hover:opacity-50 transition-opacity"
+                                            style={{ color: "#ffffff" }}
+                                        >
+                                            {slide.subtitle}
+                                        </p>
+                                    )}
+                                    {slide.buttonText && (
+                                        <Link href={slide.buttonLink || "/produtos"}>
+                                            <button
+                                                data-field="buttonText"
+                                                className="px-6 py-2.5 text-sm font-medium rounded border transition-colors hover:opacity-80 cursor-pointer"
+                                                style={{
+                                                    borderColor: styles.buttonColor || "#ffffff",
+                                                    backgroundColor: styles.buttonColor || "#ffffff",
+                                                    color: styles.buttonTextColor || "#000000"
+                                                }}
+                                            >
+                                                {slide.buttonText}
+                                            </button>
+                                        </Link>
+                                    )}
+                                </div>
+                            </SlideTransition>
+                            {slides.length > 1 && (
+                                <div className="flex gap-2 mt-6">
+                                    {slides.map((_: any, i: number) => (
+                                        <button key={i} onClick={() => goToSlide(i)} className={cn(
+                                            "h-3 w-3 rounded-full transition-all border",
+                                            i === currentSlide ? "bg-white border-white" : "bg-transparent border-white/60 hover:border-white"
+                                        )} />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                /* Sem imagem: mesma altura fixa, conteúdo centralizado */
+                <div className="flex items-center" style={{ height: 840 }}>
+                <div className="container mx-auto px-4">
+                    <SlideTransition isTransitioning={isTransitioning} transition={transition} slideDirection={slideDirection}>
+                        <div className="max-w-3xl">
+                            <h1
+                                data-field="title"
+                                className="text-3xl md:text-5xl font-light tracking-tight mb-4 leading-tight cursor-pointer hover:opacity-80 transition-opacity"
+                                style={{ color: styles.titleColor || "#000000" }}
+                            >
+                                {slide.title}
+                            </h1>
+                            {slide.subtitle && (
+                                <p
+                                    data-field="subtitle"
+                                    className="text-base md:text-lg opacity-80 mb-6 max-w-xl cursor-pointer hover:opacity-50 transition-opacity"
+                                    style={{ color: styles.textColor || "#666666" }}
+                                >
+                                    {slide.subtitle}
+                                </p>
+                            )}
+                            {slide.buttonText && (
+                                <Link href={slide.buttonLink || "/produtos"}>
+                                    <button
+                                        data-field="buttonText"
+                                        className="px-6 py-2.5 text-sm font-medium rounded border transition-colors hover:opacity-80 cursor-pointer"
+                                        style={{
+                                            borderColor: styles.buttonColor || "#000000",
+                                            backgroundColor: styles.buttonColor || "#000000",
+                                            color: styles.buttonTextColor || "#ffffff"
+                                        }}
+                                    >
+                                        {slide.buttonText}
+                                    </button>
+                                </Link>
+                            )}
+                        </div>
+                    </SlideTransition>
+                    {slides.length > 1 && (
+                        <div className="flex gap-2 mt-8">
+                            {slides.map((_: any, i: number) => (
+                                <button key={i} onClick={() => goToSlide(i)} className={cn(
+                                    "h-3 w-3 rounded-full transition-all border",
+                                    i === currentSlide ? "bg-slate-800 border-slate-800" : "bg-transparent border-slate-400 hover:border-slate-600"
+                                )} />
+                            ))}
+                        </div>
+                    )}
+                </div>
+                </div>
+            )}
         </div>
     );
 }
 
 // SPLIT - Two columns: text left, image/gradient right
 function HeroSplit({ content, styles }: any) {
-    const { slides, currentSlide, currentSlideData, nextSlide, prevSlide } = useHeroCarousel(content);
+    const { slides, currentSlide, currentSlideData, nextSlide, prevSlide, isTransitioning, slideDirection, transition } = useHeroCarousel(content);
 
     return (
-        <div className="w-full min-h-[70vh] grid md:grid-cols-2">
+        <div className="w-full min-h-[70vh] grid md:grid-cols-2 overflow-hidden">
             {/* Text Side */}
             <div className="flex flex-col justify-center p-8 md:p-16 order-2 md:order-1" style={{ backgroundColor: styles.backgroundColor || "#ffffff" }}>
+                <SlideTransition isTransitioning={isTransitioning} transition={transition} slideDirection={slideDirection}>
+                    <h1
+                        data-field="title"
+                        className="text-3xl md:text-5xl font-bold tracking-tight mb-4 cursor-pointer hover:opacity-80 transition-opacity"
+                        style={{ color: styles.titleColor || "#111827" }}
+                    >
+                        {currentSlideData.title}
+                    </h1>
+                    {currentSlideData.subtitle && (
+                        <p
+                            data-field="subtitle"
+                            className="text-lg opacity-80 mb-8 max-w-md cursor-pointer hover:opacity-60 transition-opacity"
+                            style={{ color: styles.textColor || "#6b7280" }}
+                        >
+                            {currentSlideData.subtitle}
+                        </p>
+                    )}
+                    <div className="flex items-center gap-4">
+                        {currentSlideData.buttonText && (
+                            <Link href={currentSlideData.buttonLink || "/produtos"}>
+                                <button
+                                    data-field="buttonText"
+                                    className="px-8 py-3 rounded-lg font-semibold transition-transform hover:scale-105 cursor-pointer"
+                                    style={{ backgroundColor: styles.buttonColor || "#111827", color: styles.buttonTextColor || "#ffffff" }}
+                                >
+                                    {currentSlideData.buttonText}
+                                </button>
+                            </Link>
+                        )}
+                        {slides.length > 1 && (
+                            <div className="flex gap-2">
+                                <button onClick={prevSlide} className="h-10 w-10 rounded-full border flex items-center justify-center hover:bg-slate-50"><ChevronLeft className="h-5 w-5" /></button>
+                                <button onClick={nextSlide} className="h-10 w-10 rounded-full border flex items-center justify-center hover:bg-slate-50"><ChevronRight className="h-5 w-5" /></button>
+                            </div>
+                        )}
+                    </div>
+                </SlideTransition>
+            </div>
+            {/* Image/Color Side */}
+            <div className="min-h-[300px] md:min-h-full order-1 md:order-2" style={{ background: styles.background || styles.accentColor || "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" }}>
+                <SlideTransition isTransitioning={isTransitioning} transition={transition} slideDirection={slideDirection}>
+                    {currentSlideData.imageUrl && (
+                        <div className="relative w-full h-full">
+                            <Image src={currentSlideData.imageUrl} alt={currentSlideData.title} fill sizes="50vw" className="object-cover" priority />
+                        </div>
+                    )}
+                </SlideTransition>
+            </div>
+        </div>
+    );
+}
+
+// Restaurant Hero - Clean, food-focused design
+function HeroRestaurant({ content, styles }: any) {
+    const { slides, currentSlideData } = useHeroCarousel(content);
+
+    return (
+        <div
+            className="relative w-full min-h-[40vh] sm:min-h-[50vh] flex items-center justify-center overflow-hidden"
+            style={{ background: styles.background || "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)" }}
+        >
+            {/* Background Image if provided */}
+            {currentSlideData.imageUrl && (
+                <div className="absolute inset-0">
+                    <Image src={currentSlideData.imageUrl} alt={currentSlideData.title || ""} fill sizes="100vw" className="object-cover" priority />
+                    <div className="absolute inset-0 bg-black/40" />
+                </div>
+            )}
+
+            {/* Content */}
+            <div className="relative z-10 text-center px-4 sm:px-6 md:px-8 py-8 sm:py-12 max-w-3xl mx-auto">
                 <h1
                     data-field="title"
-                    className="text-3xl md:text-5xl font-bold tracking-tight mb-4 cursor-pointer hover:opacity-80 transition-opacity"
-                    style={{ color: styles.titleColor || "#111827" }}
+                    className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight mb-2 sm:mb-4 cursor-pointer hover:opacity-80 transition-opacity"
+                    style={{ color: styles.titleColor || "#ffffff" }}
                 >
                     {currentSlideData.title}
                 </h1>
                 {currentSlideData.subtitle && (
                     <p
                         data-field="subtitle"
-                        className="text-lg opacity-80 mb-8 max-w-md cursor-pointer hover:opacity-60 transition-opacity"
-                        style={{ color: styles.textColor || "#6b7280" }}
+                        className="text-sm sm:text-base md:text-lg opacity-90 mb-4 sm:mb-6 md:mb-8 max-w-xl mx-auto cursor-pointer hover:opacity-60 transition-opacity"
+                        style={{ color: styles.textColor || "#ffffff" }}
                     >
                         {currentSlideData.subtitle}
                     </p>
                 )}
-                <div className="flex items-center gap-4">
-                    {currentSlideData.buttonText && (
-                        <Link href={currentSlideData.buttonLink || "/produtos"}>
-                            <button
-                                data-field="buttonText"
-                                className="px-8 py-3 rounded-lg font-semibold transition-transform hover:scale-105 cursor-pointer"
-                                style={{ backgroundColor: styles.buttonColor || "#111827", color: styles.buttonTextColor || "#ffffff" }}
-                            >
-                                {currentSlideData.buttonText}
-                            </button>
-                        </Link>
-                    )}
-                    {slides.length > 1 && (
-                        <div className="flex gap-2">
-                            <button onClick={prevSlide} className="h-10 w-10 rounded-full border flex items-center justify-center hover:bg-slate-50"><ChevronLeft className="h-5 w-5" /></button>
-                            <button onClick={nextSlide} className="h-10 w-10 rounded-full border flex items-center justify-center hover:bg-slate-50"><ChevronRight className="h-5 w-5" /></button>
-                        </div>
-                    )}
-                </div>
-            </div>
-            {/* Image/Color Side */}
-            <div className="min-h-[300px] md:min-h-full order-1 md:order-2" style={{ background: styles.background || styles.accentColor || "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" }}>
-                {currentSlideData.imageUrl && (
-                    <img src={currentSlideData.imageUrl} alt={currentSlideData.title} className="w-full h-full object-cover" />
+                {currentSlideData.buttonText && (
+                    <Link href={currentSlideData.buttonLink || "/cardapio"}>
+                        <button
+                            data-field="buttonText"
+                            className="px-6 sm:px-8 py-2.5 sm:py-3 rounded-full font-semibold text-sm sm:text-base transition-transform hover:scale-105 cursor-pointer shadow-lg"
+                            style={{ backgroundColor: styles.buttonColor || "#ffffff", color: styles.buttonTextColor || "#ef4444" }}
+                        >
+                            {currentSlideData.buttonText}
+                        </button>
+                    </Link>
                 )}
+            </div>
+
+            {/* Decorative wave */}
+            <div className="absolute bottom-0 left-0 right-0">
+                <svg viewBox="0 0 1440 60" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-auto">
+                    <path d="M0 30L60 25C120 20 240 10 360 10C480 10 600 20 720 30C840 40 960 50 1080 50C1200 50 1320 40 1380 35L1440 30V60H1380C1320 60 1200 60 1080 60C960 60 840 60 720 60C600 60 480 60 360 60C240 60 120 60 60 60H0V30Z" fill="white" fillOpacity="0.1"/>
+                </svg>
             </div>
         </div>
     );
@@ -265,44 +497,45 @@ const TextBlock = ({ content, styles }: any) => {
     );
 };
 
-const ProductGridBlock = ({ content, products, isAdmin, config }: { content: any, products: any[], isAdmin?: boolean, config?: any }) => {
+const ProductGridBlock = ({ content, products, isAdmin, config, variant, styles }: { content: any, products: any[], isAdmin?: boolean, config?: any, variant?: string, styles?: any }) => {
+    // Merge styles.cardVariant with config for ProductCard
+    const mergedConfig = {
+        ...config,
+        cardStyle: styles?.cardVariant || config?.cardStyle || "standard"
+    };
+
     // Manual selection mode: use selectedProductIds
     // Auto selection mode: filter by collectionType
     let filteredProducts: any[] = [];
 
     if (content.selectionMode === "manual") {
-        // Manual mode: get products by IDs in the order they were selected
         const selectedIds = content.selectedProductIds || [];
         filteredProducts = selectedIds
             .map((id: string) => products.find(p => p.id === id))
-            .filter(Boolean) // Remove undefined (in case product was deleted)
+            .filter(Boolean)
             .slice(0, content.limit || 50);
     } else {
-        // Auto mode: filter by criteria with fallback
         const limit = content.limit || 8;
 
         if (content.collectionType === "category" && content.categoryId) {
             filteredProducts = products.filter(p => p.categoryId === content.categoryId).slice(0, limit);
         } else if (content.collectionType === "new") {
-            // Try to get new arrivals, fallback to most recent products
             const newArrivals = products.filter(p => p.isNewArrival);
             filteredProducts = newArrivals.length > 0
                 ? newArrivals.slice(0, limit)
-                : products.slice(0, limit); // Fallback: most recent
+                : products.slice(0, limit);
         } else if (content.collectionType === "featured") {
-            // Try to get featured, fallback to most recent products
             const featured = products.filter(p => p.isFeatured);
             filteredProducts = featured.length > 0
                 ? featured.slice(0, limit)
-                : products.slice(0, limit); // Fallback: most recent
+                : products.slice(0, limit);
         } else {
-            // "all" - show all products
             filteredProducts = products.slice(0, limit);
         }
     }
 
     if (filteredProducts.length === 0) {
-        if (!isAdmin) return null; // Hide on live site if empty
+        if (!isAdmin) return null;
         return (
             <div className="p-8 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50 text-center text-slate-400 min-h-[200px] flex flex-col items-center justify-center">
                 <div className="font-semibold mb-2">Vitrine de Produtos</div>
@@ -316,20 +549,227 @@ const ProductGridBlock = ({ content, products, isAdmin, config }: { content: any
         );
     }
 
+    const title = content.title ? (
+        <h2
+            data-field="title"
+            className="text-xl sm:text-2xl md:text-3xl font-bold text-center mb-4 sm:mb-6 md:mb-8 cursor-pointer hover:opacity-80 transition-opacity px-2"
+        >
+            {content.title}
+        </h2>
+    ) : null;
+
+    const cardSize = content.cardSize || 200;
+
+    // ── CAROUSEL VARIANT ──
+    if (variant === "carousel") {
+        return (
+            <ProductCarouselLayout
+                products={filteredProducts}
+                config={mergedConfig}
+                title={title}
+                autoScroll={content.autoScroll}
+                autoScrollInterval={content.autoScrollInterval}
+                cardSize={cardSize}
+            />
+        );
+    }
+
+    // ── LIST VARIANT ──
+    if (variant === "list") {
+        return (
+            <ProductListLayout products={filteredProducts} config={mergedConfig} title={title} cardSize={cardSize} />
+        );
+    }
+
+    // For horizontal cards, use a different grid layout
+    const isHorizontalCards = mergedConfig.cardStyle === "horizontal";
+
+    // ── GRID VARIANT (default) ──
+    return (
+        <div className="py-4 sm:py-6 md:py-8 px-2 sm:px-4">
+            {title}
+            <div
+                className={cn(
+                    "gap-2 sm:gap-3 md:gap-4",
+                    isHorizontalCards
+                        ? "flex flex-col max-w-2xl mx-auto"
+                        : "grid"
+                )}
+                style={isHorizontalCards ? undefined : {
+                    gridTemplateColumns: `repeat(auto-fill, minmax(min(${cardSize}px, 45vw), 1fr))`
+                }}
+            >
+                {filteredProducts.map((product) => (
+                    <ProductCard key={product.id} product={product} config={mergedConfig} />
+                ))}
+            </div>
+        </div>
+    );
+};
+
+// ── PRODUCT CAROUSEL LAYOUT ──
+function formatPriceBlock(value: number) {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+}
+
+const ProductCarouselLayout = ({ products, config, title, autoScroll, autoScrollInterval, cardSize = 200 }: {
+    products: any[], config?: any, title: React.ReactNode, autoScroll?: boolean, autoScrollInterval?: number, cardSize?: number
+}) => {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [visibleCount, setVisibleCount] = useState(4);
+    const gap = 16;
+
+    // Calculate how many full cards fit in the container
+    useEffect(() => {
+        const calculate = () => {
+            const el = containerRef.current;
+            if (!el) return;
+            const containerWidth = el.clientWidth;
+            const count = Math.max(1, Math.floor((containerWidth + gap) / (cardSize + gap)));
+            setVisibleCount(count);
+        };
+        calculate();
+        window.addEventListener("resize", calculate);
+        return () => window.removeEventListener("resize", calculate);
+    }, [cardSize]);
+
+    // Infinite index: wrap around
+    const getProduct = (index: number) => {
+        const i = ((index % products.length) + products.length) % products.length;
+        return products[i];
+    };
+
+    const next = useCallback(() => {
+        setCurrentIndex(prev => prev + 1);
+    }, []);
+
+    const prev = useCallback(() => {
+        setCurrentIndex(prev => prev - 1);
+    }, []);
+
+    // Auto-scroll
+    useEffect(() => {
+        if (!autoScroll) return;
+        const interval = setInterval(next, (autoScrollInterval || 3) * 1000);
+        return () => clearInterval(interval);
+    }, [autoScroll, autoScrollInterval, next]);
+
+    // Build the visible cards array
+    const visibleProducts = [];
+    for (let i = 0; i < visibleCount; i++) {
+        visibleProducts.push({
+            product: getProduct(currentIndex + i),
+            key: `${currentIndex + i}`
+        });
+    }
+
     return (
         <div className="py-8">
-            {content.title && (
-                <h2
-                    data-field="title"
-                    className="text-3xl font-bold text-center mb-8 cursor-pointer hover:opacity-80 transition-opacity"
+            {title}
+            <div className="relative group/carousel px-12" ref={containerRef}>
+                {/* Left Arrow */}
+                <button
+                    onClick={prev}
+                    className="absolute left-1 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white shadow-lg rounded-full p-2 transition-all opacity-0 group-hover/carousel:opacity-100"
                 >
-                    {content.title}
-                </h2>
-            )}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
-                {filteredProducts.map((product) => (
-                    <ProductCard key={product.id} product={product} config={config} />
-                ))}
+                    <ChevronLeft className="h-5 w-5 text-slate-700" />
+                </button>
+
+                {/* Right Arrow */}
+                <button
+                    onClick={next}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white shadow-lg rounded-full p-2 transition-all opacity-0 group-hover/carousel:opacity-100"
+                >
+                    <ChevronRight className="h-5 w-5 text-slate-700" />
+                </button>
+
+                {/* Cards Grid - Only shows full cards */}
+                <div
+                    className="grid transition-opacity duration-300"
+                    style={{
+                        gridTemplateColumns: `repeat(${visibleCount}, 1fr)`,
+                        gap: `${gap}px`
+                    }}
+                >
+                    {visibleProducts.map(({ product, key }) => (
+                        <div key={key} className="min-w-0">
+                            <ProductCard product={product} config={config} />
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ── PRODUCT LIST LAYOUT ──
+const ProductListLayout = ({ products, config, title, cardSize = 200 }: {
+    products: any[], config?: any, title: React.ReactNode, cardSize?: number
+}) => {
+    const imgSize = Math.max(48, Math.round(cardSize * 0.4));
+    return (
+        <div className="py-8">
+            {title}
+            <div className="flex flex-col gap-3">
+                {products.map((product) => {
+                    const price = Number(product.price);
+                    const compareAtPrice = product.compareAtPrice ? Number(product.compareAtPrice) : null;
+                    const image = product.images?.[0]?.url || "/assets/placeholder-product.png";
+
+                    return (
+                        <Link
+                            key={product.id}
+                            href={`/produto/${product.slug}`}
+                            className="group flex items-center gap-4 p-3 rounded-lg border bg-card hover:shadow-md hover:border-primary/20 transition-all"
+                        >
+                            {/* Image */}
+                            <div className="relative flex-shrink-0 overflow-hidden rounded-md bg-muted" style={{ width: `${imgSize}px`, height: `${imgSize}px` }}>
+                                <Image
+                                    src={image}
+                                    alt={product.name}
+                                    fill
+                                    sizes={`${imgSize}px`}
+                                    className="object-contain p-1"
+                                    loading="lazy"
+                                />
+                            </div>
+
+                            {/* Info */}
+                            <div className="flex-1 min-w-0">
+                                <h3 className="text-sm font-medium text-foreground line-clamp-1 group-hover:text-primary transition-colors">
+                                    {product.name}
+                                </h3>
+                                {product.category?.name && (
+                                    <span className="text-xs text-muted-foreground">
+                                        {product.category.name}
+                                    </span>
+                                )}
+                                <div className="flex items-baseline gap-2 mt-1">
+                                    <span className="font-bold" style={{ color: config?.priceColor || config?.themeColor || "var(--primary)" }}>
+                                        {formatPriceBlock(price)}
+                                    </span>
+                                    {compareAtPrice && (
+                                        <span className="text-xs text-muted-foreground line-through">
+                                            {formatPriceBlock(compareAtPrice)}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Action Button */}
+                            <div
+                                className="flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                                style={{
+                                    backgroundColor: config?.productBtnBg || config?.themeColor || "var(--primary)",
+                                    color: config?.productBtnText || "white"
+                                }}
+                            >
+                                Ver
+                            </div>
+                        </Link>
+                    );
+                })}
             </div>
         </div>
     );
@@ -427,6 +867,59 @@ const PromoBlock = ({ content, styles, isAdmin }: any) => {
 };
 
 // =============================================================================
+// TOOL BLOCKS - Placeholder components for activated tools
+// =============================================================================
+
+// Tool metadata for display
+const TOOL_METADATA: Record<string, { name: string; description: string; icon: string; color: string }> = {
+    "tool-scheduling": { name: "Agendamentos Online", description: "Sistema de agendamentos para clientes", icon: "📅", color: "from-blue-500 to-cyan-500" },
+    "tool-menu": { name: "Cardápio Digital", description: "Cardápio interativo com QR Code", icon: "🍽️", color: "from-orange-500 to-red-500" },
+    "tool-delivery": { name: "Delivery Próprio", description: "Sistema de delivery integrado", icon: "🚴", color: "from-green-500 to-emerald-500" },
+    "tool-reservations": { name: "Reservas de Mesas", description: "Sistema de reservas para restaurantes", icon: "🪑", color: "from-amber-500 to-yellow-500" },
+    "tool-orders": { name: "Comandas Digitais", description: "Comandas eletrônicas para atendimento", icon: "📋", color: "from-violet-500 to-purple-500" },
+    "tool-salon": { name: "Gestão de Salão", description: "Gestão para salões e barbearias", icon: "✂️", color: "from-pink-500 to-rose-500" },
+    "tool-whatsapp-catalog": { name: "Catálogo WhatsApp", description: "Catálogo integrado ao WhatsApp", icon: "💬", color: "from-green-500 to-lime-500" },
+    "tool-quotes": { name: "Orçamentos Online", description: "Sistema de orçamentos e propostas", icon: "📝", color: "from-slate-500 to-gray-500" },
+    "tool-gift-cards": { name: "Gift Cards", description: "Vales-presente digitais", icon: "🎁", color: "from-red-500 to-pink-500" },
+    "tool-wishlist": { name: "Lista de Presentes", description: "Listas para ocasiões especiais", icon: "💝", color: "from-rose-500 to-red-500" },
+    "tool-subscriptions": { name: "Clube de Assinaturas", description: "Assinaturas recorrentes", icon: "🔄", color: "from-indigo-500 to-blue-500" },
+    "tool-loyalty": { name: "Programa de Fidelidade", description: "Pontos e recompensas", icon: "🏆", color: "from-amber-500 to-orange-500" },
+    "tool-reviews": { name: "Avaliações", description: "Reviews e depoimentos de clientes", icon: "⭐", color: "from-yellow-500 to-amber-500" },
+    "tool-coupons": { name: "Cupons e Promoções", description: "Sistema de cupons de desconto", icon: "🏷️", color: "from-emerald-500 to-teal-500" },
+    "tool-digital-showcase": { name: "Vitrine Digital", description: "Vitrine interativa de produtos", icon: "🖥️", color: "from-cyan-500 to-blue-500" },
+    "tool-social-proof": { name: "Prova Social", description: "Notificações de compras recentes", icon: "👥", color: "from-purple-500 to-violet-500" },
+    "tool-chat": { name: "Chat Online", description: "Atendimento em tempo real", icon: "💬", color: "from-blue-500 to-indigo-500" },
+    "tool-tracking": { name: "Rastreamento de Pedidos", description: "Acompanhamento de entregas", icon: "🚚", color: "from-teal-500 to-cyan-500" },
+};
+
+const ToolBlock = ({ type, content, styles, isAdmin }: { type: string; content: any; styles: any; isAdmin?: boolean }) => {
+    const metadata = TOOL_METADATA[type] || { name: "Ferramenta", description: "Ferramenta ativa", icon: "🔧", color: "from-slate-500 to-gray-500" };
+
+    return (
+        <div className={cn(
+            "w-full min-h-[200px] rounded-xl p-8 flex flex-col items-center justify-center text-white",
+            `bg-gradient-to-br ${metadata.color}`
+        )}>
+            <span className="text-5xl mb-4">{metadata.icon}</span>
+            <h3 className="text-2xl font-bold mb-2">{content.title || metadata.name}</h3>
+            <p className="text-white/80 text-center max-w-md">
+                {content.subtitle || metadata.description}
+            </p>
+            {content.buttonText && (
+                <button className="mt-6 px-6 py-2 bg-white text-slate-900 font-semibold rounded-full hover:bg-white/90 transition-colors">
+                    {content.buttonText}
+                </button>
+            )}
+            {isAdmin && (
+                <p className="mt-4 text-xs text-white/60">
+                    ⚙️ Configure esta ferramenta nas configurações
+                </p>
+            )}
+        </div>
+    );
+};
+
+// =============================================================================
 // NEWSLETTER BLOCK - Multiple variants
 // =============================================================================
 const NewsletterBlock = ({ content, styles }: { content: any, styles: any }) => {
@@ -446,37 +939,37 @@ const NewsletterBlock = ({ content, styles }: { content: any, styles: any }) => 
 // FULL - Centered with icon, large padding
 function NewsletterFull({ content, styles }: any) {
     return (
-        <div className="w-full text-center flex flex-col items-center justify-center py-24" style={{ backgroundColor: styles.backgroundColor || '#0f172a' }}>
+        <div className="w-full text-center flex flex-col items-center justify-center py-12 sm:py-16 md:py-24" style={{ backgroundColor: styles.backgroundColor || '#0f172a' }}>
             <div className="max-w-4xl mx-auto px-4">
-                <svg className="h-12 w-12 mx-auto mb-6 opacity-80" style={{ color: styles.iconColor || '#6366f1' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 mx-auto mb-4 sm:mb-6 opacity-80" style={{ color: styles.iconColor || '#6366f1' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                 </svg>
                 <h2
                     data-field="title"
-                    className="text-4xl font-bold mb-4 cursor-pointer hover:opacity-80 transition-opacity"
+                    className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 sm:mb-4 cursor-pointer hover:opacity-80 transition-opacity"
                     style={{ color: styles.titleColor || '#ffffff' }}
                 >
                     {content.title || "Entre para o Clube"}
                 </h2>
                 <p
                     data-field="description"
-                    className="max-w-md mx-auto mb-8 opacity-90 cursor-pointer hover:opacity-70 transition-opacity"
+                    className="max-w-md mx-auto mb-6 sm:mb-8 opacity-90 cursor-pointer hover:opacity-70 transition-opacity text-sm sm:text-base"
                     style={{ color: styles.textColor || '#ffffff' }}
                 >
                     {content.description || "Receba novidades e ofertas exclusivas."}
                 </p>
-                <div className="max-w-md mx-auto flex gap-2">
+                <div className="max-w-md mx-auto flex flex-col sm:flex-row gap-2 sm:gap-2">
                     <input
                         data-field="placeholder"
                         type="email"
                         placeholder={content.placeholder || "Seu e-mail"}
-                        className="flex-1 bg-white/10 border border-white/20 rounded-full h-12 px-6 cursor-pointer"
+                        className="flex-1 bg-white/10 border border-white/20 rounded-full h-11 sm:h-12 px-4 sm:px-6 cursor-pointer text-sm sm:text-base"
                         style={{ color: styles.inputTextColor || '#ffffff' }}
                         readOnly
                     />
                     <button
                         data-field="buttonText"
-                        className="rounded-full h-12 px-8 font-bold cursor-pointer hover:opacity-80 transition-opacity"
+                        className="rounded-full h-11 sm:h-12 px-6 sm:px-8 font-bold cursor-pointer hover:opacity-80 transition-opacity text-sm sm:text-base whitespace-nowrap"
                         style={{ backgroundColor: styles.buttonColor || '#6366f1', color: styles.buttonTextColor || '#ffffff' }}
                     >
                         {content.buttonText || "Inscrever"}
@@ -492,18 +985,18 @@ function NewsletterCompact({ content, styles }: any) {
     return (
         <div className="w-full py-8" style={{ backgroundColor: styles.backgroundColor || '#000000' }}>
             <div className="container mx-auto px-4">
-                <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="flex flex-col md:flex-row items-center gap-4">
                     <div className="flex items-center gap-3">
                         <span
                             data-field="title"
-                            className="text-lg font-semibold cursor-pointer hover:opacity-80 transition-opacity"
+                            className="text-lg font-semibold cursor-pointer hover:opacity-80 transition-opacity whitespace-nowrap"
                             style={{ color: styles.titleColor || '#ffffff' }}
                         >
                             {content.title || "Newsletter"}
                         </span>
                         <span
                             data-field="description"
-                            className="text-sm opacity-70 hidden md:inline cursor-pointer hover:opacity-50 transition-opacity"
+                            className="text-sm opacity-70 hidden md:inline cursor-pointer hover:opacity-50 transition-opacity whitespace-nowrap"
                             style={{ color: styles.textColor || '#ffffff' }}
                         >
                             {content.description || "Receba novidades"}
@@ -666,46 +1159,55 @@ const CategoriesBlock = ({ content, categories, styles }: { content: any, catego
     }
 };
 
-// GRID - Bento style with featured first item
+// GRID - Bento style with featured first item (always centered)
 function CategoriesGrid({ content, categories, categoriesData, styles }: any) {
+    const titleContent = (
+        <h2
+            data-field="title"
+            className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight cursor-pointer hover:opacity-80 transition-opacity"
+            style={{ color: styles.headingColor || '#111827' }}
+        >
+            {content.title || "Categorias em Destaque"}
+        </h2>
+    );
+
     return (
-        <div className="py-20 w-full">
-            <div className="container mx-auto px-4">
-                <div className="flex items-center justify-between mb-10">
-                    <h2
-                        data-field="title"
-                        className="text-3xl font-bold tracking-tight cursor-pointer hover:opacity-80 transition-opacity"
-                        style={{ color: styles.headingColor || '#111827' }}
-                    >
-                        {content.title || "Categorias em Destaque"}
-                    </h2>
-                    <Link href={content.viewAllLink || "/categorias"} className="text-sm font-medium hover:underline flex items-center gap-1 opacity-70">
-                        Ver todas →
-                    </Link>
+        <div className="py-10 sm:py-14 md:py-20 w-full">
+            <div className="container mx-auto px-3 sm:px-4">
+                <div className="flex items-center justify-center text-center mb-6 sm:mb-8 md:mb-10 gap-4">
+                    {content.viewAllLink ? (
+                        <Link href={content.viewAllLink}>{titleContent}</Link>
+                    ) : titleContent}
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 min-h-[400px]">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
                     {categories.map((cat: any, index: number) => {
                         const catData = categoriesData[cat.id] || {};
                         const displayName = catData.name || cat.name;
                         const displayImage = catData.imageUrl || cat.imageUrl;
                         const displayLink = catData.link || `/search?category=${cat.slug}`;
                         const isLarge = index === 0;
-                        const gridClass = isLarge ? "col-span-2 row-span-2 aspect-square md:aspect-auto" : "aspect-square";
 
                         return (
-                            <Link href={displayLink} key={cat.id} className={`relative group rounded-2xl overflow-hidden bg-gray-100 ${gridClass}`}>
+                            <Link
+                                href={displayLink}
+                                key={cat.id}
+                                className={cn(
+                                    "relative group rounded-xl sm:rounded-2xl overflow-hidden bg-gray-100 aspect-square",
+                                    isLarge && "col-span-2 row-span-2"
+                                )}
+                            >
                                 {displayImage ? (
-                                    <img src={displayImage} alt={displayName} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                                    <Image src={displayImage} alt={displayName} fill sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw" className="object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" />
                                 ) : (
-                                    <div className="absolute inset-0 bg-slate-200 group-hover:scale-105 transition-transform duration-500 flex items-center justify-center text-slate-400 font-bold text-lg">
+                                    <div className="absolute inset-0 bg-slate-200 group-hover:scale-105 transition-transform duration-500 flex items-center justify-center text-slate-400 font-bold text-base sm:text-lg">
                                         {displayName.charAt(0)}
                                     </div>
                                 )}
-                                <div className="absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-black/80 to-transparent">
-                                    <span className={`font-bold block ${isLarge ? "text-2xl" : "text-lg"}`} style={{ color: styles.cardTextColor || '#ffffff' }}>
+                                <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4 md:p-6 bg-gradient-to-t from-black/80 to-transparent text-center">
+                                    <span className={cn("font-bold block", isLarge ? "text-lg sm:text-xl md:text-2xl" : "text-sm sm:text-base md:text-lg")} style={{ color: styles.cardTextColor || '#ffffff' }}>
                                         {displayName}
                                     </span>
-                                    {isLarge && <span className="text-sm mt-1 inline-block opacity-80" style={{ color: styles.cardTextColor || '#ffffff' }}>Explorar →</span>}
+                                    {isLarge && <span className="text-xs sm:text-sm mt-1 inline-block opacity-80" style={{ color: styles.cardTextColor || '#ffffff' }}>Explorar →</span>}
                                 </div>
                             </Link>
                         );
@@ -716,24 +1218,27 @@ function CategoriesGrid({ content, categories, categoriesData, styles }: any) {
     );
 }
 
-// HORIZONTAL - Scrolling cards in a row
+// HORIZONTAL - Scrolling cards in a row (always centered)
 function CategoriesHorizontal({ content, categories, categoriesData, styles }: any) {
+    const titleContent = (
+        <h2
+            data-field="title"
+            className="text-lg sm:text-xl md:text-2xl font-bold cursor-pointer hover:opacity-80 transition-opacity"
+            style={{ color: styles.headingColor || '#111827' }}
+        >
+            {content.title || "Categorias"}
+        </h2>
+    );
+
     return (
-        <div className="py-12 w-full">
-            <div className="container mx-auto px-4">
-                <div className="flex items-center justify-between mb-6">
-                    <h2
-                        data-field="title"
-                        className="text-2xl font-bold cursor-pointer hover:opacity-80 transition-opacity"
-                        style={{ color: styles.headingColor || '#111827' }}
-                    >
-                        {content.title || "Categorias"}
-                    </h2>
-                    <Link href={content.viewAllLink || "/categorias"} className="text-sm font-medium hover:underline opacity-70">
-                        Ver todas →
-                    </Link>
+        <div className="py-8 sm:py-10 md:py-12 w-full">
+            <div className="container mx-auto px-3 sm:px-4">
+                <div className="flex items-center justify-center text-center mb-4 sm:mb-6 gap-4">
+                    {content.viewAllLink ? (
+                        <Link href={content.viewAllLink}>{titleContent}</Link>
+                    ) : titleContent}
                 </div>
-                <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4">
+                <div className="flex gap-3 sm:gap-6 md:gap-8 overflow-x-auto pb-4 scrollbar-hide -mx-3 px-3 sm:-mx-4 sm:px-4 snap-x">
                     {categories.map((cat: any) => {
                         const catData = categoriesData[cat.id] || {};
                         const displayName = catData.name || cat.name;
@@ -741,17 +1246,17 @@ function CategoriesHorizontal({ content, categories, categoriesData, styles }: a
                         const displayLink = catData.link || `/search?category=${cat.slug}`;
 
                         return (
-                            <Link href={displayLink} key={cat.id} className="flex-shrink-0 w-40 group">
-                                <div className="aspect-[3/4] rounded-xl overflow-hidden bg-slate-100 mb-2 relative">
+                            <Link href={displayLink} key={cat.id} className="flex-shrink-0 group w-32 sm:w-48 md:w-64 snap-start">
+                                <div className="rounded-lg sm:rounded-xl overflow-hidden bg-slate-100 mb-2 relative aspect-[4/5]">
                                     {displayImage ? (
-                                        <img src={displayImage} alt={displayName} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                        <Image src={displayImage} alt={displayName} fill sizes="(max-width: 640px) 128px, (max-width: 768px) 192px, 256px" className="object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
                                     ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-slate-300 text-4xl font-bold">
+                                        <div className="w-full h-full flex items-center justify-center text-slate-300 text-3xl sm:text-4xl md:text-5xl font-bold">
                                             {displayName.charAt(0)}
                                         </div>
                                     )}
                                 </div>
-                                <p className="text-sm font-medium text-center truncate" style={{ color: styles.headingColor || '#111827' }}>
+                                <p className="text-xs sm:text-sm md:text-base font-medium truncate text-center" style={{ color: styles.headingColor || '#111827' }}>
                                     {displayName}
                                 </p>
                             </Link>
@@ -763,20 +1268,26 @@ function CategoriesHorizontal({ content, categories, categoriesData, styles }: a
     );
 }
 
-// CIRCULAR - Round avatars in a centered row
+// CIRCULAR - Round avatars in a centered row (always centered)
 function CategoriesCircular({ content, categories, categoriesData, styles }: any) {
+    const titleContent = (
+        <h2
+            data-field="title"
+            className="text-2xl font-bold mb-2 cursor-pointer hover:opacity-80 transition-opacity"
+            style={{ color: styles.headingColor || '#111827' }}
+        >
+            {content.title || "Explore por Categoria"}
+        </h2>
+    );
+
     return (
         <div className="py-16 w-full">
             <div className="container mx-auto px-4 text-center">
-                <h2
-                    data-field="title"
-                    className="text-2xl font-bold mb-2 cursor-pointer hover:opacity-80 transition-opacity"
-                    style={{ color: styles.headingColor || '#111827' }}
-                >
-                    {content.title || "Explore por Categoria"}
-                </h2>
+                {content.viewAllLink ? (
+                    <Link href={content.viewAllLink}>{titleContent}</Link>
+                ) : titleContent}
                 <p className="text-sm text-slate-500 mb-10">Encontre o que você procura</p>
-                <div className="flex flex-wrap justify-center gap-8">
+                <div className="flex flex-wrap gap-12 justify-center">
                     {categories.map((cat: any) => {
                         const catData = categoriesData[cat.id] || {};
                         const displayName = catData.name || cat.name;
@@ -784,20 +1295,22 @@ function CategoriesCircular({ content, categories, categoriesData, styles }: any
                         const displayLink = catData.link || `/search?category=${cat.slug}`;
 
                         return (
-                            <Link href={displayLink} key={cat.id} className="group flex flex-col items-center gap-3 w-24">
+                            <Link href={displayLink} key={cat.id} className="group flex flex-col items-center gap-4" style={{ width: 240 }}>
                                 <div
-                                    className="w-20 h-20 rounded-full overflow-hidden border-2 group-hover:border-4 transition-all duration-300"
-                                    style={{ borderColor: styles.accentColor || '#000' }}
+                                    className="rounded-full overflow-hidden border-2 group-hover:border-4 transition-all duration-300"
+                                    style={{ width: 220, height: 220, borderColor: styles.accentColor || '#000' }}
                                 >
                                     {displayImage ? (
-                                        <img src={displayImage} alt={displayName} className="w-full h-full object-cover" />
+                                        <div className="relative w-full h-full">
+                                            <Image src={displayImage} alt={displayName} fill sizes="220px" className="object-cover" loading="lazy" />
+                                        </div>
                                     ) : (
-                                        <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-400 text-2xl font-bold">
+                                        <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-400 text-4xl font-bold">
                                             {displayName.charAt(0)}
                                         </div>
                                     )}
                                 </div>
-                                <span className="text-xs font-medium text-center leading-tight" style={{ color: styles.headingColor || '#111827' }}>
+                                <span className="text-sm font-medium leading-tight text-center w-full" style={{ color: styles.headingColor || '#111827' }}>
                                     {displayName}
                                 </span>
                             </Link>
@@ -879,13 +1392,21 @@ export function BlockRenderer({ blocks, isAdmin, onSelectBlock, products = [], c
                             {block.type === "html" && <HtmlBlock content={block.content} isAdmin={isAdmin} />}
                             {block.type === "hero" && <HeroBlock content={block.content} styles={styles} />}
                             {block.type === "text" && <TextBlock content={block.content} styles={styles} />}
-                            {block.type === "product-grid" && <ProductGridBlock content={block.content} products={products} config={config} />}
+                            {block.type === "product-grid" && <ProductGridBlock content={block.content} products={products} config={config} variant={block.variant} styles={styles} />}
                             {block.type === "brands" && <BrandsBlock content={block.content} brands={brands} styles={styles} />}
                             {block.type === "categories" && <CategoriesBlock content={block.content} categories={categories} styles={styles} />}
                             {block.type === "newsletter" && <NewsletterBlock content={block.content} styles={styles} />}
                             {block.type === "instagram" && <InstagramBlock content={block.content} />}
                             {block.type === "map" && <MapBlock content={block.content} />}
                             {block.type === "promo" && <PromoBlock content={block.content} styles={styles} />}
+
+                            {/* Tool Blocks */}
+                            {(block.type === "tool-scheduling" || block.type === "tool-salon") && (
+                                <SchedulingBlock content={block.content} styles={styles} isAdmin={isAdmin} />
+                            )}
+                            {block.type.startsWith("tool-") && block.type !== "tool-scheduling" && block.type !== "tool-salon" && (
+                                <ToolBlock type={block.type} content={block.content} styles={styles} isAdmin={isAdmin} />
+                            )}
                         </div>
 
                         {/* Custom CSS Injection (Advanced) */}

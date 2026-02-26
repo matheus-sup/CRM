@@ -19,6 +19,19 @@ model User {
   image         String?
   password      String?
   role          String    @default("USER") // ADMIN, USER
+
+  // Email verification
+  verificationToken       String?
+  verificationTokenExpiry DateTime?
+
+  // Password reset
+  resetToken       String?
+  resetTokenExpiry DateTime?
+
+  // Tool Store relations
+  toolPurchases ToolPurchase[]
+  userPlan      UserPlan?
+
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -73,6 +86,9 @@ model StoreConfig {
   
   productBtnBg    String   @default("#db2777")
   productBtnText  String   @default("#ffffff")
+
+  menuLinkColor      String?  // Menu link color
+  menuLinkHoverColor String?  // Menu link hover color
 
   bodyColor       String   @default("#334155")
   bodyFont        String   @default("Inter")
@@ -141,7 +157,22 @@ model StoreConfig {
   showShippingSimulator   Boolean @default(true)
   showBuyInfo             Boolean @default(true) // "Informação de compra"
   showRelatedProducts     Boolean @default(true)
-  
+
+  // Product Detail Styling
+  productPriceColor       String?  // Cor do preço
+  productBrandColor       String?  // Cor da marca
+  productDiscountBadgeBg  String?  // Cor de fundo do badge de desconto
+  productDiscountBadgeText String? // Cor do texto do badge de desconto
+  productStockBadgeBg     String?  // Cor de fundo do badge de estoque
+  productStockBadgeText   String?  // Cor do texto do badge de estoque
+  productInfoBg           String?  // Cor de fundo da seção de informações
+  productIconColor        String?  // Cor dos ícones
+  productBtnStyle         String   @default("rounded") // rounded, pill, square
+  productBtnSize          String   @default("large") // small, medium, large
+  productGalleryLayout    String   @default("bottom") // side, bottom, grid
+  productShowBreadcrumb   Boolean  @default(true)
+  productStickyCart       Boolean  @default(true)
+
   // Cart Configuration
   minPurchaseValue        Decimal  @default(0.00)
   enableQuickCart         Boolean  @default(true) // "Permitir... sem ir a outra página"
@@ -159,11 +190,19 @@ model StoreConfig {
   // Social Login Configuration
   googleClientId    String?
   googleClientSecret String?
-  
+
   appleClientId     String?
   appleKeyId        String?
   appleTeamId       String?
-  applePrivateKey   String? 
+  applePrivateKey   String?
+
+  // Restaurant/Cardapio Configuration
+  siteType          String?  // "restaurant", "cardapio", null for standard ecommerce
+  deliveryTime      String?  // e.g. "30-45 min"
+  isOpen            Boolean  @default(true)
+  storeDescription  String?  // Slogan/description for restaurant
+  storeRating       String?  // e.g. "4.8"
+  showAccountButton Boolean  @default(true)
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -206,11 +245,13 @@ model ShippingConfig {
   id String @id @default("shipping-config")
 
   // Melhor Envio
-  melhorEnvioEnabled Boolean @default(false)
-  melhorEnvioToken   String? // Access Token
-  melhorEnvioClientId String? // Client ID
-  melhorEnvioEmail   String? // Email de cadastro
-  melhorEnvioSandbox Boolean @default(true)
+  melhorEnvioEnabled        Boolean  @default(false)
+  melhorEnvioToken          String?  // Access Token
+  melhorEnvioRefreshToken   String?  // Refresh Token (OAuth2)
+  melhorEnvioTokenExpiresAt DateTime? // Data de expiração do token
+  melhorEnvioClientId       String?  // Client ID
+  melhorEnvioEmail          String?  // Email de cadastro
+  melhorEnvioSandbox        Boolean  @default(true)
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -267,10 +308,12 @@ model Product {
   length         Decimal?  // cm
   width          Decimal?  // cm
   height         Decimal?  // cm
-  
+  measurements   String?   // Tabela de medidas da peça (texto)
+
   // Compliance & Details
   expiresAt      DateTime? // Data de validade
-  
+  isPerishable   Boolean   @default(false) // Produto perecível (controle por lote)
+
   brandId        String?
   brand          Brand?    @relation(fields: [brandId], references: [id])
   brandLegacy    String?   @map("brand") // Marca/Fabricante (Legacy)
@@ -293,9 +336,44 @@ model Product {
   variants       ProductVariant[]
   cartItems      CartItem[]
   itemDiscounts  ItemDiscount[]
+  stockMovements StockMovement[]
+  batches        ProductBatch[]
 
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+}
+
+// Product Batch (Lotes para produtos perecíveis)
+model ProductBatch {
+  id          String   @id @default(cuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  quantity    Int      // Quantidade atual no lote
+  initialQty  Int      // Quantidade inicial (para relatórios)
+  expiresAt   DateTime // Validade do lote
+  unitCost    Decimal? // Custo unitário de compra
+
+  createdAt   DateTime @default(now())
+}
+
+// Stock Movement History
+model StockMovement {
+  id          String   @id @default(cuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  type        String   // "IN" | "OUT" | "ADJUSTMENT"
+  quantity    Int      // Positivo para entrada, negativo para saída
+
+  unitPrice   Decimal? // Preço unitário no momento
+  totalValue  Decimal? // quantity * unitPrice
+
+  reason      String?  // Motivo/observação
+  orderId     String?  // Referência ao pedido (se saída por venda)
+  order       Order?   @relation(fields: [orderId], references: [id])
+
+  createdAt   DateTime @default(now())
 }
 
 model ProductVariant {
@@ -345,6 +423,21 @@ model Brand {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   products  Product[]
+}
+
+// Seller Management (Vendedores)
+model Seller {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?  @unique
+  phone     String?
+  cpf       String?
+  isActive  Boolean  @default(true)
+
+  orders    Order[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // Customers (CRM)
@@ -413,9 +506,12 @@ model Address {
 model Order {
   id            String      @id @default(cuid())
   code          Int         @unique // Friendly ID: #1001 (Handle generation in code)
-  
+
   customerId    String?
   customer      Customer?   @relation(fields: [customerId], references: [id])
+
+  sellerId      String?
+  seller        Seller?     @relation(fields: [sellerId], references: [id])
   customerName  String      // Snapshot
   customerEmail String      // Snapshot
   customerPhone String?     // Snapshot
@@ -442,9 +538,10 @@ model Order {
   addressZip    String
   
   origin        String      @default("ONLINE") // ONLINE, STORE
-  
+
   items         OrderItem[]
-  
+  stockMovements StockMovement[]
+
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 }
@@ -521,6 +618,676 @@ model ItemDiscount {
   promoStock      Int      // Quantidade disponivel na promocao
   soldCount       Int      @default(0) // Quantidade vendida na promocao
   active          Boolean  @default(true)
+  endDate         DateTime?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// Tool Store (Loja de Ferramentas)
+model Tool {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  description String
+  icon        String   // Icon name from lucide-react
+  category    String   // scheduling, menu, delivery, sales, marketing, etc.
+  price       Decimal  @default(10.00)
+
+  // Tool-specific configuration schema (JSON)
+  configSchema String?
+
+  isActive    Boolean  @default(true)
+  order       Int      @default(0)
+
+  // Features/benefits list (JSON array)
+  features    String?
+
+  purchases   ToolPurchase[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// User's purchased/enabled tools
+model ToolPurchase {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  toolId      String
+  tool        Tool     @relation(fields: [toolId], references: [id], onDelete: Cascade)
+
+  // Tool configuration (JSON based on tool's configSchema)
+  config      String?
+
+  // Purchase info
+  paidAmount  Decimal  @default(0) // 0 if included in plan
+  isPlanIncluded Boolean @default(false) // True if Professional plan
+
+  isEnabled   Boolean  @default(true)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, toolId])
+}
+
+// User Subscription Plan
+model UserPlan {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  plan        String   @default("STARTER") // STARTER, PROFESSIONAL, ENTERPRISE
+
+  startDate   DateTime @default(now())
+  endDate     DateTime?
+
+  isActive    Boolean  @default(true)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// =============================================================================
+// SCHEDULING SYSTEM (Ferramenta de Agendamentos)
+// =============================================================================
+
+// Services that can be booked
+model ScheduleService {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  duration    Int      @default(60) // Duration in minutes
+  price       Decimal  @default(0)
+  color       String   @default("#3b82f6") // Color for calendar display
+  isActive    Boolean  @default(true)
+  order       Int      @default(0)
+
+  // Relations
+  providers   ScheduleServiceProvider[]
+  appointments Appointment[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Professionals/Providers who perform services (optional)
+model ScheduleProvider {
+  id          String   @id @default(cuid())
+  name        String
+  email       String?
+  phone       String?
+  avatar      String?
+  bio         String?
+  isActive    Boolean  @default(true)
+
+  // Relations
+  services    ScheduleServiceProvider[]
+  appointments Appointment[]
+  availability ProviderAvailability[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Many-to-many: Services <-> Providers
+model ScheduleServiceProvider {
+  id          String   @id @default(cuid())
+  serviceId   String
+  service     ScheduleService @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  providerId  String
+  provider    ScheduleProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  // Custom duration/price for this provider+service combo (optional)
+  customDuration Int?
+  customPrice    Decimal?
+
+  @@unique([serviceId, providerId])
+}
+
+// Provider availability (working hours)
+model ProviderAvailability {
+  id          String   @id @default(cuid())
+  providerId  String
+  provider    ScheduleProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  dayOfWeek   Int      // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  startTime   String   // "09:00"
+  endTime     String   // "18:00"
+  isActive    Boolean  @default(true)
+
+  @@unique([providerId, dayOfWeek])
+}
+
+// General business hours (when no specific provider)
+model ScheduleSettings {
+  id              String   @id @default("schedule-settings")
+  businessName    String   @default("Minha Empresa")
+
+  // Default working hours (JSON array of {dayOfWeek, startTime, endTime})
+  workingHours    String   @default("[{\"day\":1,\"start\":\"09:00\",\"end\":\"18:00\"},{\"day\":2,\"start\":\"09:00\",\"end\":\"18:00\"},{\"day\":3,\"start\":\"09:00\",\"end\":\"18:00\"},{\"day\":4,\"start\":\"09:00\",\"end\":\"18:00\"},{\"day\":5,\"start\":\"09:00\",\"end\":\"18:00\"}]")
+
+  slotDuration    Int      @default(30) // Default slot duration in minutes
+  bufferTime      Int      @default(0)  // Buffer between appointments in minutes
+  maxAdvanceDays  Int      @default(30) // How many days ahead can book
+  minAdvanceHours Int      @default(2)  // Minimum hours in advance to book
+
+  // Notifications
+  sendConfirmation Boolean @default(true)
+  sendReminder     Boolean @default(true)
+  reminderHours    Int     @default(24) // Hours before appointment to send reminder
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// The actual appointment booking
+model Appointment {
+  id          String   @id @default(cuid())
+  code        String   @unique // Friendly code like "AGD-0001"
+
+  // Customer info
+  customerName  String
+  customerEmail String?
+  customerPhone String
+
+  // Booking details
+  serviceId   String
+  service     ScheduleService @relation(fields: [serviceId], references: [id])
+  providerId  String?
+  provider    ScheduleProvider? @relation(fields: [providerId], references: [id])
+
+  // Date/Time
+  date        DateTime // The date of appointment
+  startTime   String   // "14:00"
+  endTime     String   // "15:00"
+  duration    Int      // Duration in minutes (snapshot)
+
+  // Status
+  status      String   @default("PENDING") // PENDING, CONFIRMED, COMPLETED, CANCELLED, NO_SHOW
+
+  // Pricing
+  price       Decimal  @default(0)
+  isPaid      Boolean  @default(false)
+
+  // Notes
+  notes       String?  // Customer notes
+  internalNotes String? // Admin notes
+
+  // Cancellation
+  cancelledAt   DateTime?
+  cancelReason  String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// =============================================================================
+// DELIVERY SYSTEM (Ferramenta de Delivery Próprio)
+// =============================================================================
+
+// Delivery Settings (Configurações gerais do delivery)
+model DeliverySettings {
+  id              String   @id @default("delivery-settings")
+
+  // Store Info
+  storeName       String   @default("Meu Restaurante")
+  storeDescription String?
+  storeLogo       String?
+  storeBanner     String?
+  storePhone      String?
+  storeWhatsapp   String?
+
+  // Address (for distance calculation)
+  storeAddress    String?
+  storeCity       String?
+  storeState      String?
+  storeZipCode    String?
+  storeLatitude   Decimal?
+  storeLongitude  Decimal?
+
+  // Operating hours (JSON array)
+  operatingHours  String   @default("[{\"day\":1,\"open\":\"11:00\",\"close\":\"23:00\"},{\"day\":2,\"open\":\"11:00\",\"close\":\"23:00\"},{\"day\":3,\"open\":\"11:00\",\"close\":\"23:00\"},{\"day\":4,\"open\":\"11:00\",\"close\":\"23:00\"},{\"day\":5,\"open\":\"11:00\",\"close\":\"23:00\"},{\"day\":6,\"open\":\"11:00\",\"close\":\"23:00\"},{\"day\":0,\"open\":\"11:00\",\"close\":\"22:00\"}]")
+
+  // Delivery config
+  minOrderValue   Decimal  @default(0)
+  avgPrepTime     Int      @default(30) // Average preparation time in minutes
+  maxDeliveryTime Int      @default(60) // Max delivery time in minutes
+
+  // Payment methods (JSON array)
+  paymentMethods  String   @default("[\"pix\",\"credit\",\"debit\",\"cash\"]")
+  acceptCashChange Boolean @default(true)
+
+  // Appearance
+  primaryColor    String   @default("#ef4444")
+  accentColor     String   @default("#fef2f2")
+
+  // Status
+  isOpen          Boolean  @default(true)
+  pausedUntil     DateTime?
+  pauseReason     String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// Delivery Zones (Áreas de entrega)
+model DeliveryZone {
+  id              String   @id @default(cuid())
+  name            String   // "Centro", "Zona Sul", etc.
+
+  // Zone definition (either by neighborhoods, CEPs, or radius)
+  type            String   @default("neighborhood") // neighborhood, zipcode, radius, polygon, circle
+
+  // For neighborhood type
+  neighborhoods   String?  // JSON array of neighborhood names
+
+  // For zipcode type
+  zipCodes        String?  // JSON array of zipcodes or ranges
+
+  // For radius type (requires store coordinates)
+  radiusKm        Decimal?
+
+  // For map-based zones (polygon or circle)
+  coordinates     String?  // JSON: polygon [[lat,lng],...] or circle {center:[lat,lng], radius:meters}
+  centerLat       Decimal? // Center latitude for circle
+  centerLng       Decimal? // Center longitude for circle
+
+  // Pricing
+  deliveryFee     Decimal  @default(0)
+  freeDeliveryMin Decimal? // Free delivery above this order value
+
+  // Time
+  estimatedTime   Int      @default(45) // Estimated delivery time in minutes
+
+  isActive        Boolean  @default(true)
+  order           Int      @default(0)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// Delivery Orders (Pedidos de Delivery)
+model DeliveryOrder {
+  id              String   @id @default(cuid())
+  code            String   @unique // DEL-0001
+
+  // Customer info
+  customerName    String
+  customerPhone   String
+  customerEmail   String?
+  customerDocument String? // CPF
+
+  // Delivery address
+  addressStreet   String
+  addressNumber   String
+  addressComplement String?
+  addressNeighborhood String
+  addressCity     String
+  addressState    String
+  addressZipCode  String
+  addressReference String? // "Em frente ao mercado"
+
+  // Order details
+  items           DeliveryOrderItem[]
+
+  subtotal        Decimal
+  deliveryFee     Decimal  @default(0)
+  discount        Decimal  @default(0)
+  total           Decimal
+
+  // Payment
+  paymentMethod   String   // pix, credit, debit, cash
+  paymentStatus   String   @default("PENDING") // PENDING, PAID, REFUNDED
+  changeFor       Decimal? // Troco para (se pagamento em dinheiro)
+
+  // Coupon
+  couponCode      String?
+  couponDiscount  Decimal  @default(0)
+
+  // Status (Kanban)
+  status          String   @default("NEW") // NEW, CONFIRMED, PREPARING, OUT_FOR_DELIVERY, DELIVERED, CANCELLED
+
+  // Timestamps for each status
+  confirmedAt     DateTime?
+  preparingAt     DateTime?
+  outForDeliveryAt DateTime?
+  deliveredAt     DateTime?
+  cancelledAt     DateTime?
+  cancelReason    String?
+
+  // Timing
+  estimatedDelivery DateTime?
+  actualDelivery  DateTime?
+
+  // Notes
+  customerNotes   String?  // "Sem cebola, por favor"
+  internalNotes   String?  // Admin notes
+
+  // Tracking
+  deliveryPersonName String?
+  deliveryPersonPhone String?
+
+  // Origin
+  source          String   @default("ONLINE") // ONLINE, PHONE, WHATSAPP
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// Delivery Order Items
+model DeliveryOrderItem {
+  id              String   @id @default(cuid())
+  orderId         String
+  order           DeliveryOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  productId       String?  // Reference to product (optional, for tracking)
+  name            String   // Snapshot
+  description     String?  // e.g., "Pão, carne, queijo, alface..."
+  imageUrl        String?
+  price           Decimal
+  quantity        Int
+
+  // Customizations (JSON)
+  customizations  String?  // e.g., [{"name":"Sem cebola","price":0},{"name":"Bacon extra","price":5}]
+
+  notes           String?  // Item-specific notes
+
+  createdAt       DateTime @default(now())
+}
+
+// Menu Categories for Delivery (separate from store categories)
+model DeliveryCategory {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  imageUrl        String?
+
+  isActive        Boolean  @default(true)
+  order           Int      @default(0)
+
+  items           DeliveryMenuItem[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// Menu Items for Delivery
+model DeliveryMenuItem {
+  id              String   @id @default(cuid())
+  categoryId      String
+  category        DeliveryCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  name            String
+  description     String?
+  imageUrl        String?
+
+  price           Decimal
+  compareAtPrice  Decimal? // Preço original (se em promoção)
+
+  // Availability
+  isAvailable     Boolean  @default(true)
+  availableFrom   String?  // "18:00" - disponível a partir de
+  availableUntil  String?  // "23:00" - disponível até
+
+  // Stock
+  trackStock      Boolean  @default(false)
+  stock           Int      @default(0)
+
+  // Customization options (JSON)
+  // e.g., [{"name":"Tamanho","required":true,"options":[{"name":"P","price":0},{"name":"M","price":5},{"name":"G","price":10}]}]
+  customizations  String?
+
+  // Extras/Add-ons (JSON)
+  // e.g., [{"name":"Bacon","price":5},{"name":"Queijo extra","price":3}]
+  extras          String?
+
+  // Tags
+  tags            String?  // JSON array: ["vegetariano","sem-gluten"]
+
+  // Stats
+  timesOrdered    Int      @default(0)
+
+  isActive        Boolean  @default(true)
+  order           Int      @default(0)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// =============================================================================
+// WHATSAPP CHAT SYSTEM (Chat com IA)
+// =============================================================================
+
+// Chat Configuration (Bot settings, API keys, prompts)
+model ChatConfig {
+  id              String   @id @default("chat-config")
+
+  // Evolution API Configuration
+  evolutionUrl    String?  // API URL
+  evolutionApiKey String?  // API Key
+  evolutionInstance String? // Instance name
+
+  // AI Configuration
+  aiProvider      String   @default("gemini") // gemini, openai
+  geminiApiKey    String?
+  openaiApiKey    String?
+  openaiModel     String   @default("gpt-4o-mini")
+  temperature     Decimal  @default(0.7)
+  maxTokens       Int      @default(500)
+
+  // Company Info
+  companyName     String?
+  companyPhone    String?
+  companyEmail    String?
+
+  // Bot Settings
+  botEnabled      Boolean  @default(true)
+  systemPrompt    String?  // Main AI prompt
+  instructions    String?  // Additional instructions
+  knowledgeBase   String?  // Knowledge base content
+
+  // Auto Messages
+  welcomeMessage  String?  // Boas-vindas
+  offHoursMessage String?  // Fora do horário
+  transferMessage String?  // Transferência para atendente
+  fallbackMessage String?  // Quando não entende
+  errorMessage    String?  // Erro técnico
+  goodbyeMessage  String?  // Despedida
+
+  // Operating Hours
+  hoursEnabled    Boolean  @default(false)
+  hoursStart      String   @default("08:00")
+  hoursEnd        String   @default("18:00")
+  workingDays     String   @default("[\"seg\",\"ter\",\"qua\",\"qui\",\"sex\"]") // JSON array
+
+  // Limits
+  messagesPerMinute Int    @default(20)
+  conversationTimeout Int  @default(30) // Minutes
+  maxAiMessages   Int      @default(10) // Per conversation
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// Chat Conversations
+model ChatConversation {
+  id              String   @id @default(cuid())
+  phoneNumber     String   @unique
+  name            String?  // Customer name (extracted)
+
+  // Status
+  status          String   @default("active") // active, waiting_human, closed
+  stage           String   @default("inicio") // Current flow stage
+
+  // Stats
+  messageCount    Int      @default(0)
+  aiMessageCount  Int      @default(0) // Count of AI responses sent
+
+  // Relations
+  messages        ChatMessage[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// Chat Messages
+model ChatMessage {
+  id              String   @id @default(cuid())
+  conversationId  String
+  conversation    ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  content         String
+  direction       String   // "in" (from customer) or "out" (from bot/agent)
+
+  // Metadata
+  messageId       String?  // Evolution API message ID
+  status          String   @default("sent") // sent, delivered, read, error
+  isAiGenerated   Boolean  @default(false)
+  ruleName        String?  // Which rule triggered this response
+
+  // Media
+  mediaType       String?  // image, audio, video, document
+  mediaUrl        String?
+
+  createdAt       DateTime @default(now())
+}
+
+// Chat Flow Rules (Regras de automação)
+model ChatRule {
+  id              String   @id @default(cuid())
+  name            String
+
+  // Trigger
+  triggers        String   // JSON array of keywords ["oi","olá","bom dia"]
+  matchExact      Boolean  @default(false)
+
+  // Conditions
+  stage           String?  // Only trigger if in this stage
+
+  // Actions
+  action          String   @default("responder") // responder, transferir_humano, finalizar, salvar_nome
+  response        String?  // The response text
+  followUp        String?  // Additional message after response
+
+  // Flow
+  nextStage       String?  // Move to this stage after response
+
+  isActive        Boolean  @default(true)
+  order           Int      @default(0)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// =============================================================================
+// LENS SYSTEM (Ferramenta Venda de Lentes - Óticas)
+// =============================================================================
+
+// Configurações gerais da ferramenta de lentes
+model LensConfig {
+  id                    String   @id @default("lens-config")
+
+  // Modal Appearance
+  modalTitle            String   @default("Selecione sua Lente")
+  modalSubtitle         String   @default("Fique tranquilo(a)! Sua receita pode ser enviada após a finalização do pedido.")
+
+  // Colors
+  primaryColor          String   @default("#1f2937")
+  accentColor           String   @default("#3b82f6")
+  backgroundColor       String   @default("#ffffff")
+  cardBorderColor       String   @default("#e5e7eb")
+  cardHoverBorderColor  String   @default("#3b82f6")
+  selectedBorderColor   String   @default("#3b82f6")
+  priceColor            String   @default("#059669")
+
+  // Images
+  gradeLensIcon         String?  // Icon for "Com Grau"
+  noGradeLensIcon       String?  // Icon for "Sem Grau"
+
+  // Feature flags
+  enableGradeLens       Boolean  @default(true)
+  enableNoGradeLens     Boolean  @default(true)
+  requireTreatment      Boolean  @default(false) // If true, treatment is mandatory for grade lenses
+
+  // Discounts
+  gradeDiscount         Decimal  @default(0)     // % discount on grade lenses
+  gradeDiscountLabel    String   @default("15% Off em todas as Lentes")
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+// Tipos de lente (Com Grau, Sem Grau)
+model LensType {
+  id              String   @id @default(cuid())
+  slug            String   @unique // "grau", "sem-grau"
+  name            String   // "Grau", "Sem Grau - Com filtro Azul"
+  description     String?  // "Para perto ou longe. Todas as lentes possuem UV 400"
+  iconUrl         String?  // URL or icon name
+
+  // Pricing
+  price           Decimal  @default(0) // Additional price for this type
+
+  // Behavior
+  requiresThickness  Boolean  @default(true) // If true, user must select thickness
+  requiresTreatment  Boolean  @default(true) // If true, user must select treatment
+
+  isActive        Boolean  @default(true)
+  order           Int      @default(0)
+
+  // Relations
+  thicknesses     LensThickness[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// Espessuras de lente (Normal 1.56, Fina 1.59, etc)
+model LensThickness {
+  id              String   @id @default(cuid())
+  lensTypeId      String?
+  lensType        LensType? @relation(fields: [lensTypeId], references: [id], onDelete: Cascade)
+
+  name            String   // "Normal", "Fina", "Super Fina", "Extra Fina"
+  index           String   // "1.56", "1.59", "1.67", "1.74"
+  description     String?  // Technical description
+
+  // Specs (for display)
+  sphericalRange  String?  // e.g., "+/- 4.00"
+  cylindricalRange String? // e.g., "-2.00"
+
+  // Pricing
+  price           Decimal  @default(0)
+
+  // Display
+  iconUrl         String?
+
+  isActive        Boolean  @default(true)
+  order           Int      @default(0)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// Tratamentos de lente (Anti-reflexo, Filtro Azul)
+model LensTreatment {
+  id              String   @id @default(cuid())
+  name            String   // "Tradicional", "Filtro de Luz Azul"
+  description     String?  // Detailed description
+
+  // Pricing
+  price           Decimal  @default(0)
+
+  // Display
+  iconUrl         String?
+
+  // Features (JSON array of strings)
+  features        String?  // e.g., ["Antireflexo", "Resistente a arranhões", "UV 400"]
+
+  isActive        Boolean  @default(true)
+  order           Int      @default(0)
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

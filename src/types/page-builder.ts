@@ -9,7 +9,26 @@ export type BlockType =
     | "spacer"
     | "instagram"
     | "map"
-    | "promo";
+    | "promo"
+    // Tool Blocks (Loja de Ferramentas)
+    | "tool-scheduling"      // Agendamentos Online
+    | "tool-menu"            // Cardápio Digital
+    | "tool-delivery"        // Delivery Próprio
+    | "tool-reservations"    // Reservas de Mesas
+    | "tool-orders"          // Comandas Digitais
+    | "tool-salon"           // Gestão de Salão
+    | "tool-whatsapp-catalog"// Catálogo WhatsApp
+    | "tool-quotes"          // Orçamentos Online
+    | "tool-gift-cards"      // Gift Cards
+    | "tool-wishlist"        // Lista de Presentes
+    | "tool-subscriptions"   // Clube de Assinaturas
+    | "tool-loyalty"         // Programa de Fidelidade
+    | "tool-reviews"         // Avaliações
+    | "tool-coupons"         // Cupons e Promoções
+    | "tool-digital-showcase"// Vitrine Digital
+    | "tool-social-proof"    // Prova Social
+    | "tool-chat"            // Chat Online
+    | "tool-tracking";       // Rastreamento de Pedidos
 
 export interface BlockStyles {
     backgroundColor?: string;
@@ -63,4 +82,46 @@ export interface ProductGridContent {
     productIds?: string[]; // manual
     limit?: number;
     columns?: number;
+}
+
+// --- Tool Block Content Types ---
+
+export interface ToolBlockContent {
+    title?: string;
+    subtitle?: string;
+    buttonText?: string;
+    toolSlug: string; // Reference to the tool
+    config?: Record<string, unknown>; // Tool-specific configuration
+}
+
+export interface SchedulingBlockContent extends ToolBlockContent {
+    showCalendar?: boolean;
+    professionals?: string[]; // IDs of professionals to show
+}
+
+export interface MenuBlockContent extends ToolBlockContent {
+    showCategories?: boolean;
+    showSearch?: boolean;
+    displayMode?: "grid" | "list";
+}
+
+export interface DeliveryBlockContent extends ToolBlockContent {
+    showCart?: boolean;
+    showDeliveryTime?: boolean;
+}
+
+export interface ReviewsBlockContent extends ToolBlockContent {
+    limit?: number;
+    showRating?: boolean;
+    showPhotos?: boolean;
+}
+
+export interface LoyaltyBlockContent extends ToolBlockContent {
+    showPoints?: boolean;
+    showRewards?: boolean;
+}
+
+export interface ChatBlockContent extends ToolBlockContent {
+    position?: "bottom-right" | "bottom-left";
+    welcomeMessage?: string;
 }

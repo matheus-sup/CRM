@@ -46,16 +46,24 @@ export function HeroBanner({ banners }: { banners: Banner[] }) {
                     >
                         <Link href={banner.link || "#"} className="block w-full h-full relative">
                             {/* Desktop Image */}
-                            <img
+                            <Image
                                 src={banner.imageUrl}
                                 alt={banner.label || "Banner"}
-                                className={`w-full h-full object-cover hidden md:block`}
+                                fill
+                                sizes="100vw"
+                                className="object-cover hidden md:block"
+                                priority={index === 0}
+                                loading={index === 0 ? "eager" : "lazy"}
                             />
                             {/* Mobile Image (Fallback to Desktop if missing) */}
-                            <img
+                            <Image
                                 src={banner.mobileUrl || banner.imageUrl}
                                 alt={banner.label || "Banner"}
-                                className={`w-full h-full object-cover md:hidden`}
+                                fill
+                                sizes="100vw"
+                                className="object-cover md:hidden"
+                                priority={index === 0}
+                                loading={index === 0 ? "eager" : "lazy"}
                             />
                         </Link>
                     </div>

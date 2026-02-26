@@ -31,6 +31,8 @@ export function Header({ config, categories, editorMode, onFieldClick }: HeaderP
             return <CenteredHeader config={config} categories={categories} editorMode={editorMode} onFieldClick={onFieldClick} />;
         case "minimal":
             return <MinimalHeader config={config} categories={categories} editorMode={editorMode} onFieldClick={onFieldClick} />;
+        case "restaurant":
+            return <RestaurantHeader config={config} categories={categories} editorMode={editorMode} onFieldClick={onFieldClick} />;
         case "classic":
         default:
             return <ClassicHeader config={config} categories={categories} editorMode={editorMode} onFieldClick={onFieldClick} />;
@@ -94,7 +96,7 @@ function ClassicHeader({ config, categories, editorMode, onFieldClick }: { confi
                                     src={logoUrl}
                                     alt={storeName}
                                     className={cn("object-contain transition-all duration-300", editorClass)}
-                                    style={{ height: 'auto', width: `${config.headerLogoWidth || 120}px`, maxHeight: '70px' }}
+                                    style={{ width: `${Math.min(80, Math.max(20, config?.headerLogoWidth || 55))}px`, height: 'auto' }}
                                     data-field="headerLogoWidth"
                                 />
                             ) : (
@@ -127,11 +129,14 @@ function ClassicHeader({ config, categories, editorMode, onFieldClick }: { confi
                             onClick={handleFieldClick("headerSearchPlaceholder")}
                             data-field="headerSearchPlaceholder"
                         >
-                            <div className="relative flex shadow-sm rounded-full border border-border bg-muted/30 hover:bg-background transition-colors">
+                            <div
+                                className="relative flex shadow-sm rounded-full overflow-hidden transition-colors border-2"
+                                style={{ borderColor: config?.searchBtnBg || config?.themeColor || "var(--primary)" }}
+                            >
                                 <Input
                                     type="search"
                                     placeholder={config?.headerSearchPlaceholder || "O que você está buscando?"}
-                                    className="h-12 w-full rounded-l-full border-0 bg-transparent text-foreground placeholder:text-muted-foreground focus-visible:ring-0 text-sm pl-6"
+                                    className="h-12 w-full rounded-l-full border-0 bg-white text-foreground placeholder:text-muted-foreground focus-visible:ring-0 text-sm pl-6"
                                     readOnly={editorMode}
                                 />
                                 <Button
@@ -295,11 +300,14 @@ function CenteredHeader({ config, categories, editorMode, onFieldClick }: { conf
                 {/* Search bar expandable */}
                 {showSearch && searchOpen && (
                     <div className="py-3 border-b border-border/50 hidden md:block">
-                        <div className="max-w-xl mx-auto relative">
+                        <div
+                            className="max-w-xl mx-auto relative rounded-full overflow-hidden shadow-sm border-2"
+                            style={{ borderColor: config?.searchBtnBg || config?.themeColor || "var(--primary)" }}
+                        >
                             <Input
                                 type="search"
                                 placeholder={config?.headerSearchPlaceholder || "O que você está buscando?"}
-                                className="h-10 pr-10"
+                                className="h-10 pr-10 border-0 bg-white text-foreground placeholder:text-muted-foreground focus-visible:ring-0"
                                 autoFocus
                             />
                             <Button
@@ -307,6 +315,7 @@ function CenteredHeader({ config, categories, editorMode, onFieldClick }: { conf
                                 size="sm"
                                 className="absolute right-1 top-1/2 -translate-y-1/2"
                                 onClick={() => setSearchOpen(false)}
+                                style={{ color: config?.searchBtnBg || config?.themeColor || "var(--primary)" }}
                             >
                                 <X className="h-4 w-4" />
                             </Button>
@@ -322,7 +331,7 @@ function CenteredHeader({ config, categories, editorMode, onFieldClick }: { conf
                                 src={logoUrl}
                                 alt={storeName}
                                 className="object-contain"
-                                style={{ height: 'auto', width: `${config.headerLogoWidth || 150}px`, maxHeight: '80px' }}
+                                style={{ width: `${Math.min(80, Math.max(20, config?.headerLogoWidth || 55))}px`, height: 'auto' }}
                             />
                         ) : (
                             <div className="text-center">
@@ -397,7 +406,7 @@ function MinimalHeader({ config, categories, editorMode, onFieldClick }: { confi
                                 src={logoUrl}
                                 alt={storeName}
                                 className="object-contain"
-                                style={{ height: '40px', width: 'auto' }}
+                                style={{ width: `${Math.min(80, Math.max(20, config?.headerLogoWidth || 55))}px`, height: 'auto' }}
                             />
                         ) : (
                             <>
@@ -456,11 +465,14 @@ function MinimalHeader({ config, categories, editorMode, onFieldClick }: { confi
                 {/* Expandable Search */}
                 {showSearch && searchOpen && (
                     <div className="pb-3">
-                        <div className="relative">
+                        <div
+                            className="relative rounded-full overflow-hidden shadow-sm border-2"
+                            style={{ borderColor: config?.searchBtnBg || config?.themeColor || "var(--primary)" }}
+                        >
                             <Input
                                 type="search"
                                 placeholder={config?.headerSearchPlaceholder || "Buscar..."}
-                                className="h-9 text-sm pr-9"
+                                className="h-9 text-sm pr-9 border-0 bg-white text-foreground placeholder:text-muted-foreground focus-visible:ring-0"
                                 autoFocus
                             />
                             <Button
@@ -468,6 +480,7 @@ function MinimalHeader({ config, categories, editorMode, onFieldClick }: { confi
                                 size="icon"
                                 className="absolute right-0 top-0 h-9 w-9"
                                 onClick={() => setSearchOpen(false)}
+                                style={{ color: config?.searchBtnBg || config?.themeColor || "var(--primary)" }}
                             >
                                 <X className="h-4 w-4" />
                             </Button>
@@ -487,7 +500,7 @@ function NavMenu({ config, className, inline, minimal, editorMode, onFieldClick 
     const menuItems = config?.menus?.find((m: any) => m.handle === 'main')?.items || [];
 
     const linkClass = cn(
-        "transition-colors",
+        "transition-colors outline-none focus-visible:outline-none",
         minimal ? "text-sm font-medium" : "text-sm font-semibold tracking-wider uppercase",
         editorMode && "cursor-pointer hover:ring-2 hover:ring-blue-400 hover:ring-offset-2 rounded px-2 py-1"
     );
@@ -500,6 +513,9 @@ function NavMenu({ config, className, inline, minimal, editorMode, onFieldClick 
         }
     };
 
+    const linkColor = config?.menuLinkColor || config?.menuColor || "var(--foreground)";
+    const hoverColor = config?.menuLinkHoverColor || config?.themeColor || "var(--primary)";
+
     const content = menuItems.length > 0 ? (
         menuItems
             .sort((a: any, b: any) => a.order - b.order)
@@ -508,18 +524,20 @@ function NavMenu({ config, className, inline, minimal, editorMode, onFieldClick 
                     key={item.id}
                     href={editorMode ? "#" : normalizeUrl(item.url)}
                     className={linkClass}
-                    style={{ color: config?.menuLinkColor || config?.menuColor || "var(--foreground)" }}
+                    style={{ color: linkColor, ["--menu-hover" as any]: hoverColor }}
                     onClick={handleMenuClick}
                     data-field="menuLinks"
+                    onMouseEnter={(e) => (e.currentTarget.style.color = hoverColor)}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = linkColor)}
                 >
                     {item.label}
                 </Link>
             ))
     ) : (
         <>
-            <Link href={editorMode ? "#" : "/"} className={linkClass} style={{ color: config?.menuLinkColor || config?.menuColor }} onClick={handleMenuClick} data-field="menuLinks">INÍCIO</Link>
-            <Link href={editorMode ? "#" : "/produtos"} className={linkClass} style={{ color: config?.menuLinkColor || config?.menuColor }} onClick={handleMenuClick} data-field="menuLinks">PRODUTOS</Link>
-            <Link href={editorMode ? "#" : "/contato"} className={linkClass} style={{ color: config?.menuLinkColor || config?.menuColor }} onClick={handleMenuClick} data-field="menuLinks">CONTATO</Link>
+            <Link href={editorMode ? "#" : "/"} className={linkClass} style={{ color: linkColor }} onClick={handleMenuClick} data-field="menuLinks" onMouseEnter={(e) => (e.currentTarget.style.color = hoverColor)} onMouseLeave={(e) => (e.currentTarget.style.color = linkColor)}>INÍCIO</Link>
+            <Link href={editorMode ? "#" : "/produtos"} className={linkClass} style={{ color: linkColor }} onClick={handleMenuClick} data-field="menuLinks" onMouseEnter={(e) => (e.currentTarget.style.color = hoverColor)} onMouseLeave={(e) => (e.currentTarget.style.color = linkColor)}>PRODUTOS</Link>
+            <Link href={editorMode ? "#" : "/contato"} className={linkClass} style={{ color: linkColor }} onClick={handleMenuClick} data-field="menuLinks" onMouseEnter={(e) => (e.currentTarget.style.color = hoverColor)} onMouseLeave={(e) => (e.currentTarget.style.color = linkColor)}>CONTATO</Link>
         </>
     );
 
@@ -533,6 +551,223 @@ function NavMenu({ config, className, inline, minimal, editorMode, onFieldClick 
                 {content}
             </nav>
         </div>
+    );
+}
+
+// =============================================================================
+// RESTAURANT HEADER - Food delivery style with status, time, and floating cart
+// =============================================================================
+function RestaurantHeader({ config, categories, editorMode, onFieldClick }: { config?: any, categories?: any[], editorMode?: boolean, onFieldClick?: (field: string) => void }) {
+    const { toggleCart, items } = useCart();
+    const [scrolled, setScrolled] = useState(false);
+    const [activeCategory, setActiveCategory] = useState<string | null>(null);
+
+    useEffect(() => {
+        const handleScroll = () => setScrolled(window.scrollY > 20);
+        window.addEventListener("scroll", handleScroll);
+        return () => window.removeEventListener("scroll", handleScroll);
+    }, []);
+
+    const storeName = config?.storeName || "Restaurante";
+    const logoUrl = config?.logoUrl;
+    const themeColor = config?.themeColor || config?.headerColor || "#ef4444";
+    const cartCount = items.reduce((sum, item) => sum + item.quantity, 0);
+
+    // Simulated delivery info - could come from config
+    const deliveryTime = config?.deliveryTime || "30-45 min";
+    const isOpen = config?.isOpen !== false;
+
+    const handleFieldClick = (field: string) => (e: React.MouseEvent) => {
+        if (editorMode && onFieldClick) {
+            e.preventDefault();
+            e.stopPropagation();
+            onFieldClick(field);
+        }
+    };
+
+    return (
+        <header
+            data-section="header"
+            data-style="restaurant"
+            className={cn(
+                "sticky top-0 z-50 w-full transition-all duration-300",
+                scrolled ? "shadow-lg" : ""
+            )}
+            style={{ backgroundColor: themeColor }}
+        >
+            {/* Main Header Row */}
+            <div className="container mx-auto px-3 sm:px-4">
+                <div className="flex h-14 sm:h-16 items-center justify-between gap-2 sm:gap-4">
+                    {/* Mobile Menu */}
+                    <div className="md:hidden">
+                        <RestaurantMobileMenu config={config} storeName={storeName} categories={categories} />
+                    </div>
+
+                    {/* Logo + Store Info */}
+                    <Link href={editorMode ? "#" : "/"} className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 md:flex-none" onClick={editorMode ? handleFieldClick("headerText") : undefined}>
+                        {logoUrl ? (
+                            <img
+                                src={logoUrl}
+                                alt={storeName}
+                                className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover bg-white/20 flex-shrink-0"
+                            />
+                        ) : (
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                                <span className="text-white text-sm sm:text-lg">🍔</span>
+                            </div>
+                        )}
+                        <div className="min-w-0">
+                            <span className="font-bold text-white text-sm sm:text-base block truncate">
+                                {config?.headerText || storeName}
+                            </span>
+                            <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-white/80">
+                                <span className={cn(
+                                    "w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full flex-shrink-0",
+                                    isOpen ? "bg-green-400" : "bg-red-400"
+                                )} />
+                                <span className="truncate">{isOpen ? "Aberto" : "Fechado"}</span>
+                                <span className="hidden xs:inline">•</span>
+                                <span className="hidden xs:inline">{deliveryTime}</span>
+                            </div>
+                        </div>
+                    </Link>
+
+                    {/* Desktop Search */}
+                    <div className="hidden md:flex flex-1 max-w-md mx-4">
+                        <div className="relative w-full">
+                            <Input
+                                type="search"
+                                placeholder="Buscar no cardápio..."
+                                className="h-10 w-full rounded-full bg-white/10 border-white/20 text-white placeholder:text-white/60 pl-10 pr-4 focus:bg-white/20"
+                                readOnly={editorMode}
+                            />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/60" />
+                        </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                        {/* Mobile Search */}
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="md:hidden h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-white/10 hover:bg-white/20"
+                        >
+                            <Search className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+                        </Button>
+
+                        {/* Cart Button */}
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="relative h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-white hover:bg-white/90"
+                            onClick={editorMode ? undefined : toggleCart}
+                            style={{ color: themeColor }}
+                        >
+                            <ShoppingBag className="h-4 w-4 sm:h-5 sm:w-5" />
+                            {cartCount > 0 && (
+                                <span className="absolute -top-1 -right-1 h-4 w-4 sm:h-5 sm:w-5 rounded-full bg-green-500 text-white text-[10px] sm:text-xs font-bold flex items-center justify-center">
+                                    {cartCount > 9 ? "9+" : cartCount}
+                                </span>
+                            )}
+                        </Button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Category Tabs */}
+            {categories && categories.length > 0 && (
+                <div className="border-t border-white/10">
+                    <div className="container mx-auto px-2 sm:px-4">
+                        <div className="flex gap-1.5 sm:gap-2 py-2 overflow-x-auto scrollbar-hide">
+                            {categories.slice(0, 8).map((cat, i) => (
+                                <Link
+                                    key={cat.id || i}
+                                    href={editorMode ? "#" : `/produtos?category=${cat.slug || cat.id}`}
+                                    className={cn(
+                                        "px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-[11px] sm:text-sm font-medium whitespace-nowrap transition-all flex-shrink-0",
+                                        activeCategory === cat.id
+                                            ? "bg-white text-current"
+                                            : "bg-white/15 text-white hover:bg-white/25"
+                                    )}
+                                    style={activeCategory === cat.id ? { color: themeColor } : undefined}
+                                    onClick={() => setActiveCategory(cat.id)}
+                                >
+                                    {cat.name}
+                                </Link>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+        </header>
+    );
+}
+
+// Restaurant Mobile Menu
+function RestaurantMobileMenu({ config, storeName, categories }: { config: any; storeName: string; categories?: any[] }) {
+    const themeColor = config?.themeColor || config?.headerColor || "#ef4444";
+
+    return (
+        <Sheet>
+            <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-white/10 hover:bg-white/20">
+                    <Menu className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+                </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[280px] sm:w-[320px] p-0">
+                <div className="p-4 sm:p-5" style={{ backgroundColor: themeColor }}>
+                    <span className="text-base sm:text-lg font-bold text-white">
+                        {storeName}
+                    </span>
+                    <p className="text-xs sm:text-sm text-white/70 mt-1">Faça seu pedido</p>
+                </div>
+
+                {/* Search */}
+                <div className="p-3 sm:p-4 border-b">
+                    <div className="relative">
+                        <Input placeholder="Buscar no cardápio..." className="pl-9 h-9 sm:h-10 text-sm" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    </div>
+                </div>
+
+                {/* Categories */}
+                {categories && categories.length > 0 && (
+                    <div className="p-3 sm:p-4">
+                        <h3 className="text-xs font-semibold text-muted-foreground uppercase mb-2 sm:mb-3">Categorias</h3>
+                        <nav className="flex flex-col space-y-1">
+                            {categories.map((cat, i) => (
+                                <SheetClose key={cat.id || i} asChild>
+                                    <Link
+                                        href={`/produtos?category=${cat.slug || cat.id}`}
+                                        className="flex items-center gap-2 sm:gap-3 py-2 sm:py-2.5 px-2 sm:px-3 rounded-lg text-sm sm:text-base font-medium hover:bg-muted transition-colors"
+                                    >
+                                        {cat.name}
+                                    </Link>
+                                </SheetClose>
+                            ))}
+                        </nav>
+                    </div>
+                )}
+
+                {/* Quick Links */}
+                <div className="p-3 sm:p-4 border-t mt-auto">
+                    <nav className="flex flex-col space-y-1">
+                        <SheetClose asChild>
+                            <Link href="/cardapio" className="flex items-center gap-2 sm:gap-3 py-2 px-2 sm:px-3 rounded-lg text-sm font-medium hover:bg-muted">
+                                Ver Cardápio Completo
+                            </Link>
+                        </SheetClose>
+                        <SheetClose asChild>
+                            <Link href="/minha-conta" className="flex items-center gap-2 sm:gap-3 py-2 px-2 sm:px-3 rounded-lg text-sm text-muted-foreground hover:bg-muted">
+                                <User className="h-4 w-4" />
+                                Minha Conta
+                            </Link>
+                        </SheetClose>
+                    </nav>
+                </div>
+            </SheetContent>
+        </Sheet>
     );
 }
 

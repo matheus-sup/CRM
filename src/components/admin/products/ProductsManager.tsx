@@ -2,34 +2,14 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, List, Package, FolderTree } from "lucide-react";
+import { Plus, Package, FolderTree, Tag } from "lucide-react";
 import Link from "next/link";
-import { InventoryList } from "@/components/admin/inventory/InventoryList";
-import { ProductListTable } from "./ProductListTable";
-import { CategoriesList } from "./CategoriesList";
+import { ProductsUnifiedTable } from "./ProductsUnifiedTable";
+import { CategoriesManager } from "./CategoriesManager";
 import { BrandsList } from "./BrandsList";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog"; // Ensure these exist in your UI lib
-import { Label } from "@/components/ui/label"; // Ensure these exist
-import { Input } from "@/components/ui/input"; // Ensure these exist
-import { createCategory } from "@/lib/actions/category"; // Ensure this action exists
-
-import { Tag } from "lucide-react";
 
 export function ProductsManager({ products, categories = [], brands = [] }: { products: any[], categories?: any[], brands?: any[] }) {
-    const [view, setView] = useState<"list" | "inventory" | "categories" | "brands">("list");
-    const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
-    const [isCreatingCategory, setIsCreatingCategory] = useState(false);
-
-    async function handleCreateCategory(formData: FormData) {
-        setIsCreatingCategory(true);
-        const res = await createCategory(formData);
-        setIsCreatingCategory(false);
-        if (res.success) {
-            setIsCategoryDialogOpen(false);
-        } else {
-            alert(res.message);
-        }
-    }
+    const [view, setView] = useState<"products" | "categories" | "brands">("products");
 
     return (
         <div className="space-y-6">
@@ -38,20 +18,12 @@ export function ProductsManager({ products, categories = [], brands = [] }: { pr
                     <h1 className="text-2xl font-bold text-slate-800">Produtos</h1>
                     <div className="flex bg-slate-100 p-1 rounded-lg">
                         <button
-                            onClick={() => setView("list")}
-                            className={`px-3 py-1 text-sm font-medium rounded-md transition-all flex items-center gap-2 ${view === "list" ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
-                                }`}
-                        >
-                            <List className="h-4 w-4" />
-                            Lista
-                        </button>
-                        <button
-                            onClick={() => setView("inventory")}
-                            className={`px-3 py-1 text-sm font-medium rounded-md transition-all flex items-center gap-2 ${view === "inventory" ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                            onClick={() => setView("products")}
+                            className={`px-3 py-1 text-sm font-medium rounded-md transition-all flex items-center gap-2 ${view === "products" ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
                                 }`}
                         >
                             <Package className="h-4 w-4" />
-                            Inventário
+                            Produtos
                         </button>
                         <button
                             onClick={() => setView("categories")}
@@ -72,7 +44,7 @@ export function ProductsManager({ products, categories = [], brands = [] }: { pr
                     </div>
                 </div>
 
-                {view === "list" && (
+                {view === "products" && (
                     <div className="flex gap-2">
                         <Button variant="outline" asChild>
                             <Link href="/admin/produtos/importar">
@@ -88,29 +60,10 @@ export function ProductsManager({ products, categories = [], brands = [] }: { pr
                     </div>
                 )}
 
-                <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Nova Categoria</DialogTitle>
-                        </DialogHeader>
-                        <form action={handleCreateCategory} className="space-y-4">
-                            <div className="space-y-2">
-                                <Label>Nome da Categoria</Label>
-                                <Input name="name" placeholder="Ex: Maquiagem" required />
-                            </div>
-                            <DialogFooter>
-                                <Button type="submit" disabled={isCreatingCategory}>
-                                    {isCreatingCategory ? "Criando..." : "Criar Categoria"}
-                                </Button>
-                            </DialogFooter>
-                        </form>
-                    </DialogContent>
-                </Dialog>
             </div>
 
-            {view === "list" && <ProductListTable products={products} />}
-            {view === "inventory" && <InventoryList initialProducts={products} />}
-            {view === "categories" && <CategoriesList categories={categories} onCreateClick={() => setIsCategoryDialogOpen(true)} />}
+            {view === "products" && <ProductsUnifiedTable products={products} />}
+            {view === "categories" && <CategoriesManager categories={categories} />}
             {view === "brands" && <BrandsList brands={brands} />}
         </div>
     );

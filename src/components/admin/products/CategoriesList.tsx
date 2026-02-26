@@ -1,8 +1,9 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Plus, GripVertical, MoreVertical, ExternalLink, Trash2 } from "lucide-react";
+import { Plus, GripVertical, MoreVertical, ExternalLink, Trash2, Pencil } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { deleteCategory } from "@/lib/actions/category";
 import {
     DropdownMenu,
@@ -11,7 +12,8 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export function CategoriesList({ categories, onCreateClick }: { categories: any[], onCreateClick: () => void }) {
+export function CategoriesList({ categories, onCreateClick, onEditClick }: { categories: any[], onCreateClick: () => void, onEditClick: (cat: any) => void }) {
+    const router = useRouter();
 
     async function handleDelete(id: string, productCount: number) {
         if (productCount > 0) {
@@ -21,21 +23,16 @@ export function CategoriesList({ categories, onCreateClick }: { categories: any[
         }
 
         await deleteCategory(id);
+        router.refresh();
     }
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="text-lg font-semibold text-slate-800">Gerenciar Categorias</h2>
-                    <p className="text-sm text-slate-600">
-                        Organize seus produtos em categorias para o menu da loja.
-                    </p>
-                </div>
-                <Link href="#" className="flex items-center gap-2 text-sm text-blue-600 font-medium hover:underline">
-                    <ExternalLink className="h-4 w-4" />
-                    Mais sobre criar e organizar as categorias
-                </Link>
+            <div>
+                <h2 className="text-lg font-semibold text-slate-800">Gerenciar Categorias</h2>
+                <p className="text-sm text-slate-600">
+                    Organize seus produtos em categorias para o menu da loja.
+                </p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -51,7 +48,11 @@ export function CategoriesList({ categories, onCreateClick }: { categories: any[
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent>
-                                    <DropdownMenuItem className="text-red-600 cursor-pointer" onClick={() => handleDelete(cat.id, cat._count?.products || 0)}>
+                                    <DropdownMenuItem className="cursor-pointer" onSelect={() => onEditClick(cat)}>
+                                        <Pencil className="mr-2 h-4 w-4" />
+                                        Editar
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem className="text-red-600 cursor-pointer" onSelect={() => handleDelete(cat.id, cat._count?.products || 0)}>
                                         <Trash2 className="mr-2 h-4 w-4" />
                                         Excluir
                                     </DropdownMenuItem>

@@ -153,7 +153,6 @@ export function MenuEditor({ menu, categories = [] }: { menu: any, categories?: 
 
                 const newItems = arrayMove(items, oldIndex, newIndex);
 
-                // Get ordered IDs and save
                 const orderedIds = newItems.map((item) => item.id);
                 reorderMenuItems(menu.id, orderedIds);
 
@@ -207,7 +206,6 @@ export function MenuEditor({ menu, categories = [] }: { menu: any, categories?: 
 
     // Wrapper for update item
     const handleUpdateItem = async (itemId: string, data: { label: string; url: string }) => {
-        // Optimistic update
         setItems(items.map(i => i.id === itemId ? { ...i, ...data } : i));
         await updateMenuItem(itemId, menu.id, data);
     };

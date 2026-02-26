@@ -5,9 +5,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { ArrowLeft, Trash2, Image as ImageIcon, X } from "lucide-react";
 import { PageBlock } from "@/types/page-builder";
 import { ColorPickerInput } from "./ColorPickerInput";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
+import { MediaLibrary } from "@/components/admin/media/MediaLibrary";
+import { SharedLinkSelector } from "@/components/admin/SharedLinkSelector";
 
 interface BlockPropertyEditorProps {
     block: PageBlock;
@@ -18,6 +27,50 @@ interface BlockPropertyEditorProps {
     products?: any[];
     categories?: any[];
     brands?: any[];
+}
+
+// =============================================================================
+// COMPACT IMAGE PICKER - Small inline image picker with media library
+// =============================================================================
+function CompactImagePicker({ value, onChange, label }: { value: string; onChange: (url: string) => void; label?: string }) {
+    const [open, setOpen] = useState(false);
+
+    return (
+        <div className="space-y-1">
+            {label && <Label className="text-xs">{label}</Label>}
+            <Dialog open={open} onOpenChange={setOpen}>
+                <DialogTrigger asChild>
+                    <div className="border rounded cursor-pointer hover:bg-slate-50 transition-colors flex items-center gap-2 p-1.5">
+                        {value ? (
+                            <img src={value} alt="" className="h-10 w-10 object-cover rounded" />
+                        ) : (
+                            <div className="h-10 w-10 bg-slate-100 rounded flex items-center justify-center">
+                                <ImageIcon className="h-4 w-4 text-slate-400" />
+                            </div>
+                        )}
+                        <span className="text-xs text-slate-500 flex-1">{value ? "Trocar imagem" : "Selecionar imagem"}</span>
+                        {value && (
+                            <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); onChange(""); }}
+                                className="p-1 hover:bg-red-100 rounded text-red-500"
+                            >
+                                <X className="h-3 w-3" />
+                            </button>
+                        )}
+                    </div>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl max-h-[85vh] h-[80vh] flex flex-col p-6">
+                    <DialogHeader>
+                        <DialogTitle>Galeria de Mídia</DialogTitle>
+                    </DialogHeader>
+                    <div className="flex-1 overflow-hidden">
+                        <MediaLibrary onSelect={(media: any) => { onChange(media.url); setOpen(false); }} selectedUrl={value} />
+                    </div>
+                </DialogContent>
+            </Dialog>
+        </div>
+    );
 }
 
 // =============================================================================
@@ -497,6 +550,18 @@ export function BlockPropertyEditor({ block, onUpdate, onDelete, onBack, focusFi
                                                             />
                                                         </div>
                                                     </div>
+                                                    <div className="space-y-1 border-t pt-2 mt-2">
+                                                        <CompactImagePicker
+                                                            label="Imagem do Banner"
+                                                            value={slide.imageUrl || ""}
+                                                            onChange={(url) => {
+                                                                const newSlides = [...slides];
+                                                                newSlides[index] = { ...slide, imageUrl: url };
+                                                                updateContent("slides", newSlides);
+                                                            }}
+                                                        />
+                                                        <p className="text-[10px] text-slate-400">PNG, JPG ou GIF. Tamanho: 1920 × 840px</p>
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))}
@@ -530,6 +595,19 @@ export function BlockPropertyEditor({ block, onUpdate, onDelete, onBack, focusFi
                                             </div>
                                         )}
 
+                                        <div className="space-y-1">
+                                            <Label className="text-xs">Transição</Label>
+                                            <select
+                                                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                                                value={data.content.transition || "fade"}
+                                                onChange={(e) => updateContent("transition", e.target.value)}
+                                            >
+                                                <option value="fade">Fade (Suave)</option>
+                                                <option value="slide">Slide (Deslizar)</option>
+                                                <option value="none">Sem transição</option>
+                                            </select>
+                                        </div>
+
                                         <div className="grid grid-cols-2 gap-3 pt-2">
                                             <ColorPickerInput
                                                 id="button-bg"
@@ -546,50 +624,6 @@ export function BlockPropertyEditor({ block, onUpdate, onDelete, onBack, focusFi
                                         </div>
                                     </div>
 
-                                    {/* Video Background Settings - Only for video variant */}
-                                    {block.variant === "video" && (
-                                        <div className="border-t pt-4 mt-4 space-y-3">
-                                            <h4 className="font-semibold text-xs uppercase text-slate-400">Vídeo de Fundo</h4>
-
-                                            <div className="space-y-1">
-                                                <Label className="text-xs">URL do Vídeo</Label>
-                                                <Input
-                                                    value={data.content.videoUrl || ""}
-                                                    onChange={(e) => updateContent("videoUrl", e.target.value)}
-                                                    placeholder="https://... ou ID do YouTube"
-                                                />
-                                                <p className="text-xs text-slate-500 mt-1">
-                                                    Suporta: YouTube (cole o link ou ID), Vimeo, ou link direto para .mp4/.webm
-                                                </p>
-                                            </div>
-
-                                            <div className="flex items-center gap-2">
-                                                <input
-                                                    type="checkbox"
-                                                    id="video-muted"
-                                                    checked={data.content.videoMuted !== false}
-                                                    onChange={(e) => updateContent("videoMuted", e.target.checked)}
-                                                    className="h-4 w-4"
-                                                />
-                                                <Label htmlFor="video-muted" className="text-sm font-normal">Silenciar vídeo</Label>
-                                            </div>
-
-                                            <div className="flex items-center gap-2">
-                                                <input
-                                                    type="checkbox"
-                                                    id="video-loop"
-                                                    checked={data.content.videoLoop !== false}
-                                                    onChange={(e) => updateContent("videoLoop", e.target.checked)}
-                                                    className="h-4 w-4"
-                                                />
-                                                <Label htmlFor="video-loop" className="text-sm font-normal">Repetir em loop</Label>
-                                            </div>
-
-                                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-700">
-                                                <strong>Dica:</strong> Para YouTube, basta colar o link completo (ex: https://youtube.com/watch?v=ABC123) ou apenas o ID do vídeo.
-                                            </div>
-                                        </div>
-                                    )}
                                 </>
                             );
                         })()}
@@ -669,6 +703,35 @@ export function BlockPropertyEditor({ block, onUpdate, onDelete, onBack, focusFi
                 {/* --- PRODUCT GRID BLOCK EDITOR --- */}
                 {block.type === "product-grid" && (
                     <div className="space-y-4">
+                        <div className="space-y-2">
+                            <Label>Layout da Vitrine</Label>
+                            <div className="grid grid-cols-3 gap-2">
+                                {[
+                                    { id: "grid", label: "Grade", icon: "▦" },
+                                    { id: "carousel", label: "Carrossel", icon: "◄ ►" },
+                                    { id: "list", label: "Lista", icon: "☰" },
+                                ].map((opt) => (
+                                    <button
+                                        key={opt.id}
+                                        type="button"
+                                        onClick={() => {
+                                            const newData = { ...data, variant: opt.id };
+                                            setData(newData);
+                                            onUpdate(newData);
+                                        }}
+                                        className={`flex flex-col items-center gap-1 p-3 rounded-lg border-2 text-xs font-medium transition-all ${
+                                            (data.variant || "grid") === opt.id
+                                                ? "border-blue-500 bg-blue-50 text-blue-700"
+                                                : "border-slate-200 hover:border-slate-300 text-slate-600"
+                                        }`}
+                                    >
+                                        <span className="text-lg">{opt.icon}</span>
+                                        {opt.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
                         <div className="space-y-1">
                             <Label>Modo de Seleção</Label>
                             <select
@@ -913,37 +976,59 @@ export function BlockPropertyEditor({ block, onUpdate, onDelete, onBack, focusFi
                             />
                         </div>
 
-                        <div className="border-t pt-4 my-2"></div>
-                        <h4 className="font-semibold text-xs uppercase text-slate-400 mb-3">Carrossel Automático</h4>
-
-                        <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                            <div className="flex-1">
-                                <Label className="text-sm font-medium">Ativar Rolagem Automática</Label>
-                                <p className="text-xs text-slate-500 mt-1">Os produtos vão rolar automaticamente</p>
+                        <div className="space-y-2">
+                            <Label>Tamanho dos Cards ({data.content.cardSize || 200}px)</Label>
+                            <input
+                                type="range"
+                                min={120}
+                                max={500}
+                                step={10}
+                                value={data.content.cardSize || 200}
+                                onChange={(e) => updateContent("cardSize", parseInt(e.target.value))}
+                                className="w-full h-1.5 accent-blue-600 cursor-pointer"
+                            />
+                            <div className="flex justify-between text-[10px] text-slate-400">
+                                <span>Pequeno</span>
+                                <span>Médio</span>
+                                <span>Grande</span>
                             </div>
-                            <label className="relative inline-flex items-center cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={data.content.autoScroll || false}
-                                    onChange={(e) => updateContent("autoScroll", e.target.checked)}
-                                    className="sr-only peer"
-                                />
-                                <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                            </label>
                         </div>
 
-                        {data.content.autoScroll && (
-                            <div className="space-y-1">
-                                <Label>Intervalo de Rolagem (segundos)</Label>
-                                <Input
-                                    type="number"
-                                    min="1"
-                                    max="30"
-                                    value={data.content.autoScrollInterval || 3}
-                                    onChange={(e) => updateContent("autoScrollInterval", parseInt(e.target.value) || 3)}
-                                />
-                                <p className="text-xs text-slate-500">Tempo entre cada rolagem automática (1-30 segundos)</p>
-                            </div>
+                        {(data.variant || "grid") === "carousel" && (
+                            <>
+                                <div className="border-t pt-4 my-2"></div>
+                                <h4 className="font-semibold text-xs uppercase text-slate-400 mb-3">Carrossel Automático</h4>
+
+                                <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                                    <div className="flex-1">
+                                        <Label className="text-sm font-medium">Ativar Rolagem Automática</Label>
+                                        <p className="text-xs text-slate-500 mt-1">Os produtos vão rolar automaticamente</p>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={data.content.autoScroll || false}
+                                            onChange={(e) => updateContent("autoScroll", e.target.checked)}
+                                            className="sr-only peer"
+                                        />
+                                        <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                    </label>
+                                </div>
+
+                                {data.content.autoScroll && (
+                                    <div className="space-y-1">
+                                        <Label>Intervalo de Rolagem (segundos)</Label>
+                                        <Input
+                                            type="number"
+                                            min="1"
+                                            max="30"
+                                            value={data.content.autoScrollInterval || 3}
+                                            onChange={(e) => updateContent("autoScrollInterval", parseInt(e.target.value) || 3)}
+                                        />
+                                        <p className="text-xs text-slate-500">Tempo entre cada rolagem automática (1-30 segundos)</p>
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
                 )}
@@ -1206,10 +1291,11 @@ export function BlockPropertyEditor({ block, onUpdate, onDelete, onBack, focusFi
 
                         <div className="space-y-1">
                             <Label>Link "Ver todas"</Label>
-                            <Input
+                            <SharedLinkSelector
                                 value={data.content.viewAllLink || "/categorias"}
-                                onChange={(e) => updateContent("viewAllLink", e.target.value)}
-                                placeholder="/categorias"
+                                onChange={(val) => updateContent("viewAllLink", val)}
+                                categories={categories || []}
+                                className="w-full"
                             />
                         </div>
 
@@ -1373,42 +1459,38 @@ export function BlockPropertyEditor({ block, onUpdate, onDelete, onBack, focusFi
                                                                 </div>
 
                                                                 <div className="space-y-1">
-                                                                    <Label className="text-xs">Link Personalizado (opcional)</Label>
-                                                                    <Input
-                                                                        value={categoryData.link || ""}
-                                                                        onChange={(e) => {
+                                                                    <Label className="text-xs">Link do Card</Label>
+                                                                    <SharedLinkSelector
+                                                                        value={categoryData.link || `/search?category=${category.slug}`}
+                                                                        onChange={(val) => {
                                                                             const newCategoriesData = {
                                                                                 ...(data.content.categoriesData || {}),
                                                                                 [categoryId]: {
                                                                                     ...(data.content.categoriesData?.[categoryId] || {}),
-                                                                                    link: e.target.value
+                                                                                    link: val
                                                                                 }
                                                                             };
                                                                             updateContent("categoriesData", newCategoriesData);
                                                                         }}
-                                                                        placeholder={`/search?category=${category.slug}`}
-                                                                        className="text-xs"
+                                                                        categories={categories || []}
+                                                                        className="w-full"
                                                                     />
                                                                 </div>
 
-                                                                <div className="space-y-1">
-                                                                    <Label className="text-xs">URL da Imagem (opcional)</Label>
-                                                                    <Input
-                                                                        value={categoryData.imageUrl || ""}
-                                                                        onChange={(e) => {
-                                                                            const newCategoriesData = {
-                                                                                ...(data.content.categoriesData || {}),
-                                                                                [categoryId]: {
-                                                                                    ...(data.content.categoriesData?.[categoryId] || {}),
-                                                                                    imageUrl: e.target.value
-                                                                                }
-                                                                            };
-                                                                            updateContent("categoriesData", newCategoriesData);
-                                                                        }}
-                                                                        placeholder={category.imageUrl || "/assets/categoria-placeholder.jpg"}
-                                                                        className="text-xs"
-                                                                    />
-                                                                </div>
+                                                                <CompactImagePicker
+                                                                    value={categoryData.imageUrl || category.imageUrl || ""}
+                                                                    onChange={(url) => {
+                                                                        const newCategoriesData = {
+                                                                            ...(data.content.categoriesData || {}),
+                                                                            [categoryId]: {
+                                                                                ...(data.content.categoriesData?.[categoryId] || {}),
+                                                                                imageUrl: url
+                                                                            }
+                                                                        };
+                                                                        updateContent("categoriesData", newCategoriesData);
+                                                                    }}
+                                                                    label="Imagem da Categoria"
+                                                                />
                                                             </div>
                                                         </div>
                                                     );
@@ -1491,6 +1573,67 @@ export function BlockPropertyEditor({ block, onUpdate, onDelete, onBack, focusFi
                                     />
                                     <p className="text-xs text-slate-500">Quantidade máxima de categorias a exibir (1-50)</p>
                                 </div>
+
+                                {/* Per-category image editing in auto mode */}
+                                {categories && categories.length > 0 && (
+                                    <div className="space-y-2">
+                                        <Label className="text-xs font-semibold">Imagens das Categorias</Label>
+                                        <div className="border rounded-lg max-h-[400px] overflow-y-auto">
+                                            <div className="divide-y">
+                                                {categories.slice(0, data.content.limit || 8).map((category: any) => {
+                                                    const categoryData = (data.content.categoriesData || {})[category.id] || {};
+                                                    const currentImage = categoryData.imageUrl || category.imageUrl || "";
+
+                                                    return (
+                                                        <div key={category.id} className="p-3 space-y-2">
+                                                            <div className="flex items-center gap-2">
+                                                                {currentImage ? (
+                                                                    <img src={currentImage} alt={category.name} className="h-10 w-10 object-cover rounded" />
+                                                                ) : (
+                                                                    <div className="h-10 w-10 bg-slate-200 rounded flex items-center justify-center text-xs text-slate-600 font-bold">
+                                                                        {category.name.charAt(0)}
+                                                                    </div>
+                                                                )}
+                                                                <span className="text-sm font-medium flex-1">{category.name}</span>
+                                                            </div>
+                                                            <CompactImagePicker
+                                                                value={currentImage}
+                                                                onChange={(url) => {
+                                                                    const newCategoriesData = {
+                                                                        ...(data.content.categoriesData || {}),
+                                                                        [category.id]: {
+                                                                            ...(data.content.categoriesData?.[category.id] || {}),
+                                                                            imageUrl: url
+                                                                        }
+                                                                    };
+                                                                    updateContent("categoriesData", newCategoriesData);
+                                                                }}
+                                                            />
+                                                            <div className="space-y-1">
+                                                                <Label className="text-xs">Link do Card</Label>
+                                                                <SharedLinkSelector
+                                                                    value={categoryData.link || `/search?category=${category.slug}`}
+                                                                    onChange={(val) => {
+                                                                        const newCategoriesData = {
+                                                                            ...(data.content.categoriesData || {}),
+                                                                            [category.id]: {
+                                                                                ...(data.content.categoriesData?.[category.id] || {}),
+                                                                                link: val
+                                                                            }
+                                                                        };
+                                                                        updateContent("categoriesData", newCategoriesData);
+                                                                    }}
+                                                                    categories={categories || []}
+                                                                    className="w-full"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </>
                         )}
                     </div>
@@ -1554,6 +1697,14 @@ export function BlockPropertyEditor({ block, onUpdate, onDelete, onBack, focusFi
                         onChange={(val) => updateStyle("backgroundColor", val)}
                     />
 
+                    {block.type === "categories" && (
+                        <CompactImagePicker
+                            value={data.styles.backgroundImage || ""}
+                            onChange={(url) => updateStyle("backgroundImage", url)}
+                            label="Imagem de Fundo"
+                        />
+                    )}
+
                     {block.type === "hero" && (
                         <ColorPickerInput
                             id="title-color"
@@ -1569,15 +1720,6 @@ export function BlockPropertyEditor({ block, onUpdate, onDelete, onBack, focusFi
                             label="Cor do Título da Seção"
                             value={data.styles.headingColor || "#111827"}
                             onChange={(val) => updateStyle("headingColor", val)}
-                        />
-                    )}
-
-                    {block.type === "categories" && (
-                        <ColorPickerInput
-                            id="card-text-color"
-                            label="Cor do Texto nos Cards"
-                            value={data.styles.cardTextColor || "#ffffff"}
-                            onChange={(val) => updateStyle("cardTextColor", val)}
                         />
                     )}
 
@@ -1610,13 +1752,6 @@ export function BlockPropertyEditor({ block, onUpdate, onDelete, onBack, focusFi
                         </>
                     )}
 
-                    <ColorPickerInput
-                        id="text-color"
-                        label="Cor do Texto"
-                        value={data.styles.textColor || "#000000"}
-                        onChange={(val) => updateStyle("textColor", val)}
-                    />
-
                     <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-1">
                             <Label className="text-xs">Espaço Superior</Label>
@@ -1648,8 +1783,8 @@ export function BlockPropertyEditor({ block, onUpdate, onDelete, onBack, focusFi
                         </div>
                     </div>
 
-                    {/* Hide text alignment for text blocks - they have their own control in TextBlockEditor */}
-                    {block.type !== "text" && (
+                    {/* Hide text alignment for text blocks (own control) and categories (always centered) */}
+                    {block.type !== "text" && block.type !== "categories" && (
                         <div className="space-y-1">
                             <Label className="text-xs">Alinhamento de Texto</Label>
                             <div className="flex border rounded overflow-hidden">

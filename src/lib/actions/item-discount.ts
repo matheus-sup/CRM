@@ -49,6 +49,7 @@ export async function createItemDiscount(data: {
     productId: string;
     discountPercent: number;
     promoStock: number;
+    endDate?: Date;
 }) {
     try {
         // Check if product already has an active discount
@@ -65,6 +66,7 @@ export async function createItemDiscount(data: {
                 productId: data.productId,
                 discountPercent: data.discountPercent,
                 promoStock: data.promoStock,
+                endDate: data.endDate,
             },
         });
         revalidatePath("/admin/descontos");
@@ -72,6 +74,21 @@ export async function createItemDiscount(data: {
     } catch (error: any) {
         console.error("Erro ao criar desconto por item:", error);
         return { success: false, error: `Erro ao criar: ${error.message}` };
+    }
+}
+
+export async function updateItemDiscount(id: string, data: {
+    endDate?: Date | null;
+}) {
+    try {
+        await prisma.itemDiscount.update({
+            where: { id },
+            data: { endDate: data.endDate }
+        });
+        revalidatePath("/admin/descontos");
+        return { success: true };
+    } catch (error) {
+        return { success: false, error: "Erro ao atualizar desconto" };
     }
 }
 
@@ -109,6 +126,10 @@ export async function getActiveItemDiscount(productId: string) {
         });
 
         if (!discount || discount.soldCount >= discount.promoStock) {
+            return { success: false, discount: null };
+        }
+
+        if (discount.endDate && new Date() > discount.endDate) {
             return { success: false, discount: null };
         }
 

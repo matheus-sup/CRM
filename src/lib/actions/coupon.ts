@@ -46,6 +46,21 @@ export async function createCoupon(data: {
     }
 }
 
+export async function updateCoupon(id: string, data: {
+    endDate?: Date | null;
+}) {
+    try {
+        await prisma.coupon.update({
+            where: { id },
+            data: { endDate: data.endDate }
+        });
+        revalidatePath("/admin/descontos");
+        return { success: true };
+    } catch (error) {
+        return { success: false, error: "Erro ao atualizar cupom" };
+    }
+}
+
 export async function toggleCoupon(id: string, active: boolean) {
     try {
         await prisma.coupon.update({

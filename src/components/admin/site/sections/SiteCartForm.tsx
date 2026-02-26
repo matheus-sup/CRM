@@ -12,7 +12,7 @@ import { ShoppingCart } from "lucide-react";
 
 const initialState = { success: false, message: "" };
 
-export function SiteCartForm({ config }: { config: any }) {
+export function SiteCartForm({ config, onConfigChange }: { config: any; onConfigChange?: (key: string, value: any) => void }) {
     const [state, formAction, isPending] = useActionState(updateStoreConfig, initialState);
 
     // Helper for Boolean Inputs
@@ -44,6 +44,7 @@ export function SiteCartForm({ config }: { config: any }) {
                             step="0.01"
                             defaultValue={config.minPurchaseValue?.toString() || "0"}
                             placeholder="0.00"
+                            onChange={(e) => onConfigChange?.("minPurchaseValue", parseFloat(e.target.value) || 0)}
                         />
                         <p className="text-xs text-muted-foreground">Insira apenas números.</p>
                     </div>
@@ -61,6 +62,7 @@ export function SiteCartForm({ config }: { config: any }) {
                                 onCheckedChange={(c: boolean) => {
                                     const el = document.getElementById("enableQuickCart") as HTMLInputElement;
                                     if (el) el.value = c.toString();
+                                    onConfigChange?.("enableQuickCart", c);
                                 }}
                             />
                             <div className="space-y-0.5">
@@ -71,7 +73,7 @@ export function SiteCartForm({ config }: { config: any }) {
 
                         <div className="space-y-2">
                             <Label>Ação ao adicionar um produto ao carrinho:</Label>
-                            <Select name="cartAction" defaultValue={config.cartAction || "notification"}>
+                            <Select name="cartAction" defaultValue={config.cartAction || "notification"} onValueChange={(v) => onConfigChange?.("cartAction", v)}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Selecione" />
                                 </SelectTrigger>
@@ -96,6 +98,7 @@ export function SiteCartForm({ config }: { config: any }) {
                                 onCheckedChange={(c: boolean) => {
                                     const el = document.getElementById("showCartRecommendations") as HTMLInputElement;
                                     if (el) el.value = c.toString();
+                                    onConfigChange?.("showCartRecommendations", c);
                                 }}
                             />
                             <div className="space-y-0.5">
@@ -117,6 +120,7 @@ export function SiteCartForm({ config }: { config: any }) {
                                 onCheckedChange={(c: boolean) => {
                                     const el = document.getElementById("showShippingCalculator") as HTMLInputElement;
                                     if (el) el.value = c.toString();
+                                    onConfigChange?.("showShippingCalculator", c);
                                 }}
                             />
                             <div className="space-y-0.5">

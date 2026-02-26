@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Check, Eye, Sparkles, ShoppingBag, Search, User } from "lucide-react";
+import { Check, Eye, Sparkles, ShoppingBag, Search, User, Loader2, Palette } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { saveDraftConfig, publishStoreConfig } from "@/lib/actions/settings";
 
@@ -23,6 +23,136 @@ interface Template {
 }
 
 const templates: Template[] = [
+    {
+        id: "restaurant",
+        name: "Restaurante & Delivery",
+        description: "Tema otimizado para restaurantes, lanchonetes e delivery de comida",
+        badge: "Novo",
+        features: ["Cards horizontais", "Categorias fixas", "Carrinho flutuante", "Checkout rápido"],
+        colors: {
+            primary: "#ef4444",
+            secondary: "#fef2f2",
+            background: "#ffffff"
+        },
+        config: {
+            themeColor: "#ef4444",
+            secondaryColor: "#fef2f2",
+            backgroundColor: "#ffffff",
+            headerColor: "#ef4444",
+            footerBg: "#1f2937",
+            footerText: "#9ca3af",
+            headingColor: "#111827",
+            bodyColor: "#4b5563",
+            menuColor: "#ffffff",
+            // Restaurant-specific settings
+            siteType: "restaurant",
+            deliveryTime: "30-45 min",
+            minPurchaseValue: 15,
+            // Component Styles - Restaurant
+            headerStyle: "restaurant",
+            cardStyle: "horizontal",
+            footerStyle: "restaurant",
+            homeLayout: JSON.stringify([
+                {
+                    id: "hero-restaurant",
+                    type: "hero",
+                    content: {
+                        slides: [{
+                            id: "slide-1",
+                            title: "Sabor que Encanta",
+                            subtitle: "Peça agora e receba em minutos no conforto da sua casa",
+                            buttonText: "Ver Cardápio",
+                            buttonLink: "/cardapio"
+                        }],
+                        autoplay: false
+                    },
+                    styles: {
+                        variant: "restaurant",
+                        minHeight: "50vh",
+                        background: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
+                        textColor: "#ffffff",
+                        titleColor: "#ffffff",
+                        textAlign: "center",
+                        buttonColor: "#ffffff",
+                        buttonTextColor: "#ef4444",
+                        fullWidth: true
+                    }
+                },
+                {
+                    id: "categories-restaurant",
+                    type: "categories",
+                    content: { title: "Nosso Cardápio", selectionMode: "auto", limit: 8 },
+                    styles: { variant: "horizontal", headingColor: "#111827", accentColor: "#ef4444", fullWidth: true }
+                },
+                {
+                    id: "products-restaurant",
+                    type: "product-grid",
+                    content: { collectionType: "featured", title: "🔥 Mais Pedidos", limit: 6 },
+                    styles: {
+                        backgroundColor: "#fef2f2",
+                        textColor: "#111827",
+                        accentColor: "#ef4444",
+                        cardVariant: "horizontal",
+                        fullWidth: true,
+                        paddingTop: "2rem",
+                        paddingBottom: "2rem"
+                    }
+                },
+                {
+                    id: "cta-restaurant",
+                    type: "newsletter",
+                    content: {
+                        title: "Peça pelo WhatsApp",
+                        description: "Faça seu pedido diretamente pelo WhatsApp e receba ofertas exclusivas",
+                        placeholder: "seu@email.com",
+                        buttonText: "Fazer Pedido"
+                    },
+                    styles: {
+                        variant: "cta",
+                        backgroundColor: "#1f2937",
+                        titleColor: "#ffffff",
+                        textColor: "#9ca3af",
+                        buttonColor: "#ef4444",
+                        buttonTextColor: "#ffffff",
+                        fullWidth: true
+                    }
+                }
+            ])
+        }
+    },
+    {
+        id: "cardapio-direto",
+        name: "Cardápio Direto",
+        description: "Layout minimalista focado 100% em pedidos. Sem distrações, só cardápio",
+        badge: "Novo",
+        features: ["Lista simples", "Popup de pedido", "Login rápido", "Sem páginas extras"],
+        colors: {
+            primary: "#18181b",
+            secondary: "#f4f4f5",
+            background: "#ffffff"
+        },
+        config: {
+            themeColor: "#18181b",
+            secondaryColor: "#f4f4f5",
+            backgroundColor: "#ffffff",
+            headerColor: "#18181b",
+            footerBg: "#18181b",
+            footerText: "#a1a1aa",
+            headingColor: "#18181b",
+            bodyColor: "#52525b",
+            menuColor: "#ffffff",
+            // Cardapio Direto specific
+            siteType: "cardapio",
+            deliveryTime: "25-40 min",
+            minPurchaseValue: 10,
+            showAccountButton: true,
+            // Component Styles
+            headerStyle: "cardapio",
+            cardStyle: "list",
+            footerStyle: "minimal",
+            homeLayout: JSON.stringify([])
+        }
+    },
     {
         id: "classic",
         name: "Clássico Elegante",
@@ -43,6 +173,8 @@ const templates: Template[] = [
             headingColor: "#111827",
             bodyColor: "#334155",
             menuColor: "#334155",
+            // Site type - shop padrão
+            siteType: "shop",
             // Component Styles
             headerStyle: "classic",
             cardStyle: "standard",
@@ -115,6 +247,8 @@ const templates: Template[] = [
             headingColor: "#000000",
             bodyColor: "#404040",
             menuColor: "#000000",
+            // Site type - shop padrão
+            siteType: "shop",
             // Component Styles - Minimalista
             headerStyle: "minimal",
             cardStyle: "compact",
@@ -185,6 +319,8 @@ const templates: Template[] = [
             headingColor: "#2c3e50",
             bodyColor: "#34495e",
             menuColor: "#2c3e50",
+            // Site type - shop padrão
+            siteType: "shop",
             // Component Styles - Vibrante
             headerStyle: "centered",
             cardStyle: "detailed",
@@ -296,42 +432,135 @@ function TemplatePreview({ template }: { template: Template }) {
                 </div>
             )}
 
-            {/* Hero Mockup */}
-            <div
-                className="relative h-40 flex items-center"
-                style={{
-                    background: template.id === "classic"
-                        ? `linear-gradient(to bottom right, ${colors.primary}, #9333ea)`
-                        : template.id === "vibrant"
-                            ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
-                            : colors.secondary,
-                    justifyContent: headerStyle === "minimal" ? "flex-start" : "center",
-                    paddingLeft: headerStyle === "minimal" ? "1.5rem" : "0"
-                }}
-            >
-                <div className={headerStyle === "minimal" ? "text-left" : "text-center"}>
-                    <h2 className="text-lg font-bold mb-1" style={{ color: template.id === "minimal" ? colors.primary : "#ffffff" }}>
-                        {template.id === "classic" && "Beleza que Transforma"}
-                        {template.id === "minimal" && "Menos é Mais"}
-                        {template.id === "vibrant" && "Brilhe com Cor"}
-                    </h2>
-                    <p className="text-[10px] mb-2 opacity-80" style={{ color: template.id === "minimal" ? "#666" : "#ffffff" }}>
-                        Descubra nossa coleção exclusiva
-                    </p>
-                    <button
-                        className={`px-3 py-1 text-[10px] font-medium ${headerStyle === "minimal" ? "rounded" : "rounded-full"}`}
-                        style={{ backgroundColor: template.id === "minimal" ? colors.primary : "#ffffff", color: template.id === "minimal" ? "#ffffff" : colors.primary }}
-                    >
-                        Ver Coleção
-                    </button>
+            {headerStyle === "restaurant" && (
+                <div style={{ backgroundColor: config.headerColor || colors.primary }}>
+                    <div className="flex items-center justify-between px-4 py-3">
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                                <span className="text-white text-xs">🍔</span>
+                            </div>
+                            <div>
+                                <span className="font-bold text-white text-sm block">MINHA LOJA</span>
+                                <span className="text-[9px] text-white/70">Aberto • 30-45min</span>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="h-7 w-7 rounded-full bg-white/20 flex items-center justify-center">
+                                <Search className="h-3.5 w-3.5 text-white" />
+                            </div>
+                            <div className="h-7 w-7 rounded-full bg-white flex items-center justify-center relative">
+                                <ShoppingBag className="h-3.5 w-3.5" style={{ color: colors.primary }} />
+                                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-white text-[8px] flex items-center justify-center" style={{ backgroundColor: "#22c55e" }}>2</span>
+                            </div>
+                        </div>
+                    </div>
+                    {/* Category tabs */}
+                    <div className="flex gap-2 px-3 pb-2 overflow-hidden">
+                        {["🍔 Burgers", "🍟 Combos", "🥤 Bebidas"].map((cat, i) => (
+                            <span
+                                key={i}
+                                className={cn(
+                                    "text-[9px] px-2.5 py-1 rounded-full whitespace-nowrap font-medium",
+                                    i === 0 ? "bg-white text-red-600" : "bg-white/20 text-white"
+                                )}
+                            >
+                                {cat}
+                            </span>
+                        ))}
+                    </div>
                 </div>
-            </div>
+            )}
+
+            {headerStyle === "cardapio" && (
+                <div style={{ backgroundColor: config.headerColor || colors.primary }}>
+                    <div className="flex items-center justify-between px-4 py-3">
+                        <div className="flex items-center gap-2">
+                            <span className="font-bold text-white text-sm">🍔 CARDÁPIO</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="h-7 px-2.5 rounded-full bg-white/20 flex items-center justify-center gap-1.5">
+                                <User className="h-3 w-3 text-white" />
+                                <span className="text-[9px] text-white font-medium">Entrar</span>
+                            </div>
+                            <div className="h-7 w-7 rounded-full bg-white flex items-center justify-center relative">
+                                <ShoppingBag className="h-3.5 w-3.5" style={{ color: colors.primary }} />
+                                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-white text-[8px] flex items-center justify-center bg-green-500">2</span>
+                            </div>
+                        </div>
+                    </div>
+                    {/* Search bar */}
+                    <div className="px-3 pb-3">
+                        <div className="flex items-center gap-2 h-8 px-3 rounded-lg bg-white/10">
+                            <Search className="h-3 w-3 text-white/60" />
+                            <span className="text-[9px] text-white/60">Buscar no cardápio...</span>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Hero Mockup */}
+            {template.id === "cardapio-direto" ? (
+                // No hero for cardapio-direto - go straight to products
+                <div className="bg-gray-50 px-3 py-2">
+                    <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-semibold text-gray-700">Cardápio</span>
+                        <span className="text-[8px] text-gray-500">12 itens</span>
+                    </div>
+                </div>
+            ) : template.id === "restaurant" ? (
+                <div
+                    className="relative h-32 flex items-center justify-center"
+                    style={{ background: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)" }}
+                >
+                    <div className="text-center">
+                        <h2 className="text-lg font-bold mb-1 text-white">Sabor que Encanta</h2>
+                        <p className="text-[10px] mb-2 text-white/80">Peça agora e receba em minutos</p>
+                        <button className="px-4 py-1.5 text-[10px] font-medium rounded-full bg-white text-red-600">
+                            Ver Cardápio
+                        </button>
+                    </div>
+                </div>
+            ) : (
+                <div
+                    className="relative h-40 flex items-center"
+                    style={{
+                        background: template.id === "classic"
+                            ? `linear-gradient(to bottom right, ${colors.primary}, #9333ea)`
+                            : template.id === "vibrant"
+                                ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+                                : colors.secondary,
+                        justifyContent: headerStyle === "minimal" ? "flex-start" : "center",
+                        paddingLeft: headerStyle === "minimal" ? "1.5rem" : "0"
+                    }}
+                >
+                    <div className={headerStyle === "minimal" ? "text-left" : "text-center"}>
+                        <h2 className="text-lg font-bold mb-1" style={{ color: template.id === "minimal" ? colors.primary : "#ffffff" }}>
+                            {template.id === "classic" && "Beleza que Transforma"}
+                            {template.id === "minimal" && "Menos é Mais"}
+                            {template.id === "vibrant" && "Brilhe com Cor"}
+                        </h2>
+                        <p className="text-[10px] mb-2 opacity-80" style={{ color: template.id === "minimal" ? "#666" : "#ffffff" }}>
+                            Descubra nossa coleção exclusiva
+                        </p>
+                        <button
+                            className={`px-3 py-1 text-[10px] font-medium ${headerStyle === "minimal" ? "rounded" : "rounded-full"}`}
+                            style={{ backgroundColor: template.id === "minimal" ? colors.primary : "#ffffff", color: template.id === "minimal" ? "#ffffff" : colors.primary }}
+                        >
+                            Ver Coleção
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Products Mockup - Different card styles */}
             <div className="p-3" style={{ backgroundColor: colors.background }}>
-                <h3 className="text-xs font-bold mb-2 text-center" style={{ color: config.headingColor || colors.primary }}>
-                    {template.id === "vibrant" ? "🔥 Em Alta" : "Novidades"}
-                </h3>
+                {template.id !== "cardapio-direto" && (
+                    <h3 className="text-xs font-bold mb-2 text-center" style={{ color: config.headingColor || colors.primary }}>
+                        {template.id === "vibrant" && "🔥 Em Alta"}
+                        {template.id === "restaurant" && "🔥 Mais Pedidos"}
+                        {template.id !== "vibrant" && template.id !== "restaurant" && "Novidades"}
+                    </h3>
+                )}
 
                 {cardStyle === "standard" && (
                     <div className="grid grid-cols-4 gap-1.5">
@@ -385,13 +614,47 @@ function TemplatePreview({ template }: { template: Template }) {
 
                 {cardStyle === "horizontal" && (
                     <div className="space-y-1.5">
-                        {[1, 2].map((i) => (
-                            <div key={i} className="flex gap-2 p-1.5 rounded border bg-white">
-                                <div className="w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-200 rounded flex-shrink-0" />
+                        {[
+                            { name: "X-Burger", desc: "Hambúrguer, queijo, alface", price: "24,90" },
+                            { name: "X-Bacon", desc: "Hambúrguer, bacon crocante", price: "29,90" }
+                        ].map((item, i) => (
+                            <div key={i} className="flex gap-2.5 p-2 rounded-lg border bg-white shadow-sm">
+                                <div className="w-16 h-16 bg-gradient-to-br from-orange-100 to-orange-200 rounded-lg flex-shrink-0 flex items-center justify-center text-xl">
+                                    🍔
+                                </div>
                                 <div className="flex-1 min-w-0">
-                                    <div className="h-1.5 w-3/4 bg-gray-200 rounded mb-1" />
-                                    <div className="h-1.5 w-1/2 bg-gray-100 rounded mb-1" />
-                                    <span className="text-[9px] font-bold" style={{ color: colors.primary }}>R$ 49,90</span>
+                                    <div className="font-semibold text-[10px] text-gray-800">{item.name}</div>
+                                    <div className="text-[8px] text-gray-500 mb-1.5">{item.desc}</div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] font-bold" style={{ color: colors.primary }}>R$ {item.price}</span>
+                                        <div
+                                            className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold"
+                                            style={{ backgroundColor: colors.primary }}
+                                        >
+                                            +
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {cardStyle === "list" && (
+                    <div className="divide-y divide-gray-100">
+                        {[
+                            { name: "X-Burger", desc: "Hambúrguer, queijo, alface", price: "24,90" },
+                            { name: "X-Bacon", desc: "Hambúrguer, bacon crocante", price: "29,90" },
+                            { name: "X-Tudo", desc: "Completo com todos ingredientes", price: "34,90" }
+                        ].map((item, i) => (
+                            <div key={i} className="flex items-center justify-between py-2.5 px-1">
+                                <div className="flex-1 min-w-0">
+                                    <div className="font-medium text-[10px] text-gray-900">{item.name}</div>
+                                    <div className="text-[8px] text-gray-500">{item.desc}</div>
+                                    <span className="text-[10px] font-bold mt-1 block" style={{ color: colors.primary }}>R$ {item.price}</span>
+                                </div>
+                                <div className="w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex-shrink-0 ml-3 flex items-center justify-center text-base">
+                                    🍔
                                 </div>
                             </div>
                         ))}
@@ -450,6 +713,32 @@ function TemplatePreview({ template }: { template: Template }) {
                     </div>
                 </div>
             )}
+
+            {footerStyle === "restaurant" && (
+                <div className="px-3 py-3" style={{ backgroundColor: config.footerBg || "#1f2937" }}>
+                    <div className="text-center mb-2">
+                        <span className="text-sm font-bold text-white">🍔 MINHA LOJA</span>
+                        <p className="text-[8px] text-gray-400 mt-0.5">O melhor sabor da cidade</p>
+                    </div>
+                    <div className="flex justify-center gap-4 text-[8px] text-gray-400 mb-2">
+                        <span className="flex items-center gap-1">📍 Centro</span>
+                        <span className="flex items-center gap-1">📞 (11) 99999</span>
+                        <span className="flex items-center gap-1">⏰ 18h-23h</span>
+                    </div>
+                    <div className="flex justify-center gap-2 mb-2">
+                        {["💳", "💵", "PIX"].map((p, i) => (
+                            <span key={i} className="text-[7px] bg-white/10 text-white px-1.5 py-0.5 rounded">{p}</span>
+                        ))}
+                    </div>
+                    <div className="flex justify-center gap-2">
+                        {["📸", "📱"].map((e, i) => (
+                            <span key={i} className="w-6 h-6 rounded-full flex items-center justify-center text-[10px]" style={{ backgroundColor: colors.primary }}>
+                                {e}
+                            </span>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
@@ -457,6 +746,8 @@ function TemplatePreview({ template }: { template: Template }) {
 export function TemplateGallery({ currentConfig }: { currentConfig: any }) {
     const [applying, setApplying] = useState<string | null>(null);
     const [previewTemplate, setPreviewTemplate] = useState<Template | null>(null);
+    const [confirmTemplate, setConfirmTemplate] = useState<Template | null>(null);
+    const [applyStatus, setApplyStatus] = useState<"idle" | "applying" | "success" | "error">("idle");
 
     // Detect active template by comparing theme colors
     const detectActiveTemplate = () => {
@@ -468,17 +759,22 @@ export function TemplateGallery({ currentConfig }: { currentConfig: any }) {
     const activeTemplateId = detectActiveTemplate();
 
     const handleApply = async (template: Template) => {
-        if (!confirm(`Aplicar o template "${template.name}"?\n\nIsso substituirá as configurações atuais de cores e layout da página inicial.\n\nVocê poderá personalizar tudo depois.`)) {
-            return;
-        }
+        setConfirmTemplate(template);
+    };
 
+    const confirmApply = async () => {
+        if (!confirmTemplate) return;
+        const template = confirmTemplate;
+
+        setApplyStatus("applying");
         setApplying(template.id);
         setPreviewTemplate(null);
 
         try {
             const validFields = [
                 'storeName', 'description', 'bannerUrl', 'logoUrl', 'faviconUrl',
-                'cnpj', 'legalName', 'themeColor', 'accentColor', 'priceColor',
+                'cnpj', 'legalName', 'themeColor', 'accentColor', 'priceColor', 'siteType',
+                'deliveryTime', 'isOpen', 'storeDescription', 'storeRating', 'showAccountButton',
                 'secondaryColor', 'backgroundColor', 'menuColor', 'menuFont', 'menuFontSize',
                 'headerColor', 'cartCountBg', 'cartCountText', 'searchBtnBg', 'searchIconColor',
                 'headerShowLogo', 'headerLogoWidth', 'headerText', 'headerSubtext', 'headerSearchPlaceholder',
@@ -528,21 +824,35 @@ export function TemplateGallery({ currentConfig }: { currentConfig: any }) {
             const draftResult = await saveDraftConfig(newConfig);
 
             if (!draftResult.success) {
-                alert(`❌ Erro ao salvar template: ${draftResult.message}`);
+                setApplyStatus("error");
+                setTimeout(() => {
+                    setConfirmTemplate(null);
+                    setApplyStatus("idle");
+                }, 2000);
                 return;
             }
 
             const publishResult = await publishStoreConfig();
 
             if (publishResult.success) {
-                alert(`✅ Template "${template.name}" aplicado com sucesso!\n\nA página será recarregada.`);
-                window.location.reload();
+                setApplyStatus("success");
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
             } else {
-                alert(`❌ Template salvo, mas erro ao publicar: ${publishResult.message}`);
+                setApplyStatus("error");
+                setTimeout(() => {
+                    setConfirmTemplate(null);
+                    setApplyStatus("idle");
+                }, 2000);
             }
         } catch (error) {
             console.error("Error applying template:", error);
-            alert("❌ Erro ao aplicar template. Tente novamente.");
+            setApplyStatus("error");
+            setTimeout(() => {
+                setConfirmTemplate(null);
+                setApplyStatus("idle");
+            }, 2000);
         } finally {
             setApplying(null);
         }
@@ -550,6 +860,100 @@ export function TemplateGallery({ currentConfig }: { currentConfig: any }) {
 
     return (
         <div className="space-y-4">
+            {/* Apply Confirmation Modal */}
+            {confirmTemplate && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
+                    onClick={() => applyStatus === "idle" && setConfirmTemplate(null)}
+                >
+                    {/* Backdrop */}
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+
+                    {/* Modal */}
+                    <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="relative w-full max-w-sm bg-white rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
+                    >
+                        {/* Color Preview Header */}
+                        <div
+                            className="h-2"
+                            style={{
+                                background: `linear-gradient(to right, ${confirmTemplate.colors.primary}, ${confirmTemplate.colors.secondary})`
+                            }}
+                        />
+
+                        <div className="p-6">
+                            {applyStatus === "idle" && (
+                                <>
+                                    {/* Icon */}
+                                    <div
+                                        className="w-14 h-14 rounded-xl mx-auto mb-4 flex items-center justify-center"
+                                        style={{ backgroundColor: confirmTemplate.colors.primary + "15" }}
+                                    >
+                                        <Palette className="w-7 h-7" style={{ color: confirmTemplate.colors.primary }} />
+                                    </div>
+
+                                    {/* Text */}
+                                    <h3 className="text-lg font-semibold text-center text-gray-900 mb-1">
+                                        {confirmTemplate.name}
+                                    </h3>
+                                    <p className="text-sm text-center text-gray-500 mb-6">
+                                        Aplicar este tema à sua loja?
+                                    </p>
+
+                                    {/* Buttons */}
+                                    <div className="flex gap-3">
+                                        <button
+                                            onClick={() => setConfirmTemplate(null)}
+                                            className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
+                                        >
+                                            Cancelar
+                                        </button>
+                                        <button
+                                            onClick={confirmApply}
+                                            className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-white transition-colors hover:opacity-90"
+                                            style={{ backgroundColor: confirmTemplate.colors.primary }}
+                                        >
+                                            Aplicar
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+
+                            {applyStatus === "applying" && (
+                                <div className="py-8 text-center">
+                                    <Loader2
+                                        className="w-10 h-10 mx-auto mb-4 animate-spin"
+                                        style={{ color: confirmTemplate.colors.primary }}
+                                    />
+                                    <p className="text-sm text-gray-600">Aplicando tema...</p>
+                                </div>
+                            )}
+
+                            {applyStatus === "success" && (
+                                <div className="py-8 text-center">
+                                    <div className="w-14 h-14 rounded-full mx-auto mb-4 flex items-center justify-center bg-green-50">
+                                        <Check className="w-7 h-7 text-green-500" />
+                                    </div>
+                                    <p className="text-sm font-medium text-gray-900">Tema aplicado!</p>
+                                    <p className="text-xs text-gray-500 mt-1">Recarregando...</p>
+                                </div>
+                            )}
+
+                            {applyStatus === "error" && (
+                                <div className="py-8 text-center">
+                                    <div className="w-14 h-14 rounded-full mx-auto mb-4 flex items-center justify-center bg-red-50">
+                                        <span className="text-2xl">😕</span>
+                                    </div>
+                                    <p className="text-sm font-medium text-gray-900">Erro ao aplicar</p>
+                                    <p className="text-xs text-gray-500 mt-1">Tente novamente</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Preview Modal */}
             <Dialog open={previewTemplate !== null} onOpenChange={() => setPreviewTemplate(null)}>
                 <DialogContent className="max-w-2xl">

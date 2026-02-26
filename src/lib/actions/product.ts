@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
 import { redirect } from "next/navigation";
 import { parseCsv } from "@/lib/csv-helper";
 
@@ -91,6 +91,7 @@ export async function importProducts(formData: FormData) {
         }
 
         revalidatePath("/admin/produtos");
+        revalidateTag("products");
         return { success: true, message: `Processado: ${count} salvos, ${errors} erros.` };
 
     } catch (error) {
@@ -100,22 +101,55 @@ export async function importProducts(formData: FormData) {
 }
 
 
-export async function getProducts() {
-    const products = await prisma.product.findMany({
-        orderBy: { createdAt: "desc" },
-        include: { variants: true, images: true, brand: true },
-    });
+// Cached version for faster loads
+const getCachedProducts = unstable_cache(
+    async () => {
+        const products = await prisma.product.findMany({
+            orderBy: { createdAt: "desc" },
+            select: {
+                id: true,
+                name: true,
+                slug: true,
+                sku: true,
+                barcode: true,
+                price: true,
+                costPerItem: true,
+                stock: true,
+                expiresAt: true,
+                isPerishable: true,
+                brandLegacy: true,
+                images: {
+                    take: 1,
+                    select: { url: true }
+                },
+                brand: {
+                    select: { name: true }
+                },
+                category: {
+                    select: { id: true, name: true }
+                },
+                batches: {
+                    where: { quantity: { gt: 0 } },
+                    orderBy: { expiresAt: "asc" },
+                    take: 1,
+                    select: { expiresAt: true }
+                }
+            },
+        });
 
-    return products.map(product => ({
-        ...product,
-        price: product.price.toNumber(),
-        compareAtPrice: product.compareAtPrice?.toNumber() || null,
-        costPerItem: product.costPerItem?.toNumber() || null,
-        weight: product.weight?.toNumber() || null,
-        length: product.length?.toNumber() || null,
-        width: product.width?.toNumber() || null,
-        height: product.height?.toNumber() || null,
-    }));
+        return products.map(product => ({
+            ...product,
+            price: product.price.toNumber(),
+            costPerItem: product.costPerItem?.toNumber() || null,
+            nextBatchExpiry: product.batches[0]?.expiresAt || null,
+        }));
+    },
+    ["products-list"],
+    { revalidate: 30, tags: ["products"] }
+);
+
+export async function getProducts() {
+    return getCachedProducts();
 }
 
 export async function getProductById(id: string) {
@@ -188,6 +222,8 @@ export async function upsertProduct(formData: FormData) {
     const seoTitle = formData.get("seoTitle") as string | null;
     const seoDescription = formData.get("seoDescription") as string | null;
     const isNewArrival = formData.get("isNewArrival") === "true";
+    const isPerishable = formData.get("isPerishable") === "true";
+    const measurements = formData.get("measurements") as string | null;
 
     const rawExpiresAt = formData.get("expiresAt") as string | null;
     const expiresAt = rawExpiresAt ? new Date(rawExpiresAt as string) : null;
@@ -269,10 +305,12 @@ export async function upsertProduct(formData: FormData) {
         length,
         width,
         height,
+        measurements: measurements || null,
         seoTitle: seoTitle || null,
         seoDescription: seoDescription || null,
         isNewArrival,
-        expiresAt: expiresAt && !isNaN(expiresAt.getTime()) ? expiresAt : null,
+        isPerishable,
+        expiresAt: isPerishable ? null : (expiresAt && !isNaN(expiresAt.getTime()) ? expiresAt : null),
         status: "ACTIVE",
     };
 
@@ -347,6 +385,69 @@ export async function upsertProduct(formData: FormData) {
             },
         });
         targetProductId = product.id;
+
+        // For perishable products with initial stock, create the first batch
+        if (isPerishable && stock > 0 && expiresAt && !isNaN(expiresAt.getTime())) {
+            await prisma.productBatch.create({
+                data: {
+                    productId: product.id,
+                    quantity: stock,
+                    initialQty: stock,
+                    expiresAt: expiresAt,
+                    unitCost: costPerItem || null,
+                }
+            });
+
+            // Also create a stock movement record for the initial stock
+            await prisma.stockMovement.create({
+                data: {
+                    productId: product.id,
+                    type: "IN",
+                    quantity: stock,
+                    unitPrice: costPerItem || null,
+                    totalValue: costPerItem ? costPerItem * stock : null,
+                    reason: "Estoque inicial",
+                }
+            });
+        }
+    }
+
+    // Handle Image Deletions (for existing products)
+    // Get the IDs of images to keep
+    const keepImageIds = formData.getAll("keepImageIds") as string[];
+
+    if (id && targetProductId) {
+        // Delete images that are NOT in the keepImageIds list
+        const imagesToDelete = await prisma.productImage.findMany({
+            where: {
+                productId: targetProductId,
+                id: { notIn: keepImageIds },
+            },
+        });
+
+        // Delete files from disk and database
+        if (imagesToDelete.length > 0) {
+            const fs = require("fs");
+            const path = require("path");
+
+            for (const img of imagesToDelete) {
+                // Delete file from disk if it's a local upload
+                if (img.url.startsWith("/uploads/")) {
+                    const filePath = path.join(process.cwd(), "public", img.url);
+                    if (fs.existsSync(filePath)) {
+                        fs.unlinkSync(filePath);
+                    }
+                }
+            }
+
+            // Delete from database
+            await prisma.productImage.deleteMany({
+                where: {
+                    productId: targetProductId,
+                    id: { notIn: keepImageIds },
+                },
+            });
+        }
     }
 
     // Handle Image Uploads
@@ -383,15 +484,15 @@ export async function upsertProduct(formData: FormData) {
     }
 
     revalidatePath("/admin/produtos");
-    revalidatePath("/admin/inventario");
     revalidatePath("/");
+    revalidateTag("products");
     redirect("/admin/produtos");
 }
 
 export async function deleteProduct(id: string) {
     await prisma.product.delete({ where: { id } });
     revalidatePath("/admin/produtos");
-    revalidatePath("/admin/inventario");
     revalidatePath("/");
+    revalidateTag("products");
     redirect("/admin/produtos");
 }

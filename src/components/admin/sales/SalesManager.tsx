@@ -1,17 +1,31 @@
 "use client";
 
 import { useState } from "react";
-import { List, Store, ShoppingCart } from "lucide-react";
+import { List, ShoppingCart, Users } from "lucide-react";
 import { OrdersList } from "@/components/admin/sales/OrdersList";
-import { PdvManager } from "@/components/admin/pdv/PdvManager";
+import { SellersTab } from "@/components/admin/sales/SellersTab";
+
+interface SellerStats {
+    id: string;
+    name: string;
+    email: string | null;
+    phone: string | null;
+    isActive: boolean;
+    totalSales: number;
+    salesCount: number;
+    totalItems: number;
+    pa: number;
+    tkm: number;
+}
 
 interface SalesManagerProps {
     orders: any[];
     products: any[];
+    sellers?: SellerStats[];
 }
 
-export function SalesManager({ orders, products }: SalesManagerProps) {
-    const [view, setView] = useState<"list" | "pdv" | "abandoned">("list");
+export function SalesManager({ orders, products, sellers = [] }: SalesManagerProps) {
+    const [view, setView] = useState<"list" | "abandoned" | "sellers">("list");
 
     return (
         <div className="space-y-6">
@@ -28,14 +42,6 @@ export function SalesManager({ orders, products }: SalesManagerProps) {
                             Lista de Vendas
                         </button>
                         <button
-                            onClick={() => setView("pdv")}
-                            className={`px-3 py-1 text-sm font-medium rounded-md transition-all flex items-center gap-2 ${view === "pdv" ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
-                                }`}
-                        >
-                            <Store className="h-4 w-4" />
-                            PDV (Caixa)
-                        </button>
-                        <button
                             onClick={() => setView("abandoned")}
                             className={`px-3 py-1 text-sm font-medium rounded-md transition-all flex items-center gap-2 ${view === "abandoned" ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
                                 }`}
@@ -43,13 +49,21 @@ export function SalesManager({ orders, products }: SalesManagerProps) {
                             <ShoppingCart className="h-4 w-4" />
                             Carrinhos Abandonados
                         </button>
+                        <button
+                            onClick={() => setView("sellers")}
+                            className={`px-3 py-1 text-sm font-medium rounded-md transition-all flex items-center gap-2 ${view === "sellers" ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                                }`}
+                        >
+                            <Users className="h-4 w-4" />
+                            Vendedores
+                        </button>
                     </div>
                 </div>
             </div>
 
             <div className="mt-4">
                 {view === "list" && <OrdersList orders={orders} />}
-                {view === "pdv" && <PdvManager initialProducts={products} />}
+                {view === "sellers" && <SellersTab initialSellers={sellers} />}
                 {view === "abandoned" && (
                     <div className="p-12 text-center bg-white rounded-lg border border-dashed border-slate-200">
                         <ShoppingCart className="w-12 h-12 mx-auto text-slate-300 mb-4" />

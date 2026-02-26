@@ -13,7 +13,7 @@ import { useState } from "react";
 
 const initialState = { success: false, message: "" };
 
-export function SiteProductListForm({ config }: { config: any }) {
+export function SiteProductListForm({ config, onConfigChange }: { config: any; onConfigChange?: (key: string, value: any) => void }) {
     const [state, formAction, isPending] = useActionState(updateStoreConfig, initialState);
     const [categoryImage, setCategoryImage] = useState(config.categoryDefaultImage || "");
 
@@ -57,7 +57,7 @@ export function SiteProductListForm({ config }: { config: any }) {
                                 <Label className="flex items-center gap-2">
                                     <Smartphone className="h-4 w-4" /> Colunas no Celular
                                 </Label>
-                                <Select name="mobileColumns" defaultValue={config.mobileColumns?.toString() || "2"}>
+                                <Select name="mobileColumns" defaultValue={config.mobileColumns?.toString() || "2"} onValueChange={(v) => onConfigChange?.("mobileColumns", parseInt(v))}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Selecione" />
                                     </SelectTrigger>
@@ -72,7 +72,7 @@ export function SiteProductListForm({ config }: { config: any }) {
                                 <Label className="flex items-center gap-2">
                                     <Monitor className="h-4 w-4" /> Colunas no Computador
                                 </Label>
-                                <Select name="desktopColumns" defaultValue={config.desktopColumns?.toString() || "4"}>
+                                <Select name="desktopColumns" defaultValue={config.desktopColumns?.toString() || "4"} onValueChange={(v) => onConfigChange?.("desktopColumns", parseInt(v))}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Selecione" />
                                     </SelectTrigger>
@@ -87,7 +87,7 @@ export function SiteProductListForm({ config }: { config: any }) {
 
                         <div className="space-y-2">
                             <Label>Mostrar produtos usando:</Label>
-                            <Select name="paginationType" defaultValue={config.paginationType || "infinite"}>
+                            <Select name="paginationType" defaultValue={config.paginationType || "infinite"} onValueChange={(v) => onConfigChange?.("paginationType", v)}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Selecione" />
                                 </SelectTrigger>
@@ -115,6 +115,7 @@ export function SiteProductListForm({ config }: { config: any }) {
                                     onCheckedChange={(c: boolean) => {
                                         const el = document.getElementById("enableQuickBuy") as HTMLInputElement;
                                         if (el) el.value = c.toString();
+                                        onConfigChange?.("enableQuickBuy", c);
                                     }}
                                 />
                                 <BooleanInput name="enableQuickBuy" value={config.enableQuickBuy} />
@@ -130,6 +131,7 @@ export function SiteProductListForm({ config }: { config: any }) {
                                     onCheckedChange={(c: boolean) => {
                                         const el = document.getElementById("showInstallments") as HTMLInputElement;
                                         if (el) el.value = c.toString();
+                                        onConfigChange?.("showInstallments", c);
                                     }}
                                 />
                                 <BooleanInput name="showInstallments" value={config.showInstallments} />
@@ -145,6 +147,7 @@ export function SiteProductListForm({ config }: { config: any }) {
                                     onCheckedChange={(c: boolean) => {
                                         const el = document.getElementById("showColorVariations") as HTMLInputElement;
                                         if (el) el.value = c.toString();
+                                        onConfigChange?.("showColorVariations", c);
                                     }}
                                 />
                                 <BooleanInput name="showColorVariations" value={config.showColorVariations} />
@@ -160,6 +163,7 @@ export function SiteProductListForm({ config }: { config: any }) {
                                     onCheckedChange={(c: boolean) => {
                                         const el = document.getElementById("showHoverImage") as HTMLInputElement;
                                         if (el) el.value = c.toString();
+                                        onConfigChange?.("showHoverImage", c);
                                     }}
                                 />
                                 <BooleanInput name="showHoverImage" value={config.showHoverImage} />
@@ -175,6 +179,7 @@ export function SiteProductListForm({ config }: { config: any }) {
                                     onCheckedChange={(c: boolean) => {
                                         const el = document.getElementById("showLowStockWarning") as HTMLInputElement;
                                         if (el) el.value = c.toString();
+                                        onConfigChange?.("showLowStockWarning", c);
                                     }}
                                 />
                                 <BooleanInput name="showLowStockWarning" value={config.showLowStockWarning} />

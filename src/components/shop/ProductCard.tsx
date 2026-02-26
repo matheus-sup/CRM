@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { ShoppingBag, Heart, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -40,20 +42,38 @@ function StandardCard({ product, config }: ProductCardProps) {
     const compareAtPrice = product.compareAtPrice ? Number(product.compareAtPrice) : null;
     const discount = compareAtPrice ? Math.round(((compareAtPrice - price) / compareAtPrice) * 100) : 0;
     const image = product.images?.[0]?.url || "/assets/placeholder-product.png";
+    const secondImage = product.images?.[1]?.url;
+
+    // Config toggles
+    const showQuickBuy = config?.enableQuickBuy !== false && config?.enableQuickBuy !== "false";
+    const showHoverImage = config?.showHoverImage !== false && config?.showHoverImage !== "false";
+    const showLowStock = config?.showLowStockWarning !== false && config?.showLowStockWarning !== "false";
+    const showInstallments = config?.showInstallments !== false && config?.showInstallments !== "false";
+
+    const [hovered, setHovered] = useState(false);
+    const isLowStock = showLowStock && product.stock > 0 && product.stock <= 5;
 
     return (
         <Link href={`/produto/${product.slug}`} className="group relative block h-full">
-            <div className="flex h-full flex-col gap-4 rounded-xl bg-card p-4 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border border-transparent hover:border-primary/10">
+            <div className="flex h-full flex-col gap-4 rounded-xl p-4 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border border-transparent hover:border-primary/10">
                 {/* Image Container */}
-                <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-muted">
-                    <img
-                        src={image}
+                <div
+                    className="relative aspect-square w-full overflow-hidden rounded-lg bg-transparent"
+                    onMouseEnter={() => setHovered(true)}
+                    onMouseLeave={() => setHovered(false)}
+                >
+                    <Image
+                        src={(showHoverImage && secondImage && hovered) ? secondImage : image}
                         alt={product.name}
-                        className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                        fill
+                        sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 22vw"
+                        quality={90}
+                        className="object-contain object-center transition-all duration-500 group-hover:scale-105 p-2"
+                        loading="lazy"
                     />
 
                     {/* Badges */}
-                    <div className="absolute left-2 top-2 flex flex-col gap-1">
+                    <div className="absolute left-2 top-2 flex flex-col gap-1 z-10">
                         {discount > 0 && (
                             <Badge className="bg-primary/90 hover:bg-primary text-primary-foreground border-none px-2 py-1 text-[10px] font-bold uppercase tracking-wider">
                                 -{discount}%
@@ -64,21 +84,28 @@ function StandardCard({ product, config }: ProductCardProps) {
                                 Novo
                             </Badge>
                         )}
+                        {isLowStock && (
+                            <Badge variant="destructive" className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider">
+                                Últimas unidades
+                            </Badge>
+                        )}
                     </div>
 
                     {/* Quick Add Button */}
-                    <div className="absolute bottom-3 right-3 translate-y-4 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
-                        <Button
-                            size="icon"
-                            className="h-10 w-10 rounded-full shadow-md transition-colors"
-                            style={{
-                                backgroundColor: config?.productBtnBg || config?.themeColor || "var(--primary)",
-                                color: config?.productBtnText || "white"
-                            }}
-                        >
-                            <ShoppingBag className="h-5 w-5" />
-                        </Button>
-                    </div>
+                    {showQuickBuy && (
+                        <div className="absolute bottom-3 right-3 translate-y-4 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 z-10">
+                            <Button
+                                size="icon"
+                                className="h-10 w-10 rounded-full shadow-md transition-colors"
+                                style={{
+                                    backgroundColor: config?.productBtnBg || config?.themeColor || "var(--primary)",
+                                    color: config?.productBtnText || "white"
+                                }}
+                            >
+                                <ShoppingBag className="h-5 w-5" />
+                            </Button>
+                        </div>
+                    )}
                 </div>
 
                 {/* Info */}
@@ -97,7 +124,7 @@ function StandardCard({ product, config }: ProductCardProps) {
                             <span className="text-lg font-bold" style={{ color: config?.priceColor || config?.themeColor || "var(--primary)" }}>
                                 {formatPrice(price)}
                             </span>
-                            {config?.showInstallments !== false && (
+                            {showInstallments && (
                                 <span className="text-[10px] text-muted-foreground font-medium">
                                     6x sem juros
                                 </span>
@@ -121,11 +148,15 @@ function CompactCard({ product, config }: ProductCardProps) {
         <Link href={`/produto/${product.slug}`} className="group block h-full">
             <div className="flex h-full flex-col">
                 {/* Image */}
-                <div className="relative aspect-[4/5] w-full overflow-hidden bg-muted">
-                    <img
+                <div className="relative aspect-[4/5] w-full overflow-hidden bg-transparent">
+                    <Image
                         src={image}
                         alt={product.name}
-                        className="h-full w-full object-cover object-center transition-opacity duration-300 group-hover:opacity-90"
+                        fill
+                        sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 22vw"
+                        quality={90}
+                        className="object-contain object-center transition-opacity duration-300 group-hover:opacity-90 p-2"
+                        loading="lazy"
                     />
                 </div>
 
@@ -156,17 +187,21 @@ function DetailedCard({ product, config }: ProductCardProps) {
         <Link href={`/produto/${product.slug}`} className="group block h-full">
             <div className="flex h-full flex-col rounded-lg border bg-card overflow-hidden transition-shadow duration-300 hover:shadow-xl">
                 {/* Image with overlay actions */}
-                <div className="relative aspect-square w-full overflow-hidden bg-muted">
-                    <img
+                <div className="relative aspect-square w-full overflow-hidden bg-transparent">
+                    <Image
                         src={image}
                         alt={product.name}
-                        className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-110"
+                        fill
+                        sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 22vw"
+                        quality={90}
+                        className="object-contain object-center transition-transform duration-500 group-hover:scale-110 p-2"
+                        loading="lazy"
                     />
 
                     {/* Discount badge */}
                     {discount > 0 && (
                         <div
-                            className="absolute top-0 right-0 px-3 py-1 text-xs font-bold text-white"
+                            className="absolute top-0 right-0 px-3 py-1 text-xs font-bold text-white z-10"
                             style={{ backgroundColor: config?.themeColor || "var(--primary)" }}
                         >
                             -{discount}%
@@ -174,7 +209,7 @@ function DetailedCard({ product, config }: ProductCardProps) {
                     )}
 
                     {/* Action buttons overlay */}
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2">
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2 z-10">
                         <Button size="icon" variant="secondary" className="h-10 w-10 rounded-full">
                             <Eye className="h-4 w-4" />
                         </Button>
@@ -246,17 +281,20 @@ function HorizontalCard({ product, config }: ProductCardProps) {
 
     return (
         <Link href={`/produto/${product.slug}`} className="group block">
-            <div className="flex gap-4 p-3 rounded-lg border bg-card transition-all duration-300 hover:shadow-md hover:border-primary/20">
-                {/* Image */}
-                <div className="relative w-24 h-24 flex-shrink-0 overflow-hidden rounded-md bg-muted">
-                    <img
+            <div className="flex gap-2.5 sm:gap-4 p-2 sm:p-3 rounded-lg border bg-card transition-all duration-300 hover:shadow-md hover:border-primary/20">
+                {/* Image - Responsive sizing */}
+                <div className="relative w-16 h-16 xs:w-20 xs:h-20 sm:w-24 sm:h-24 flex-shrink-0 overflow-hidden rounded-md bg-muted">
+                    <Image
                         src={image}
                         alt={product.name}
-                        className="h-full w-full object-cover object-center"
+                        fill
+                        sizes="(max-width: 400px) 64px, (max-width: 640px) 80px, 96px"
+                        className="object-contain object-center p-1"
+                        loading="lazy"
                     />
                     {discount > 0 && (
                         <Badge
-                            className="absolute top-1 left-1 text-[8px] px-1.5 py-0.5"
+                            className="absolute top-0.5 left-0.5 sm:top-1 sm:left-1 text-[7px] sm:text-[8px] px-1 sm:px-1.5 py-0.5 z-10"
                             style={{ backgroundColor: config?.themeColor || "var(--primary)" }}
                         >
                             -{discount}%
@@ -264,25 +302,25 @@ function HorizontalCard({ product, config }: ProductCardProps) {
                     )}
                 </div>
 
-                {/* Info */}
-                <div className="flex flex-col flex-1 min-w-0">
-                    <h3 className="text-sm font-medium text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+                {/* Info - Responsive text */}
+                <div className="flex flex-col flex-1 min-w-0 py-0.5">
+                    <h3 className="text-xs sm:text-sm font-medium text-foreground line-clamp-2 group-hover:text-primary transition-colors">
                         {product.name}
                     </h3>
 
                     {product.category?.name && (
-                        <span className="text-xs text-muted-foreground mt-1">
+                        <span className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1 truncate">
                             {product.category.name}
                         </span>
                     )}
 
-                    <div className="mt-auto flex items-center justify-between">
-                        <div className="flex items-baseline gap-2">
-                            <span className="font-bold" style={{ color: config?.priceColor || config?.themeColor || "var(--primary)" }}>
+                    <div className="mt-auto flex items-center justify-between gap-2">
+                        <div className="flex flex-col xs:flex-row xs:items-baseline xs:gap-2 min-w-0">
+                            <span className="text-sm sm:text-base font-bold truncate" style={{ color: config?.priceColor || config?.themeColor || "var(--primary)" }}>
                                 {formatPrice(price)}
                             </span>
                             {compareAtPrice && (
-                                <span className="text-xs text-muted-foreground line-through">
+                                <span className="text-[10px] sm:text-xs text-muted-foreground line-through">
                                     {formatPrice(compareAtPrice)}
                                 </span>
                             )}
@@ -291,10 +329,10 @@ function HorizontalCard({ product, config }: ProductCardProps) {
                         <Button
                             size="sm"
                             variant="ghost"
-                            className="h-8 w-8 p-0 rounded-full"
+                            className="h-7 w-7 sm:h-8 sm:w-8 p-0 rounded-full flex-shrink-0"
                             style={{ color: config?.themeColor || "var(--primary)" }}
                         >
-                            <ShoppingBag className="h-4 w-4" />
+                            <ShoppingBag className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         </Button>
                     </div>
                 </div>

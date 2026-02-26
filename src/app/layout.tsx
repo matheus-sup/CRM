@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "leaflet/dist/leaflet.css";
 import { Inter } from "next/font/google";
 import { cn, serializeForClient } from "@/lib/utils";
 import { ThemeInjector } from "@/components/theme-injector";
@@ -14,14 +15,19 @@ const inter = Inter({ subsets: ["latin"] });
 
 export async function generateMetadata(): Promise<Metadata> {
   const config = await getStoreConfig();
+  const v = Date.now();
 
   return {
     title: config.storeName || "Minha Loja",
     description: config.description || "Sua loja de cosméticos favorita",
     icons: {
-      icon: (config.faviconUrl || "/favicon.ico") + "?v=" + Date.now(),
-      shortcut: (config.faviconUrl || "/favicon.ico") + "?v=" + Date.now(),
-      apple: (config.faviconUrl || "/favicon.ico") + "?v=" + Date.now(),
+      icon: [
+        { url: (config.faviconUrl || "/favicon.png") + "?v=" + v, sizes: "32x32", type: "image/png" },
+        { url: (config.faviconUrl || "/favicon-16.png") + "?v=" + v, sizes: "16x16", type: "image/png" },
+        { url: (config.faviconUrl || "/icon-192.png") + "?v=" + v, sizes: "192x192", type: "image/png" },
+      ],
+      shortcut: (config.faviconUrl || "/favicon.png") + "?v=" + v,
+      apple: (config.faviconUrl || "/apple-touch-icon.png") + "?v=" + v,
     }
   };
 }

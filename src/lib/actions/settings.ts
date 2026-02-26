@@ -147,9 +147,9 @@ export async function updateStoreConfig(prevState: any, formData: FormData) {
         addIfPresent("cartCountBg");
         addIfPresent("cartCountText");
         addIfPresent("searchBtnBg");
-        addIfPresent("searchBtnBg");
-        addIfPresent("searchBtnBg");
         addIfPresent("searchIconColor");
+        addIfPresent("menuLinkColor");
+        addIfPresent("menuLinkHoverColor");
 
         // Header Branding
         addBoolIfPresent("headerShowLogo");

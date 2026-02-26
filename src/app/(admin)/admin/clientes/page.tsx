@@ -30,9 +30,10 @@ export default async function CustomersPage() {
 
             <div className="rounded-lg border bg-white shadow-sm overflow-hidden">
                 <div className="p-4 border-b bg-slate-50/50 flex text-sm font-bold text-slate-600">
-                    <div className="w-[30%]">Cliente</div>
-                    <div className="w-[20%]">WhatsApp</div>
-                    <div className="w-[15%]">Pedidos</div>
+                    <div className="w-[10%]">ID</div>
+                    <div className="w-[25%]">Cliente</div>
+                    <div className="w-[18%]">WhatsApp</div>
+                    <div className="w-[12%]">Pedidos</div>
                     <div className="w-[15%]">Total Gasto</div>
                     <div className="w-[20%] text-right">Ações</div>
                 </div>
@@ -42,19 +43,23 @@ export default async function CustomersPage() {
                     </div>
                 ) : (
                     <div>
-                        {customers.map((constomer) => {
+                        {customers.map((constomer, index) => {
                             const totalSpent = constomer.orders.reduce((acc, order) => acc + Number(order.total), 0);
+                            const clientId = String(customers.length - index).padStart(4, "0");
 
                             return (
                                 <div key={constomer.id} className="flex items-center p-4 border-b last:border-0 hover:bg-slate-50 transition-colors">
-                                    <div className="w-[30%]">
+                                    <div className="w-[10%]">
+                                        <span className="text-xs font-mono text-slate-500">#{clientId}</span>
+                                    </div>
+                                    <div className="w-[25%]">
                                         <div className="font-bold text-slate-800">{constomer.name}</div>
                                         <div className="text-xs text-slate-400">Desde {format(constomer.createdAt, "MMM yyyy", { locale: ptBR })}</div>
                                     </div>
-                                    <div className="w-[20%] text-sm text-slate-600">
+                                    <div className="w-[18%] text-sm text-slate-600">
                                         {constomer.phone || "-"}
                                     </div>
-                                    <div className="w-[15%]">
+                                    <div className="w-[12%]">
                                         <span className="inline-flex items-center justify-center px-2 py-1 rounded bg-blue-100 text-blue-700 text-xs font-bold">
                                             {constomer.orders.length}
                                         </span>

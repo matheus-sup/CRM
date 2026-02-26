@@ -3,18 +3,12 @@ import Link from "next/link";
 import Image from "next/image";
 
 export async function RelatedProducts({ categoryId, currentProductId }: { categoryId?: string, currentProductId: string }) {
-    // In a real app, use a specialized query: findMany({ where: { categoryId, id: { not: currentProductId } }, take: 4 })
-    // For now using getProducts and filtering in JS as getProducts() is what we have handy, 
-    // BUT efficient way is to call prisma direct or add a filtered param to getProducts.
-    // I'll assume we can use prisma directly here since it's a server component.
-
-    // START: Server Component Data Fetching
     const { prisma } = await import("@/lib/prisma");
 
     const related = await prisma.product.findMany({
         where: {
             id: { not: currentProductId },
-            categoryId: categoryId || undefined // if no category, just random/latest
+            categoryId: categoryId || undefined
         },
         take: 4,
         include: { images: true }
@@ -30,10 +24,13 @@ export async function RelatedProducts({ categoryId, currentProductId }: { catego
                     <Link key={prod.id} href={`/produto/${prod.slug}`} className="group block space-y-3">
                         <div className="relative aspect-square overflow-hidden rounded-lg bg-slate-100 border">
                             {prod.images[0] ? (
-                                <img
+                                <Image
                                     src={prod.images[0].url}
                                     alt={prod.name}
-                                    className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                                    fill
+                                    sizes="(max-width: 640px) 50vw, 25vw"
+                                    className="object-contain transition-transform group-hover:scale-105 p-2"
+                                    loading="lazy"
                                 />
                             ) : (
                                 <div className="flex h-full items-center justify-center text-slate-300 font-bold text-2xl">

@@ -5,6 +5,7 @@ import { ProductCard } from "@/components/shop/ProductCard";
 import { Button } from "@/components/ui/button";
 import { Filter, SlidersHorizontal } from "lucide-react";
 import { getStoreConfig } from "@/lib/actions/settings";
+import { cn } from "@/lib/utils";
 import {
     Sheet,
     SheetContent,
@@ -144,7 +145,13 @@ export default async function ProductsPage({
                 {/* Product Grid */}
                 <div className="flex-1">
                     {products.length > 0 ? (
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        <div className={cn(
+                            "grid gap-6",
+                            config?.mobileColumns === 1 ? "grid-cols-1" : "grid-cols-2",
+                            config?.desktopColumns === 3 ? "md:grid-cols-2 lg:grid-cols-3" :
+                            config?.desktopColumns === 5 ? "md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5" :
+                            "md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4"
+                        )}>
                             {products.map((product) => (
                                 <ProductCard key={product.id} product={product} config={config} />
                             ))}

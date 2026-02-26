@@ -47,12 +47,13 @@ export function OrdersList({ orders }: OrdersListProps) {
 
             <div className="rounded-lg border bg-white shadow-sm overflow-hidden">
                 <div className="p-4 border-b bg-slate-50/50 flex text-sm font-bold text-slate-600">
-                    <div className="w-[15%]">Pedido</div>
-                    <div className="w-[25%]">Cliente</div>
-                    <div className="w-[20%]">Data</div>
-                    <div className="w-[15%]">Status</div>
-                    <div className="w-[15%]">Total</div>
-                    <div className="w-[10%] text-right">Detalhes</div>
+                    <div className="w-[12%]">Pedido</div>
+                    <div className="w-[18%]">Cliente</div>
+                    <div className="w-[14%]">Data</div>
+                    <div className="w-[14%]">Vendedor</div>
+                    <div className="w-[12%]">Status</div>
+                    <div className="w-[12%]">Total</div>
+                    <div className="w-[8%] text-right">Detalhes</div>
                 </div>
                 {orders.length === 0 ? (
                     <div className="p-8 text-center text-muted-foreground">
@@ -62,24 +63,33 @@ export function OrdersList({ orders }: OrdersListProps) {
                     <div>
                         {orders.map((order) => (
                             <div key={order.id} className="flex items-center p-4 border-b last:border-0 hover:bg-slate-50 transition-colors">
-                                <div className="w-[15%] font-bold text-blue-600">
+                                <div className="w-[12%] font-bold text-blue-600">
                                     #{order.code}
                                 </div>
-                                <div className="w-[25%] text-sm text-slate-700">
+                                <div className="w-[18%] text-sm text-slate-700">
                                     {order.customer?.name || "Visitante (WhatsApp)"}
                                 </div>
-                                <div className="w-[20%] text-sm text-slate-500">
+                                <div className="w-[14%] text-sm text-slate-500">
                                     {format(new Date(order.createdAt), "dd 'de' MMM, HH:mm", { locale: ptBR })}
                                 </div>
-                                <div className="w-[15%]">
+                                <div className="w-[14%] text-sm">
+                                    {order.seller ? (
+                                        <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">
+                                            {order.seller.name}
+                                        </span>
+                                    ) : (
+                                        <span className="text-slate-400">-</span>
+                                    )}
+                                </div>
+                                <div className="w-[12%]">
                                     <Badge className={getStatusColor(order.status)}>
                                         {getStatusLabel(order.status)}
                                     </Badge>
                                 </div>
-                                <div className="w-[15%] font-medium text-slate-700">
+                                <div className="w-[12%] font-medium text-slate-700">
                                     {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(order.total))}
                                 </div>
-                                <div className="w-[10%] flex justify-end">
+                                <div className="w-[8%] flex justify-end">
                                     <Button variant="ghost" size="icon" asChild>
                                         <Link href={`/admin/pedidos/${order.id}`}>
                                             <Eye className="h-4 w-4 text-slate-400 hover:text-blue-600" />

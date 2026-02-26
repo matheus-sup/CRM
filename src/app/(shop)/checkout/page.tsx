@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { createOrder } from "@/lib/actions/checkout";
 import { checkEmail, login, socialLogin } from "@/lib/actions/auth";
 import { validateCoupon } from "@/lib/actions/coupon";
+import { calculateShipping } from "@/lib/actions/shipping-calculator";
 import { useCart } from "@/lib/store/cart";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,7 +57,20 @@ export default function CheckoutPage() {
     const [district, setDistrict] = useState("");
     const [city, setCity] = useState("");
     const [state, setState] = useState("");
-    const [selectedShipping, setSelectedShipping] = useState("correios-sedex");
+    const [selectedShipping, setSelectedShipping] = useState("");
+
+    // Shipping options from API
+    interface ShippingOption {
+        id: string;
+        name: string;
+        company: string;
+        price: string;
+        priceNumber: number;
+        delivery_time: number;
+    }
+    const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([]);
+    const [isLoadingShipping, setIsLoadingShipping] = useState(false);
+    const [shippingError, setShippingError] = useState("");
 
     // Form States - Step 3
     const [selectedPayment, setSelectedPayment] = useState("pix");
@@ -66,7 +80,8 @@ export default function CheckoutPage() {
     const [cardCcv, setCardCcv] = useState("");
 
     const total = getCartTotal();
-    const shippingCost = selectedShipping === 'correios-sedex' ? 25.90 : 18.50;
+    const selectedShippingOption = shippingOptions.find(opt => opt.id === selectedShipping);
+    const shippingCost = selectedShippingOption?.priceNumber || 0;
 
     const discount = appliedCoupon
         ? (appliedCoupon.type === 'PERCENTAGE' ? (total * Number(appliedCoupon.value)) / 100 : Number(appliedCoupon.value))
@@ -90,6 +105,7 @@ export default function CheckoutPage() {
 
     const handleCepBlur = async () => {
         if (cep.length === 8) {
+            // Buscar endereço via ViaCEP
             try {
                 const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
                 const data = await res.json();
@@ -101,6 +117,59 @@ export default function CheckoutPage() {
                 }
             } catch (error) {
                 console.error("Erro ao buscar CEP:", error);
+            }
+
+            // Calcular frete via Melhor Envio
+            setIsLoadingShipping(true);
+            setShippingError("");
+            setShippingOptions([]);
+            setSelectedShipping("");
+
+            try {
+                // Calcular peso e dimensões totais dos produtos no carrinho
+                let totalWeight = 0;
+                let maxHeight = 2;
+                let maxWidth = 11;
+                let maxLength = 16;
+
+                items.forEach(item => {
+                    const qty = item.quantity || 1;
+                    // Se tiver dimensões do produto, usar. Senão, usar mínimos
+                    totalWeight += (item.weight || 0.3) * qty;
+                    maxHeight = Math.max(maxHeight, item.height || 2);
+                    maxWidth = Math.max(maxWidth, item.width || 11);
+                    maxLength = Math.max(maxLength, item.length || 16);
+                });
+
+                const result = await calculateShipping(cep, {
+                    weight: Math.max(totalWeight, 0.3),
+                    height: maxHeight,
+                    width: maxWidth,
+                    length: maxLength
+                });
+
+                if (result.error) {
+                    setShippingError(result.error);
+                } else if (result.quotes) {
+                    const options: ShippingOption[] = result.quotes.map((quote: any, index: number) => ({
+                        id: `shipping-${index}`,
+                        name: quote.name,
+                        company: quote.company,
+                        price: quote.price,
+                        priceNumber: parseFloat(quote.price.replace('.', '').replace(',', '.')),
+                        delivery_time: quote.delivery_time
+                    }));
+                    setShippingOptions(options);
+                    // Selecionar a primeira opção por padrão
+                    if (options.length > 0) {
+                        setSelectedShipping(options[0].id);
+                    }
+                }
+            } catch (error) {
+                console.error("Erro ao calcular frete:", error);
+                setShippingError("Erro ao calcular frete. Tente novamente.");
+            } finally {
+                setIsLoadingShipping(false);
             }
         }
     };
@@ -167,7 +236,11 @@ export default function CheckoutPage() {
 
     const handleContinueStep2 = () => {
         if (!name || !cpf || !phone || !cep || !street || !number || !city || !state) {
-            alert("Por favor, preencha todos os campos obrigatórios.");
+            toast.error("Por favor, preencha todos os campos obrigatórios.");
+            return;
+        }
+        if (!selectedShipping || shippingOptions.length === 0) {
+            toast.error("Por favor, selecione uma opção de envio.");
             return;
         }
         setCurrentStep(3);
@@ -187,7 +260,10 @@ export default function CheckoutPage() {
             const res = await createOrder({
                 customer: { name, email, phone, document: cpf },
                 address: { zip: cep, street, number, complement, district, city, state },
-                shipping: { title: selectedShipping, price: shippingCost },
+                shipping: {
+                    title: selectedShippingOption ? `${selectedShippingOption.name}${selectedShippingOption.company ? ` (${selectedShippingOption.company})` : ''}` : selectedShipping,
+                    price: shippingCost
+                },
                 paymentMethod: selectedPayment,
                 items: items,
                 total: finalTotal,
@@ -442,35 +518,53 @@ export default function CheckoutPage() {
                                         {/* Shipping Options */}
                                         <div className="border-t pt-4 mt-4">
                                             <h4 className="font-medium text-slate-800 mb-4">Opções de Envio</h4>
-                                            <RadioGroup value={selectedShipping} onValueChange={setSelectedShipping} className="space-y-3">
-                                                <div className={`flex items-center justify-between border rounded-lg p-4 cursor-pointer hover:bg-slate-50 ${selectedShipping === 'correios-sedex' ? 'border-primary bg-primary/5' : ''}`}>
-                                                    <div className="flex items-center gap-3">
-                                                        <RadioGroupItem value="correios-sedex" id="sedex" />
-                                                        <Label htmlFor="sedex" className="flex items-center gap-2 cursor-pointer">
-                                                            <Truck className="h-4 w-4 text-slate-500" />
-                                                            <div>
-                                                                <div className="font-semibold">Sedex (Correios)</div>
-                                                                <div className="text-xs text-slate-500">Chega em até 3 dias úteis</div>
-                                                            </div>
-                                                        </Label>
-                                                    </div>
-                                                    <div className="font-bold">R$ 25,90</div>
-                                                </div>
 
-                                                <div className={`flex items-center justify-between border rounded-lg p-4 cursor-pointer hover:bg-slate-50 ${selectedShipping === 'correios-pac' ? 'border-primary bg-primary/5' : ''}`}>
-                                                    <div className="flex items-center gap-3">
-                                                        <RadioGroupItem value="correios-pac" id="pac" />
-                                                        <Label htmlFor="pac" className="flex items-center gap-2 cursor-pointer">
-                                                            <Truck className="h-4 w-4 text-slate-500" />
-                                                            <div>
-                                                                <div className="font-semibold">PAC (Correios)</div>
-                                                                <div className="text-xs text-slate-500">Chega em até 7 dias úteis</div>
-                                                            </div>
-                                                        </Label>
-                                                    </div>
-                                                    <div className="font-bold">R$ 18,50</div>
+                                            {!cep && (
+                                                <div className="text-center py-6 text-slate-500 bg-slate-50 rounded-lg border border-dashed">
+                                                    <Truck className="h-8 w-8 mx-auto mb-2 text-slate-400" />
+                                                    <p className="text-sm">Preencha o CEP para ver as opções de envio</p>
                                                 </div>
-                                            </RadioGroup>
+                                            )}
+
+                                            {isLoadingShipping && (
+                                                <div className="text-center py-6 text-slate-500">
+                                                    <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2"></div>
+                                                    <p className="text-sm">Buscando opções de envio...</p>
+                                                </div>
+                                            )}
+
+                                            {shippingError && (
+                                                <div className="flex items-center gap-2 p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                                                    <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                                                    <span>{shippingError}</span>
+                                                </div>
+                                            )}
+
+                                            {shippingOptions.length > 0 && (
+                                                <RadioGroup value={selectedShipping} onValueChange={setSelectedShipping} className="space-y-3">
+                                                    {shippingOptions.map((option) => (
+                                                        <div
+                                                            key={option.id}
+                                                            className={`flex items-center justify-between border rounded-lg p-4 cursor-pointer hover:bg-slate-50 ${selectedShipping === option.id ? 'border-primary bg-primary/5' : ''}`}
+                                                        >
+                                                            <div className="flex items-center gap-3">
+                                                                <RadioGroupItem value={option.id} id={option.id} />
+                                                                <Label htmlFor={option.id} className="flex items-center gap-2 cursor-pointer">
+                                                                    <Truck className="h-4 w-4 text-slate-500" />
+                                                                    <div>
+                                                                        <div className="font-semibold">{option.name}</div>
+                                                                        <div className="text-xs text-slate-500">
+                                                                            {option.company && <span>{option.company} - </span>}
+                                                                            Chega em até {option.delivery_time} dias úteis
+                                                                        </div>
+                                                                    </div>
+                                                                </Label>
+                                                            </div>
+                                                            <div className="font-bold">R$ {option.price}</div>
+                                                        </div>
+                                                    ))}
+                                                </RadioGroup>
+                                            )}
                                         </div>
 
                                         <div className="flex justify-end pt-4">
@@ -658,7 +752,14 @@ export default function CheckoutPage() {
                                     )}
                                     <div className="flex justify-between">
                                         <span className="text-slate-600">Frete</span>
-                                        <span>{currentStep >= 2 ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(shippingCost) : 'A calcular'}</span>
+                                        <span>
+                                            {isLoadingShipping
+                                                ? 'Calculando...'
+                                                : (shippingCost > 0
+                                                    ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(shippingCost)
+                                                    : 'A calcular'
+                                                )}
+                                        </span>
                                     </div>
                                     {selectedPayment === 'pix' && currentStep === 3 && (
                                         <div className="flex justify-between text-green-600">
@@ -672,7 +773,7 @@ export default function CheckoutPage() {
                                     <span className="font-bold text-lg text-slate-800">Total</span>
                                     <span className="font-bold text-xl text-slate-900">
                                         {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
-                                            currentStep >= 2 ? finalTotal : (total - discount)
+                                            shippingCost > 0 ? finalTotal : (total - discount)
                                         )}
                                     </span>
                                 </div>

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Truck, AlertCircle, CheckCircle2 } from "lucide-react";
 import { calculateShipping } from "@/lib/actions/shipping-calculator"; // I will create this
+import { cn } from "@/lib/utils";
 
 interface ShippingCalculatorProps {
     productId: string;
@@ -12,9 +13,11 @@ interface ShippingCalculatorProps {
     length: number | null;
     width: number | null;
     height: number | null;
+    btnStyle?: "rounded" | "pill" | "square";
+    iconColor?: string;
 }
 
-export function ShippingCalculator({ productId, weight, length, width, height }: ShippingCalculatorProps) {
+export function ShippingCalculator({ productId, weight, length, width, height, btnStyle = "rounded", iconColor }: ShippingCalculatorProps) {
     const [cep, setCep] = useState("");
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<any[] | null>(null);
@@ -43,10 +46,12 @@ export function ShippingCalculator({ productId, weight, length, width, height }:
         }
     };
 
+    const btnRoundedClass = btnStyle === "pill" ? "rounded-full" : btnStyle === "square" ? "rounded-none" : "rounded-lg";
+
     return (
-        <div className="border rounded-lg p-4 space-y-4 bg-slate-50">
+        <div className={cn("border p-4 space-y-4 bg-slate-50", btnRoundedClass)}>
             <div className="flex items-center gap-2 text-slate-700 font-medium">
-                <Truck className="h-5 w-5" />
+                <Truck className="h-5 w-5" style={{ color: iconColor }} />
                 <span>Calcular Frete</span>
             </div>
 
@@ -55,9 +60,9 @@ export function ShippingCalculator({ productId, weight, length, width, height }:
                     placeholder="Seu CEP"
                     value={cep}
                     onChange={(e) => setCep(e.target.value.replace(/\D/g, "").slice(0, 8))}
-                    className="bg-white"
+                    className={cn("bg-white", btnRoundedClass)}
                 />
-                <Button onClick={handleCalculate} disabled={loading}>
+                <Button onClick={handleCalculate} disabled={loading} className={btnRoundedClass}>
                     {loading ? "..." : "OK"}
                 </Button>
             </div>
@@ -72,7 +77,7 @@ export function ShippingCalculator({ productId, weight, length, width, height }:
             {result && result.length > 0 && (
                 <div className="space-y-2 mt-2">
                     {result.map((quote, idx) => (
-                        <div key={idx} className="flex justify-between items-center bg-white p-2 rounded border text-sm">
+                        <div key={idx} className={cn("flex justify-between items-center bg-white p-2 border text-sm", btnRoundedClass)}>
                             <div className="flex items-center gap-2">
                                 {/* <img src={quote.company.picture} className="h-6 w-auto" /> // If available */}
                                 <div>

@@ -160,7 +160,7 @@ export function BrandsList({ brands: initialBrands }: { brands: any[] }) {
             </div>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent>
+                <DialogContent className="max-w-sm">
                     <DialogHeader>
                         <DialogTitle>{editingBrand ? "Editar Marca" : "Nova Marca"}</DialogTitle>
                     </DialogHeader>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
     LayoutDashboard,
     ShoppingBag,
@@ -32,10 +32,14 @@ import {
     Share2,
     Hammer,
     Lock,
-    ChevronRight
+    ChevronRight,
+    Puzzle,
+    Calendar,
+    Sparkles
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { getTestUserTools } from "@/lib/actions/tools";
 
 // Define types for navigation items
 // Define types for navigation items
@@ -73,7 +77,6 @@ const navSections: NavSection[] = [
             },
             { href: "/admin/pagamentos", label: "Pagamentos", icon: CreditCard },
             { href: "/admin/envios", label: "Envios", icon: Truck },
-            { href: "/admin/chat", label: "Chat", icon: MessageSquare },
             { href: "/admin/clientes", label: "Clientes", icon: Users },
             { href: "/admin/descontos", label: "Descontos", icon: Percent },
             { href: "/admin/marketing", label: "Marketing", icon: Megaphone },
@@ -83,10 +86,10 @@ const navSections: NavSection[] = [
                 icon: Globe,
                 subItems: [
                     { href: "/admin/site", label: "Layout" },
-                    { href: "/admin/blog", label: "Blog", locked: true },
+                    { href: "/admin/blog", label: "Blog" },
                     { href: "/admin/filtros", label: "Filtros", locked: true },
                     { href: "/admin/manutencao", label: "Página em construção" },
-                    { href: "/", label: "Ver Loja", external: true },
+                    { href: "/", label: "Ver Site", external: true },
                 ]
             },
             {
@@ -106,37 +109,109 @@ const navSections: NavSection[] = [
                     { href: "/admin/configuracoes?tab=seo", label: "SEO / Códigos", locked: true },
                     { href: "/admin/configuracoes?tab=idiomas", label: "Idiomas e Moedas", locked: true },
                 ]
-            }
+            },
+            {
+                href: "#",
+                label: "Loja de Ferramentas",
+                icon: Puzzle,
+                badge: "NOVO",
+                subItems: [
+                    { href: "/admin/ferramentas", label: "Ver Todas" },
+                ]
+            },
         ]
     }
 ];
 
+// Mapeamento de slugs de ferramentas para rotas
+const toolRouteMap: Record<string, string> = {
+    "agendamentos-online": "/admin/agendamentos",
+    "cardapio-digital": "/admin/cardapio",
+    "delivery-proprio": "/admin/delivery",
+    "comandas-digitais": "/admin/comandas",
+    "reservas-mesas": "/admin/reservas",
+    "catalogo-whatsapp": "/admin/catalogo-whatsapp",
+    "programa-fidelidade": "/admin/fidelidade",
+    "avaliacoes-reviews": "/admin/avaliacoes",
+    "orcamentos-online": "/admin/orcamentos",
+    "gift-cards": "/admin/gift-cards",
+    "lista-presentes": "/admin/lista-presentes",
+    "clube-assinaturas": "/admin/assinaturas",
+    "chat-whatsapp": "/admin/chat",
+};
+
+type ActiveTool = {
+    id: string;
+    slug: string;
+    name: string;
+};
+
 export function Sidebar() {
     const pathname = usePathname();
     const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+    const [activeTools, setActiveTools] = useState<ActiveTool[]>([]);
+    const [initialized, setInitialized] = useState(false);
 
-    // Initialize expanded state based on active path
-    if (Object.keys(expanded).length === 0) {
-        navSections.forEach(section => {
-            section.items.forEach(item => {
-                if (item.subItems && item.subItems.some(sub => pathname.startsWith(sub.href) && sub.href !== "#")) {
-                    // User preference override logic if needed
-                }
+    // Carregar ferramentas ativas do usuário
+    useEffect(() => {
+        async function loadActiveTools() {
+            try {
+                const userTools = await getTestUserTools();
+                // Filtrar apenas ferramentas habilitadas (isEnabled === true)
+                const tools = userTools
+                    .filter((ut: any) => ut.isEnabled === true)
+                    .map((ut: any) => ({
+                        id: ut.tool.id,
+                        slug: ut.tool.slug,
+                        name: ut.tool.name,
+                    }));
+                setActiveTools(tools);
+            } catch (error) {
+                console.error("Erro ao carregar ferramentas ativas:", error);
+            }
+        }
+        loadActiveTools();
+    }, []);
+
+    // Initialize expanded state based on active path (only once)
+    useEffect(() => {
+        if (!initialized) {
+            const initialExpanded: Record<string, boolean> = {};
+            navSections.forEach(section => {
+                section.items.forEach(item => {
+                    if (item.subItems && item.subItems.some(sub => pathname.startsWith(sub.href) && sub.href !== "#" && sub.href !== "/")) {
+                        initialExpanded[item.label] = true;
+                    }
+                });
             });
-        });
-    }
+            setExpanded(initialExpanded);
+            setInitialized(true);
+        }
+    }, [pathname, initialized]);
 
     const toggleExpand = (label: string) => {
         setExpanded(prev => ({ ...prev, [label]: !prev[label] }));
     };
 
+    // Gerar subitens dinâmicos para Loja de Ferramentas
+    const getToolsSubItems = () => {
+        const baseItems = [{ href: "/admin/ferramentas", label: "Ver Todas", badge: "NOVO" }];
+        const toolItems = activeTools.map(tool => ({
+            href: toolRouteMap[tool.slug] || `/admin/ferramentas/${tool.slug}`,
+            label: tool.name,
+        }));
+        return [...baseItems, ...toolItems];
+    };
+
     return (
         <aside className="flex h-screen w-64 flex-col border-r bg-white text-slate-600">
-            <div className="flex h-16 items-center px-6 border-b">
-                {/* Logo Placeholder - Keeping it simple/whitelabel as requested */}
+            <div className="flex h-16 items-center justify-between px-6 border-b">
                 <div className="flex items-center gap-2 text-blue-600">
                     <span className="text-xl font-bold">Admin</span>
                 </div>
+                <Link href="/" target="_blank" className="text-xs text-slate-400 hover:text-blue-600 flex items-center gap-1 transition-colors">
+                    Ver Site <ExternalLink className="h-3 w-3" />
+                </Link>
             </div>
 
             <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-8">
@@ -151,8 +226,10 @@ export function Sidebar() {
                             {section.items.map((item) => {
                                 const isActive = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
                                 const isLocked = item.locked;
-                                const hasSubItems = item.subItems && item.subItems.length > 0;
-                                const isExpanded = expanded[item.label] ?? (hasSubItems && item.subItems?.some(sub => pathname.startsWith(sub.href) && sub.href !== "#"));
+                                // Para "Loja de Ferramentas", usar subitens dinâmicos
+                                const dynamicSubItems = item.label === "Loja de Ferramentas" ? getToolsSubItems() : item.subItems;
+                                const hasSubItems = dynamicSubItems && dynamicSubItems.length > 0;
+                                const isExpanded = expanded[item.label] || false;
 
                                 return (
                                     <div key={item.label}>
@@ -204,7 +281,7 @@ export function Sidebar() {
                                         {/* SubItems Rendering */}
                                         {hasSubItems && isExpanded && (
                                             <div className="mt-1 ml-9 space-y-1 border-l-2 border-slate-100 pl-2 animate-in slide-in-from-top-1 duration-200">
-                                                {item.subItems!.map(sub => (
+                                                {dynamicSubItems!.map(sub => (
                                                     <Link
                                                         key={sub.label}
                                                         href={sub.locked ? "#" : sub.href}
@@ -218,6 +295,11 @@ export function Sidebar() {
                                                     >
                                                         {sub.label}
                                                         <div className="flex items-center gap-2">
+                                                            {sub.badge && (
+                                                                <span className="rounded-full bg-blue-100 px-1.5 py-0.5 text-[9px] font-bold text-blue-600 border border-blue-200">
+                                                                    {sub.badge}
+                                                                </span>
+                                                            )}
                                                             {sub.locked && <Lock className="h-3 w-3 opacity-40" />}
                                                             {sub.external && !sub.locked && <ExternalLink className="h-3 w-3 opacity-40" />}
                                                         </div>

@@ -9,6 +9,20 @@ export interface CartItem {
     image?: string;
     slug?: string;
     quantity: number;
+    // Dimensões para cálculo de frete
+    weight?: number;  // kg
+    height?: number;  // cm
+    width?: number;   // cm
+    length?: number;  // cm
+    // Metadata para informações adicionais (lentes, variantes, etc)
+    metadata?: {
+        variant?: string;
+        lensType?: string;
+        lensThickness?: string;
+        lensTreatment?: string;
+        lensDescription?: string;
+        [key: string]: unknown;
+    };
 }
 
 interface CartState {

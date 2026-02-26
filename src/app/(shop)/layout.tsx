@@ -4,11 +4,11 @@ import { TopBar } from "@/components/shop/TopBar";
 import { CategoryNav } from "@/components/shop/CategoryNav";
 import { ChatWidget } from "@/components/shop/ChatWidget";
 import { CartSheet } from "@/components/shop/CartSheet";
-import { WhatsAppFloat } from "@/components/shop/WhatsAppFloat";
 import { getStoreConfig } from "@/lib/actions/settings";
 import { ThemeInjector } from "@/components/theme-injector";
 import { cn } from "@/lib/utils";
-import { prisma } from "@/lib/prisma"; // Added
+import { prisma } from "@/lib/prisma";
+import { CardapioHeader } from "@/components/shop/restaurant";
 
 export const dynamic = "force-dynamic";
 
@@ -74,11 +74,51 @@ export default async function ShopLayout({
 
     const currentTheme = (config as any)?.theme || "modern";
     const isLegacy = currentTheme === "legacy";
+    const isRestaurant = (config as any)?.siteType === "restaurant";
+    const isCardapio = (config as any)?.siteType === "cardapio";
 
     // Fetch Footer Menus (All menus for dynamic blocks)
     const footerMenus = await prisma.menu.findMany({
         include: { items: { orderBy: { order: 'asc' } } }
     });
+
+    // Cardapio Direto mode - minimal ordering-focused layout
+    if (isCardapio) {
+        return (
+            <div className="flex min-h-screen flex-col bg-white">
+                <style dangerouslySetInnerHTML={{ __html: cssVariables }} />
+                <ThemeInjector config={serializedConfig} />
+
+                {/* Cardapio Header with Login */}
+                <CardapioHeader config={serializedConfig} categories={categories} />
+
+                <main className="flex-1">
+                    {children}
+                </main>
+
+                <CartSheet />
+            </div>
+        );
+    }
+
+    // Restaurant mode - simplified layout
+    if (isRestaurant) {
+        return (
+            <div className="flex min-h-screen flex-col bg-gray-50">
+                <style dangerouslySetInnerHTML={{ __html: cssVariables }} />
+                <ThemeInjector config={serializedConfig} />
+
+                {/* Restaurant Header */}
+                <Header config={serializedConfig} categories={categories} />
+
+                <main className="flex-1">
+                    {children}
+                </main>
+
+                <CartSheet />
+            </div>
+        );
+    }
 
     return (
         <div className="flex min-h-screen flex-col">
@@ -100,7 +140,6 @@ export default async function ShopLayout({
             </main>
             <ChatWidget />
             <CartSheet />
-            <WhatsAppFloat whatsapp={serializedConfig.whatsapp} />
             <Footer config={serializedConfig} menus={footerMenus} />
         </div>
     );

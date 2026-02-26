@@ -1,16 +1,66 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Type, Image as ImageIcon, Layout, Code, ShoppingBag, MapPin, Instagram, Megaphone, ChevronLeft, Check } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+    Type, Image as ImageIcon, Layout, Code, ShoppingBag, MapPin, Instagram, Megaphone, ChevronLeft, Check,
+    Calendar, QrCode, Bike, ClipboardList, Utensils, MessageCircle, Award, Star, FileText, Gift, Heart,
+    RefreshCw, Scissors, Percent, Monitor, Users, MessageSquare, Truck, Sparkles
+} from "lucide-react";
 import { BlockType } from "@/types/page-builder";
 import { cn } from "@/lib/utils";
+import { getTestUserTools } from "@/lib/actions/tools";
 
 interface SiteBlockSidebarProps {
     onAddBlock: (type: BlockType, variant?: string) => void;
     isOpen: boolean;
     onClose: () => void;
 }
+
+// Mapping from tool slug to block type
+const TOOL_SLUG_TO_BLOCK: Record<string, BlockType> = {
+    "agendamentos-online": "tool-scheduling",
+    "cardapio-digital": "tool-menu",
+    "delivery-proprio": "tool-delivery",
+    "reservas-mesas": "tool-reservations",
+    "comandas-digitais": "tool-orders",
+    "gestao-salao": "tool-salon",
+    "catalogo-whatsapp": "tool-whatsapp-catalog",
+    "orcamentos-online": "tool-quotes",
+    "gift-cards": "tool-gift-cards",
+    "lista-presentes": "tool-wishlist",
+    "clube-assinaturas": "tool-subscriptions",
+    "programa-fidelidade": "tool-loyalty",
+    "avaliacoes-reviews": "tool-reviews",
+    "cupons-promocoes": "tool-coupons",
+    "vitrine-digital": "tool-digital-showcase",
+    "prova-social": "tool-social-proof",
+    "chat-online": "tool-chat",
+    "rastreamento-pedidos": "tool-tracking",
+};
+
+// Icon mapping for tools
+const TOOL_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+    "agendamentos-online": Calendar,
+    "cardapio-digital": QrCode,
+    "delivery-proprio": Bike,
+    "reservas-mesas": Utensils,
+    "comandas-digitais": ClipboardList,
+    "gestao-salao": Scissors,
+    "catalogo-whatsapp": MessageCircle,
+    "orcamentos-online": FileText,
+    "gift-cards": Gift,
+    "lista-presentes": Heart,
+    "clube-assinaturas": RefreshCw,
+    "programa-fidelidade": Award,
+    "avaliacoes-reviews": Star,
+    "cupons-promocoes": Percent,
+    "vitrine-digital": Monitor,
+    "prova-social": Users,
+    "chat-online": MessageSquare,
+    "rastreamento-pedidos": Truck,
+};
 
 // Block type definitions
 const AVAILABLE_BLOCKS = [
@@ -69,24 +119,6 @@ const BLOCK_VARIANTS: Record<string, { id: string; name: string; description: st
                 </div>
             )
         },
-        {
-            id: "video",
-            name: "Com Vídeo",
-            description: "Vídeo de fundo em loop",
-            mockup: (
-                <div className="w-full h-20 bg-slate-800 rounded relative flex items-center justify-center">
-                    <div className="absolute inset-0 flex items-center justify-center opacity-30">
-                        <div className="w-6 h-6 border-2 border-white rounded-full flex items-center justify-center">
-                            <div className="w-0 h-0 border-l-4 border-l-white border-y-2 border-y-transparent ml-0.5" />
-                        </div>
-                    </div>
-                    <div className="text-center z-10">
-                        <div className="w-16 h-2 bg-white/90 rounded mx-auto mb-1" />
-                        <div className="w-10 h-1.5 bg-white/60 rounded mx-auto" />
-                    </div>
-                </div>
-            )
-        }
     ],
     "product-grid": [
         {
@@ -356,9 +388,39 @@ const BLOCK_VARIANTS: Record<string, { id: string; name: string; description: st
     ]
 };
 
+type ActivatedTool = {
+    id: string;
+    toolId: string;
+    isEnabled: boolean;
+    tool: {
+        id: string;
+        slug: string;
+        name: string;
+        description: string;
+        icon: string;
+    };
+};
+
 export function SiteBlockSidebar({ onAddBlock, isOpen, onClose }: SiteBlockSidebarProps) {
     const [selectedBlockType, setSelectedBlockType] = useState<string | null>(null);
     const [selectedVariant, setSelectedVariant] = useState<string | null>(null);
+    const [activatedTools, setActivatedTools] = useState<ActivatedTool[]>([]);
+    const [loadingTools, setLoadingTools] = useState(true);
+
+    // Fetch activated tools
+    useEffect(() => {
+        async function loadActivatedTools() {
+            try {
+                const userTools = await getTestUserTools();
+                setActivatedTools(userTools.filter(t => t.isEnabled));
+            } catch (error) {
+                console.error("Error loading tools:", error);
+            } finally {
+                setLoadingTools(false);
+            }
+        }
+        loadActivatedTools();
+    }, []);
 
     if (!isOpen) return null;
 
@@ -464,6 +526,55 @@ export function SiteBlockSidebar({ onAddBlock, isOpen, onClose }: SiteBlockSideb
                                 )}
                             </button>
                         ))}
+
+                        {/* Ferramentas Section */}
+                        {activatedTools.length > 0 && (
+                            <>
+                                <div className="pt-4 pb-2 border-t mt-4">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Sparkles className="h-4 w-4 text-purple-500" />
+                                        <span className="font-bold text-slate-800 text-sm">Ferramentas</span>
+                                        <Badge className="bg-purple-100 text-purple-700 text-xs">
+                                            {activatedTools.length}
+                                        </Badge>
+                                    </div>
+                                    <p className="text-xs text-slate-500">
+                                        Ferramentas ativadas na sua loja
+                                    </p>
+                                </div>
+                                {activatedTools.map((userTool) => {
+                                    const blockType = TOOL_SLUG_TO_BLOCK[userTool.tool.slug];
+                                    const IconComponent = TOOL_ICONS[userTool.tool.slug] || Sparkles;
+
+                                    if (!blockType) return null;
+
+                                    return (
+                                        <button
+                                            key={userTool.id}
+                                            onClick={() => {
+                                                onAddBlock(blockType);
+                                                onClose();
+                                            }}
+                                            className="w-full flex items-start gap-4 p-4 rounded-xl border border-purple-200 hover:border-purple-500 hover:bg-purple-50 transition-all text-left group bg-gradient-to-r from-purple-50/50 to-blue-50/50"
+                                        >
+                                            <div className="p-2 bg-gradient-to-br from-purple-100 to-blue-100 rounded-lg group-hover:from-purple-200 group-hover:to-blue-200 text-purple-600">
+                                                <IconComponent className="h-5 w-5" />
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="font-semibold text-slate-800 text-sm">{userTool.tool.name}</div>
+                                                <div className="text-xs text-slate-500 leading-snug mt-1 line-clamp-2">{userTool.tool.description}</div>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </>
+                        )}
+
+                        {loadingTools && (
+                            <div className="pt-4 border-t mt-4 text-center text-slate-400 text-sm">
+                                Carregando ferramentas...
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

@@ -3,6 +3,8 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 export default function AdminLayout({
     children,
 }: {
