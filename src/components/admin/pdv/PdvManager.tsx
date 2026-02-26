@@ -266,7 +266,7 @@ export function PdvManager({ initialProducts, sellers = [] }: PdvManagerProps) {
                         <div className="flex gap-4 items-center">
                             {/* Barcode Input */}
                             <div className="relative flex-1">
-                                <Barcode className={`absolute left-3 top-1/2 -translate-y-1/2 w-6 h-6 ${lastError ? "text-red-500" : "text-pink-500"}`} />
+                                <Barcode className={`absolute left-3 top-1/2 -translate-y-1/2 w-6 h-6 ${lastError ? "text-red-500" : "text-primary"}`} />
                                 <Input
                                     ref={searchInputRef}
                                     placeholder="Digite o código ou escaneie o código de barras..."
