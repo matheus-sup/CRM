@@ -33,9 +33,22 @@ export async function registerCrmUser(formData: FormData) {
 
   try {
     // Check if email has active subscription (local database only - no external API call)
-    const userPlan = await prisma.userPlan.findUnique({
-      where: { email }
-    });
+    // Add timeout to prevent infinite loading
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("timeout")), 10000)
+    );
+
+    let userPlan;
+    try {
+      userPlan = await Promise.race([
+        prisma.userPlan.findUnique({ where: { email } }),
+        timeoutPromise
+      ]) as any;
+    } catch (dbError: any) {
+      console.error("Database error checking subscription:", dbError);
+      // If database error, allow registration (webhook will link later)
+      userPlan = null;
+    }
 
     if (!userPlan || !userPlan.isActive) {
       return {
