@@ -10,6 +10,11 @@ export type BlockType =
     | "instagram"
     | "map"
     | "promo"
+    | "brands"
+    | "categories"
+    | "newsletter"
+    | "blog-posts"
+    | "promo-banner"
     // Tool Blocks (Loja de Ferramentas)
     | "tool-scheduling"      // Agendamentos Online
     | "tool-menu"            // Cardápio Digital
@@ -124,4 +129,27 @@ export interface LoyaltyBlockContent extends ToolBlockContent {
 export interface ChatBlockContent extends ToolBlockContent {
     position?: "bottom-right" | "bottom-left";
     welcomeMessage?: string;
+}
+
+export interface BrandsBlockContent {
+    title?: string;
+    subtitle?: string;
+    selectionMode?: "auto" | "manual";
+    selectedBrandIds?: string[];
+    limit?: number;
+    brandsData?: Record<string, { link?: string; image?: string }>;
+}
+
+export interface BlogPostsBlockContent {
+    title?: string;
+    linkText?: string;
+    linkUrl?: string;
+    posts?: Array<{
+        id: string;
+        title: string;
+        image?: string;
+        url?: string;
+    }>;
+    limit?: number;
+    columns?: 2 | 3;
 }

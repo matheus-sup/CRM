@@ -4,9 +4,21 @@ import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Eye, EyeOff, Palette, LayoutGrid, ChevronDown, ChevronUp } from "lucide-react";
+import { Eye, EyeOff, Palette, LayoutGrid, ChevronDown, ChevronUp, Info } from "lucide-react";
 import { ColorPickerInput } from "@/components/admin/site/ColorPickerInput";
 import { cn } from "@/lib/utils";
+
+function InfoTip({ text }: { text: string }) {
+    return (
+        <span className="relative group/info inline-flex ml-1.5 cursor-help">
+            <Info className="h-3.5 w-3.5 text-slate-400 group-hover/info:text-blue-500 transition-colors" />
+            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-2.5 text-xs text-white bg-slate-800 rounded-lg shadow-lg opacity-0 invisible group-hover/info:opacity-100 group-hover/info:visible transition-all duration-200 z-50 pointer-events-none leading-relaxed">
+                {text}
+                <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-slate-800" />
+            </span>
+        </span>
+    );
+}
 
 export function SiteProductDetailForm({ config, onConfigChange }: { config: any; onConfigChange?: (key: string, value: any) => void }) {
     const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
@@ -220,7 +232,10 @@ export function SiteProductDetailForm({ config, onConfigChange }: { config: any;
                 {expandedSections.layout && (
                     <div className="space-y-4 pt-2 p-3 border rounded-lg">
                         <div className="space-y-2">
-                            <Label className="text-sm font-medium">Layout da Galeria</Label>
+                            <Label className="text-sm font-medium flex items-center">
+                                Layout da Galeria
+                                <InfoTip text="Galeria ao Lado: miniaturas à esquerda — ideal para fotos quadradas (1:1). Galeria Abaixo: miniaturas embaixo — versátil para qualquer proporção. Grid: todas as fotos visíveis — bom para poucos itens (3-6 fotos). Navegação por Pontos: visual clean e minimalista com indicadores — recomendado para óticas, joias e moda. Use fotos com fundo neutro para melhor resultado." />
+                            </Label>
                             <Select
                                 value={config?.productGalleryLayout || "side"}
                                 onValueChange={(v) => onConfigChange?.("productGalleryLayout", v)}
@@ -232,13 +247,17 @@ export function SiteProductDetailForm({ config, onConfigChange }: { config: any;
                                     <SelectItem value="side">Galeria ao Lado</SelectItem>
                                     <SelectItem value="bottom">Galeria Abaixo</SelectItem>
                                     <SelectItem value="grid">Galeria em Grid</SelectItem>
+                                    <SelectItem value="dots">Navegação por Pontos</SelectItem>
                                 </SelectContent>
                             </Select>
                             <p className="text-xs text-muted-foreground">Como as miniaturas são exibidas em relação à imagem principal</p>
                         </div>
 
                         <div className="space-y-2">
-                            <Label className="text-sm font-medium">Estilo do Botão</Label>
+                            <Label className="text-sm font-medium flex items-center">
+                                Estilo do Botão
+                                <InfoTip text="Arredondado: cantos suavizados, visual equilibrado — funciona para a maioria das lojas. Pílula: cantos totalmente arredondados, visual moderno e amigável — ideal para moda, cosméticos e lifestyle. Quadrado: cantos retos, visual sóbrio e profissional — recomendado para eletrônicos, ferramentas e B2B." />
+                            </Label>
                             <Select
                                 value={config?.productBtnStyle || "rounded"}
                                 onValueChange={(v) => onConfigChange?.("productBtnStyle", v)}
@@ -256,7 +275,10 @@ export function SiteProductDetailForm({ config, onConfigChange }: { config: any;
                         </div>
 
                         <div className="space-y-2">
-                            <Label className="text-sm font-medium">Tamanho do Botão</Label>
+                            <Label className="text-sm font-medium flex items-center">
+                                Tamanho do Botão
+                                <InfoTip text="Pequeno: discreto e compacto — bom quando há muitas ações na página. Médio: equilíbrio entre visibilidade e espaço — uso geral. Grande: botão chamativo e fácil de clicar — recomendado para lojas mobile-first e quando o botão de compra é a ação principal." />
+                            </Label>
                             <Select
                                 value={config?.productBtnSize || "large"}
                                 onValueChange={(v) => onConfigChange?.("productBtnSize", v)}

@@ -23,6 +23,8 @@ export function ProductCard({ product, config }: ProductCardProps) {
             return <DetailedCard product={product} config={config} />;
         case "horizontal":
             return <HorizontalCard product={product} config={config} />;
+        case "optica":
+            return <OpticaCard product={product} config={config} />;
         case "standard":
         default:
             return <StandardCard product={product} config={config} />;
@@ -41,7 +43,7 @@ function StandardCard({ product, config }: ProductCardProps) {
     const price = Number(product.price);
     const compareAtPrice = product.compareAtPrice ? Number(product.compareAtPrice) : null;
     const discount = compareAtPrice ? Math.round(((compareAtPrice - price) / compareAtPrice) * 100) : 0;
-    const image = product.images?.[0]?.url || "/assets/placeholder-product.png";
+    const defaultImage = product.images?.[0]?.url || "/assets/placeholder-product.png";
     const secondImage = product.images?.[1]?.url;
 
     // Config toggles
@@ -51,7 +53,21 @@ function StandardCard({ product, config }: ProductCardProps) {
     const showInstallments = config?.showInstallments !== false && config?.showInstallments !== "false";
 
     const [hovered, setHovered] = useState(false);
+    const [activeVariantIdx, setActiveVariantIdx] = useState<number | null>(null);
     const isLowStock = showLowStock && product.stock > 0 && product.stock <= 5;
+
+    // Color variants
+    const colorVariants = (product.variants || []).filter((v: any) => v.colorHex || v.colorImage);
+
+    const getDisplayImage = () => {
+        if (activeVariantIdx !== null && colorVariants[activeVariantIdx]) {
+            const v = colorVariants[activeVariantIdx];
+            const imgs = typeof v.images === "string" ? (() => { try { return JSON.parse(v.images); } catch { return []; } })() : (v.images || []);
+            if (imgs.length > 0) return imgs[0];
+        }
+        if (showHoverImage && secondImage && hovered && activeVariantIdx === null) return secondImage;
+        return defaultImage;
+    };
 
     return (
         <Link href={`/produto/${product.slug}`} className="group relative block h-full">
@@ -60,10 +76,10 @@ function StandardCard({ product, config }: ProductCardProps) {
                 <div
                     className="relative aspect-square w-full overflow-hidden rounded-lg bg-transparent"
                     onMouseEnter={() => setHovered(true)}
-                    onMouseLeave={() => setHovered(false)}
+                    onMouseLeave={() => { setHovered(false); setActiveVariantIdx(null); }}
                 >
                     <Image
-                        src={(showHoverImage && secondImage && hovered) ? secondImage : image}
+                        src={getDisplayImage()}
                         alt={product.name}
                         fill
                         sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 22vw"
@@ -113,6 +129,38 @@ function StandardCard({ product, config }: ProductCardProps) {
                     <h3 className="text-sm font-medium text-foreground line-clamp-2 min-h-10 group-hover:text-primary transition-colors">
                         {product.name}
                     </h3>
+
+                    {/* Color swatches */}
+                    {colorVariants.length > 0 && (
+                        <div className="flex gap-1.5 mt-0.5">
+                            {colorVariants.slice(0, 5).map((v: any, idx: number) => (
+                                <button
+                                    key={v.id || idx}
+                                    type="button"
+                                    onMouseEnter={(e) => { e.preventDefault(); setActiveVariantIdx(idx); }}
+                                    onMouseLeave={() => setActiveVariantIdx(null)}
+                                    onClick={(e) => e.preventDefault()}
+                                    className={cn(
+                                        "w-3.5 h-3.5 rounded-full border-2 transition-all duration-200 relative overflow-hidden",
+                                        activeVariantIdx === idx
+                                            ? "border-gray-800 scale-125"
+                                            : "border-gray-300 hover:border-gray-500"
+                                    )}
+                                    style={!v.colorImage ? { backgroundColor: v.colorHex } : undefined}
+                                    title={v.name}
+                                >
+                                    {v.colorImage && (
+                                        <img src={v.colorImage} alt={v.name} className="absolute inset-0 w-full h-full object-cover" />
+                                    )}
+                                </button>
+                            ))}
+                            {colorVariants.length > 5 && (
+                                <span className="text-[10px] text-muted-foreground self-center">
+                                    +{colorVariants.length - 5}
+                                </span>
+                            )}
+                        </div>
+                    )}
 
                     <div className="mt-auto flex flex-col gap-1">
                         {compareAtPrice && (
@@ -335,6 +383,127 @@ function HorizontalCard({ product, config }: ProductCardProps) {
                             <ShoppingBag className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         </Button>
                     </div>
+                </div>
+            </div>
+        </Link>
+    );
+}
+
+// =============================================================================
+// OPTICA CARD - Clean card with color swatches, sizes, "Adicionar à sacola" overlay
+// =============================================================================
+function OpticaCard({ product, config }: ProductCardProps) {
+    const price = Number(product.price);
+    const compareAtPrice = product.compareAtPrice ? Number(product.compareAtPrice) : null;
+    const defaultImage = product.images?.[0]?.url || "/assets/placeholder-product.png";
+    const secondImage = product.images?.[1]?.url;
+    const [hovered, setHovered] = useState(false);
+    const [activeVariantIdx, setActiveVariantIdx] = useState<number | null>(null);
+
+    const showHoverImage = config?.showHoverImage !== false && config?.showHoverImage !== "false";
+    const showInstallments = config?.showInstallments !== false && config?.showInstallments !== "false";
+
+    // Color variants from new system
+    const colorVariants = (product.variants || []).filter((v: any) => v.colorHex || v.colorImage);
+
+    // Determine displayed image based on active variant
+    const getDisplayImage = () => {
+        if (activeVariantIdx !== null && colorVariants[activeVariantIdx]) {
+            const v = colorVariants[activeVariantIdx];
+            // images can be a JSON string or already parsed array
+            const imgs = typeof v.images === "string" ? (() => { try { return JSON.parse(v.images); } catch { return []; } })() : (v.images || []);
+            if (imgs.length > 0) return imgs[0];
+        }
+        if (showHoverImage && secondImage && hovered && activeVariantIdx === null) return secondImage;
+        return defaultImage;
+    };
+
+    return (
+        <Link href={`/produto/${product.slug}`} className="group block h-full">
+            <div className="flex h-full flex-col">
+                {/* Image Container with hover overlay */}
+                <div
+                    className="relative aspect-square w-full overflow-hidden bg-[#f5f5f5] rounded-sm"
+                    onMouseEnter={() => setHovered(true)}
+                    onMouseLeave={() => { setHovered(false); setActiveVariantIdx(null); }}
+                >
+                    <Image
+                        src={getDisplayImage()}
+                        alt={product.name}
+                        fill
+                        sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 22vw"
+                        quality={90}
+                        className="object-contain object-center transition-all duration-500 p-4"
+                        loading="lazy"
+                    />
+
+                    {/* "Adicionar à sacola" overlay button */}
+                    <div className="absolute bottom-0 left-0 right-0 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 z-10 px-3 pb-3">
+                        <Button
+                            className="w-full h-10 text-xs font-medium tracking-wide uppercase rounded-sm"
+                            style={{
+                                backgroundColor: config?.productBtnBg || config?.themeColor || "#1a1a1a",
+                                color: config?.productBtnText || "white"
+                            }}
+                        >
+                            Adicionar à sacola
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Product Info */}
+                <div className="flex flex-col gap-1 pt-3 text-center">
+                    <h3 className="text-sm font-normal text-foreground line-clamp-1">
+                        {product.name}
+                    </h3>
+
+                    <span className="text-sm font-medium" style={{ color: config?.priceColor || "#1a1a1a" }}>
+                        {formatPrice(price)}
+                    </span>
+
+                    {showInstallments && (
+                        <span className="text-[11px] text-muted-foreground">
+                            12x de {formatPrice(price / 12)}
+                        </span>
+                    )}
+
+                    {compareAtPrice && (
+                        <span className="text-[11px] text-muted-foreground">
+                            {formatPrice(compareAtPrice * 0.95)} no boleto (-5%)
+                        </span>
+                    )}
+
+                    {/* Color swatches */}
+                    {colorVariants.length > 0 && (
+                        <div className="flex justify-center gap-1.5 mt-1">
+                            {colorVariants.slice(0, 5).map((v: any, idx: number) => (
+                                <button
+                                    key={v.id || idx}
+                                    type="button"
+                                    onMouseEnter={(e) => { e.preventDefault(); setActiveVariantIdx(idx); }}
+                                    onMouseLeave={() => setActiveVariantIdx(null)}
+                                    onClick={(e) => e.preventDefault()}
+                                    className={cn(
+                                        "w-4 h-4 rounded-full border-2 transition-all duration-200 relative overflow-hidden",
+                                        activeVariantIdx === idx
+                                            ? "border-gray-800 scale-125"
+                                            : "border-gray-300 hover:border-gray-500"
+                                    )}
+                                    style={!v.colorImage ? { backgroundColor: v.colorHex } : undefined}
+                                    title={v.name}
+                                >
+                                    {v.colorImage && (
+                                        <img src={v.colorImage} alt={v.name} className="absolute inset-0 w-full h-full object-cover" />
+                                    )}
+                                </button>
+                            ))}
+                            {colorVariants.length > 5 && (
+                                <span className="text-[10px] text-muted-foreground self-center">
+                                    +{colorVariants.length - 5}
+                                </span>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
         </Link>

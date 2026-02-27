@@ -8,10 +8,12 @@ import {
     HeaderClassicPreview,
     HeaderCenteredPreview,
     HeaderMinimalPreview,
+    HeaderOpticaPreview,
     CardStandardPreview,
     CardCompactPreview,
     CardDetailedPreview,
     CardHorizontalPreview,
+    CardOpticaPreview,
     FooterFullPreview,
     FooterMinimalPreview,
     FooterModernPreview,
@@ -91,6 +93,12 @@ const headerOptions = [
         name: "Minimalista",
         description: "Compacto em linha única, menu inline, sem busca visível",
         preview: <HeaderMinimalPreview />
+    },
+    {
+        id: "optica",
+        name: "Ótica",
+        description: "Logo em texto com barra, nav centralizada, ícones minimalistas",
+        preview: <HeaderOpticaPreview />
     }
 ];
 
@@ -119,6 +127,12 @@ const cardOptions = [
         name: "Horizontal",
         description: "Layout lado a lado, ideal para listas e carrinhos",
         preview: <CardHorizontalPreview />
+    },
+    {
+        id: "optica",
+        name: "Ótica",
+        description: "Clean com swatches de cor, tamanhos e overlay de compra",
+        preview: <CardOpticaPreview />
     }
 ];
 

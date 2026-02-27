@@ -57,7 +57,7 @@ export default async function ProductDetailsPage({
     // Layout from config
     const btnStyle = (config?.productBtnStyle || "rounded") as "square" | "rounded" | "pill";
     const btnRoundedClass = btnStyle === "pill" ? "rounded-full" : btnStyle === "square" ? "rounded-none" : "rounded-lg";
-    const galleryLayout = (config?.productGalleryLayout || "bottom") as "grid" | "side" | "bottom";
+    const galleryLayout = (config?.productGalleryLayout || "bottom") as "grid" | "side" | "bottom" | "dots";
 
     const discountPercentage = product.compareAtPrice
         ? Math.round(((Number(product.compareAtPrice) - Number(product.price)) / Number(product.compareAtPrice)) * 100)
@@ -100,7 +100,22 @@ export default async function ProductDetailsPage({
             <div className="grid gap-12 lg:grid-cols-2">
                 {/* Left Column: Gallery */}
                 <div>
-                    <ProductGallery images={product.images} productName={product.name} layout={galleryLayout} />
+                    <ProductGallery
+                        images={product.images}
+                        productName={product.name}
+                        layout={galleryLayout}
+                        variants={product.variants?.map((v: any) => ({
+                            id: v.id,
+                            name: v.name,
+                            colorHex: v.colorHex,
+                            colorImage: v.colorImage || null,
+                            images: Array.isArray(v.images) ? v.images : [],
+                            price: v.price ? Number(v.price) : null,
+                            stock: v.stock,
+                            isDefault: v.isDefault || false,
+                        }))}
+                        priceColor={priceColor}
+                    />
                 </div>
 
                 {/* Right Column: Info & Actions */}
@@ -143,7 +158,7 @@ export default async function ProductDetailsPage({
 
                     <div className="flex flex-col gap-1">
                         <div className="flex items-baseline gap-3">
-                            <span className="text-4xl font-bold" style={{ color: priceColor }}>
+                            <span className="text-2xl font-bold" style={{ color: priceColor }}>
                                 {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(product.price))}
                             </span>
                             {showPromoPrice && product.compareAtPrice && Number(product.compareAtPrice) > Number(product.price) && (

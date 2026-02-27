@@ -206,11 +206,13 @@ export function SiteEditorLayout({ config, banners, products, categories = [], b
                             type === "map" ? { embedUrl: "" } :
                                 type === "promo" ? { title: "Super Promoção", subtitle: "Desconto de 50% em toda a loja!" } :
                                     type === "product-grid" ? { collectionType: "new" } :
-                                        type === "columns" ? { columns: variant === "4-cols" ? 4 : variant === "3-cols" ? 3 : 2 } : {},
+                                        type === "columns" ? { columns: variant === "4-cols" ? 4 : variant === "3-cols" ? 3 : 2 } :
+                            type === "promo-banner" ? { title: "Estilo & proteção.", subtitle: "", buttonText: "", buttonLink: "", image: "", overlayOpacity: 0.4 } : {},
             styles: {
                 paddingTop: "2rem",
                 paddingBottom: "2rem",
-                ...(type === "promo" ? { backgroundColor: "#db2777", textColor: "#ffffff" } : {})
+                ...(type === "promo" ? { backgroundColor: "#db2777", textColor: "#ffffff" } : {}),
+                ...(type === "promo-banner" ? { textColor: "#ffffff", textAlign: "center", fullWidth: true, minHeight: "400px", paddingTop: "0", paddingBottom: "0" } : {})
             }
         };
 

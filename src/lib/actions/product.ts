@@ -133,6 +133,16 @@ const getCachedProducts = unstable_cache(
                     orderBy: { expiresAt: "asc" },
                     take: 1,
                     select: { expiresAt: true }
+                },
+                variants: {
+                    orderBy: { order: "asc" },
+                    select: {
+                        id: true,
+                        name: true,
+                        colorHex: true,
+                        colorImage: true,
+                        images: true,
+                    }
                 }
             },
         });
@@ -155,7 +165,11 @@ export async function getProducts() {
 export async function getProductById(id: string) {
     const product = await prisma.product.findUnique({
         where: { id },
-        include: { variants: true, images: true, brand: true },
+        include: {
+            variants: { orderBy: { order: "asc" } },
+            images: true,
+            brand: true,
+        },
     });
 
     if (!product) return null;
@@ -169,14 +183,42 @@ export async function getProductById(id: string) {
         length: product.length?.toNumber() || null,
         width: product.width?.toNumber() || null,
         height: product.height?.toNumber() || null,
+        variants: product.variants.map(v => ({
+            ...v,
+            price: v.price?.toNumber() || null,
+            images: v.images ? JSON.parse(v.images) as string[] : [],
+        })),
     };
 }
 
 export async function getProductBySlug(slug: string) {
-    return await prisma.product.findUnique({
+    const product = await prisma.product.findUnique({
         where: { slug },
-        include: { variants: true, images: true, brand: true, category: true },
+        include: {
+            variants: { orderBy: { order: "asc" } },
+            images: true,
+            brand: true,
+            category: true,
+        },
     });
+
+    if (!product) return null;
+
+    return {
+        ...product,
+        price: product.price.toNumber(),
+        compareAtPrice: product.compareAtPrice?.toNumber() || null,
+        costPerItem: product.costPerItem?.toNumber() || null,
+        weight: product.weight?.toNumber() || null,
+        length: product.length?.toNumber() || null,
+        width: product.width?.toNumber() || null,
+        height: product.height?.toNumber() || null,
+        variants: product.variants.map(v => ({
+            ...v,
+            price: v.price?.toNumber() || null,
+            images: v.images ? JSON.parse(v.images) as string[] : [],
+        })),
+    };
 }
 
 export async function upsertProduct(formData: FormData) {
@@ -479,6 +521,182 @@ export async function upsertProduct(formData: FormData) {
                         alt: name
                     }
                 });
+            }
+        }
+    }
+
+    // Handle Color Variants
+    // The frontend sends variants as a JSON string: variantsJson
+    // Each variant: { id?, name, colorHex, images: string[], price?, stock, sku?, order }
+    const variantsJson = formData.get("variantsJson") as string | null;
+
+    if (variantsJson && targetProductId) {
+        try {
+            const variants = JSON.parse(variantsJson) as Array<{
+                id?: string;
+                name: string;
+                colorHex?: string;
+                colorImage?: string;
+                images?: string[];
+                price?: number | null;
+                stock?: number;
+                sku?: string;
+                order?: number;
+                isDefault?: boolean;
+            }>;
+
+            // Get existing variant IDs for this product
+            const existingVariants = await prisma.productVariant.findMany({
+                where: { productId: targetProductId },
+                select: { id: true },
+            });
+            const existingIds = existingVariants.map(v => v.id);
+
+            // Determine which variants to keep (have an existing id)
+            const incomingIds = variants.filter(v => v.id).map(v => v.id!);
+
+            // Delete variants that are no longer in the list
+            const idsToDelete = existingIds.filter(eid => !incomingIds.includes(eid));
+            if (idsToDelete.length > 0) {
+                await prisma.productVariant.deleteMany({
+                    where: { id: { in: idsToDelete } },
+                });
+            }
+
+            // Upsert each variant
+            for (let i = 0; i < variants.length; i++) {
+                const v = variants[i];
+                const variantData = {
+                    name: v.name,
+                    colorHex: v.colorHex || null,
+                    colorImage: v.colorImage || null,
+                    images: v.images && v.images.length > 0 ? JSON.stringify(v.images) : null,
+                    price: v.price ?? null,
+                    stock: v.stock ?? 0,
+                    sku: v.sku || null,
+                    order: v.order ?? i,
+                    isDefault: v.isDefault || false,
+                };
+
+                if (v.id && existingIds.includes(v.id)) {
+                    await prisma.productVariant.update({
+                        where: { id: v.id },
+                        data: variantData,
+                    });
+                } else {
+                    await prisma.productVariant.create({
+                        data: {
+                            ...variantData,
+                            productId: targetProductId,
+                        },
+                    });
+                }
+            }
+        } catch (e: any) {
+            console.error("Error processing variants:", e?.message || e);
+        }
+    }
+
+    // Handle variant image uploads
+    // Format: variantImages_<index>_<fileIndex> or variantImages_<index>
+    if (targetProductId) {
+        const fs = require("fs");
+        const pathModule = require("path");
+        const uploadDir = pathModule.join(process.cwd(), "public", "uploads");
+
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+
+        // Check for variant image files in formData
+        const variantImageFiles = formData.getAll("variantImageFiles") as File[];
+        const variantImageMapping = formData.get("variantImageMapping") as string | null;
+
+        if (variantImageFiles.length > 0 && variantImageMapping) {
+            try {
+                // mapping: { fileIndex: variantIndex }
+                const mapping = JSON.parse(variantImageMapping) as Record<string, number>;
+                const uploadedUrls: Record<number, string[]> = {};
+
+                for (let fi = 0; fi < variantImageFiles.length; fi++) {
+                    const file = variantImageFiles[fi];
+                    if (file.size > 0 && file.name) {
+                        const ext = pathModule.extname(file.name);
+                        const filename = `variant-${Date.now()}-${fi}-${Math.round(Math.random() * 1000)}${ext}`;
+                        const filepath = pathModule.join(uploadDir, filename);
+
+                        const buffer = Buffer.from(await file.arrayBuffer());
+                        fs.writeFileSync(filepath, buffer);
+
+                        const variantIdx = mapping[String(fi)];
+                        if (variantIdx !== undefined) {
+                            if (!uploadedUrls[variantIdx]) uploadedUrls[variantIdx] = [];
+                            uploadedUrls[variantIdx].push(`/uploads/${filename}`);
+                        }
+                    }
+                }
+
+                // Now update variants with uploaded image URLs
+                // Re-read variants after the upsert above
+                const updatedVariants = await prisma.productVariant.findMany({
+                    where: { productId: targetProductId },
+                    orderBy: { order: "asc" },
+                });
+
+                for (const [idxStr, urls] of Object.entries(uploadedUrls)) {
+                    const idx = parseInt(idxStr);
+                    const variant = updatedVariants[idx];
+                    if (variant) {
+                        const existingImages = variant.images ? JSON.parse(variant.images) as string[] : [];
+                        const allImages = [...existingImages, ...urls];
+                        await prisma.productVariant.update({
+                            where: { id: variant.id },
+                            data: { images: JSON.stringify(allImages) },
+                        });
+                    }
+                }
+            } catch (e) {
+                console.error("Error uploading variant images:", e);
+            }
+        }
+
+        // Handle color swatch image uploads (variantColorImageFiles)
+        const colorImageFiles = formData.getAll("variantColorImageFiles") as File[];
+        const colorImageMapping = formData.get("variantColorImageMapping") as string | null;
+
+        if (colorImageFiles.length > 0 && colorImageMapping) {
+            try {
+                const mapping = JSON.parse(colorImageMapping) as Record<string, number>;
+
+                const updatedVariants = await prisma.productVariant.findMany({
+                    where: { productId: targetProductId },
+                    orderBy: { order: "asc" },
+                });
+
+                for (let fi = 0; fi < colorImageFiles.length; fi++) {
+                    const file = colorImageFiles[fi];
+                    if (file.size > 0 && file.name) {
+                        const ext = pathModule.extname(file.name);
+                        const filename = `swatch-${Date.now()}-${fi}-${Math.round(Math.random() * 1000)}${ext}`;
+                        const filepath = pathModule.join(uploadDir, filename);
+
+                        const buffer = Buffer.from(await file.arrayBuffer());
+                        fs.writeFileSync(filepath, buffer);
+
+                        const variantIdx = mapping[String(fi)];
+                        if (variantIdx !== undefined) {
+                            const variant = updatedVariants[variantIdx];
+                            if (variant) {
+                                await prisma.productVariant.update({
+                                    where: { id: variant.id },
+                                    data: { colorImage: `/uploads/${filename}` },
+                                });
+                            }
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error("Error uploading color swatch images:", e);
             }
         }
     }

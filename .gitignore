@@ -42,3 +42,5 @@ next-env.d.ts
 
 /src/generated/prisma
 nul
+dev.db
+_check_db.js

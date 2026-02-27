@@ -17,9 +17,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { upsertProduct, deleteProduct } from "@/lib/actions/product"; // Server Action
-import React, { useState, useTransition } from "react";
+import React, { useState, useTransition, useCallback } from "react";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Upload, Plus, Trash2 } from "lucide-react";
+import { Loader2, Upload, Plus, Trash2, GripVertical, Palette, Info, ImageIcon, Star } from "lucide-react";
 import { StatusFeedback } from "@/components/admin/StatusFeedback";
 import { createCategory, deleteCategory } from "@/lib/actions/category";
 import { createBrand, deleteBrand, getAllBrands } from "@/lib/actions/brands-management";
@@ -141,6 +141,402 @@ function MeasurementsField({ value, onChange }: { value?: string; onChange: (val
     );
 }
 
+// Color Variant types for the editor
+interface ColorVariantState {
+    id?: string;
+    name: string;
+    colorHex: string;
+    colorImage: string; // URL of swatch image (alternative to colorHex)
+    colorImageFile: File | null; // New file to upload for swatch
+    colorImagePreview: string; // Preview URL for new file
+    existingImages: string[]; // URLs already uploaded
+    newFiles: File[];
+    newFilePreviews: string[];
+    price: string;
+    stock: number;
+    sku: string;
+    order: number;
+    isDefault: boolean;
+}
+
+function createEmptyVariant(order: number): ColorVariantState {
+    return {
+        name: "",
+        colorHex: "#000000",
+        colorImage: "",
+        colorImageFile: null,
+        colorImagePreview: "",
+        existingImages: [],
+        newFiles: [],
+        newFilePreviews: [],
+        price: "",
+        stock: 0,
+        sku: "",
+        order,
+        isDefault: false,
+    };
+}
+
+function ColorVariantsEditor({
+    variants,
+    onChange,
+}: {
+    variants: ColorVariantState[];
+    onChange: (variants: ColorVariantState[]) => void;
+}) {
+    const fileRefs = React.useRef<Record<number, HTMLInputElement | null>>({});
+    const swatchFileRefs = React.useRef<Record<number, HTMLInputElement | null>>({});
+
+    const addVariant = () => {
+        onChange([...variants, createEmptyVariant(variants.length)]);
+    };
+
+    const removeVariant = (index: number) => {
+        const updated = variants.filter((_, i) => i !== index).map((v, i) => ({ ...v, order: i }));
+        onChange(updated);
+    };
+
+    const updateVariant = (index: number, field: keyof ColorVariantState, value: any) => {
+        const updated = [...variants];
+        updated[index] = { ...updated[index], [field]: value };
+        onChange(updated);
+    };
+
+    const handleVariantFileChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files.length > 0) {
+            const newFiles = Array.from(e.target.files);
+            const updated = [...variants];
+            const v = { ...updated[index] };
+            v.newFiles = [...v.newFiles, ...newFiles];
+            v.newFilePreviews = [...v.newFilePreviews, ...newFiles.map(f => URL.createObjectURL(f))];
+            updated[index] = v;
+            onChange(updated);
+        }
+        // Reset input so same file can be selected again
+        e.target.value = "";
+    };
+
+    const removeExistingVariantImage = (variantIndex: number, imageIndex: number) => {
+        const updated = [...variants];
+        const v = { ...updated[variantIndex] };
+        v.existingImages = v.existingImages.filter((_, i) => i !== imageIndex);
+        updated[variantIndex] = v;
+        onChange(updated);
+    };
+
+    const removeNewVariantFile = (variantIndex: number, fileIndex: number) => {
+        const updated = [...variants];
+        const v = { ...updated[variantIndex] };
+        v.newFiles = v.newFiles.filter((_, i) => i !== fileIndex);
+        v.newFilePreviews = v.newFilePreviews.filter((_, i) => i !== fileIndex);
+        updated[variantIndex] = v;
+        onChange(updated);
+    };
+
+    const moveVariant = (index: number, direction: "up" | "down") => {
+        const newIndex = direction === "up" ? index - 1 : index + 1;
+        if (newIndex < 0 || newIndex >= variants.length) return;
+        const updated = [...variants];
+        [updated[index], updated[newIndex]] = [updated[newIndex], updated[index]];
+        onChange(updated.map((v, i) => ({ ...v, order: i })));
+    };
+
+    const setDefaultVariant = (index: number) => {
+        const updated = variants.map((v, i) => ({ ...v, isDefault: i === index }));
+        onChange(updated);
+    };
+
+    return (
+        <div className="space-y-4">
+            {variants.map((variant, index) => (
+                <div key={variant.id || `new-${index}`} className="border rounded-lg p-4 space-y-3 bg-slate-50">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <div className="flex flex-col gap-1">
+                                <button
+                                    type="button"
+                                    onClick={() => moveVariant(index, "up")}
+                                    disabled={index === 0}
+                                    className="text-gray-400 hover:text-gray-600 disabled:opacity-30"
+                                >
+                                    <svg className="h-3 w-3" viewBox="0 0 10 6"><path d="M1 5l4-4 4 4" stroke="currentColor" strokeWidth="1.5" fill="none" /></svg>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => moveVariant(index, "down")}
+                                    disabled={index === variants.length - 1}
+                                    className="text-gray-400 hover:text-gray-600 disabled:opacity-30"
+                                >
+                                    <svg className="h-3 w-3" viewBox="0 0 10 6"><path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.5" fill="none" /></svg>
+                                </button>
+                            </div>
+                            <span className="text-sm font-medium text-gray-500">Cor {index + 1}</span>
+                        </div>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeVariant(index)}
+                            className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                        >
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                    </div>
+
+                    <div className="flex flex-wrap gap-3 items-end">
+                        {/* Color Name */}
+                        <div className="w-40">
+                            <label className="text-sm font-medium mb-1 block">Nome da Cor *</label>
+                            <Input
+                                placeholder="Ex: Preto, Cinza Mesclado"
+                                value={variant.name}
+                                onChange={(e) => updateVariant(index, "name", e.target.value)}
+                                className="bg-white"
+                            />
+                        </div>
+
+                        {/* Color Picker / Image Swatch */}
+                        <div className="flex-1 min-w-[200px]">
+                            <label className="text-sm font-medium mb-1 block">Cor / Imagem</label>
+                            {(() => {
+                                const useImageMode = !variant.colorHex;
+                                const imagePreview = variant.colorImagePreview || variant.colorImage || "";
+
+                                const switchToImage = () => {
+                                    const updated = [...variants];
+                                    updated[index] = { ...updated[index], colorHex: "" };
+                                    onChange(updated);
+                                };
+
+                                const switchToHex = () => {
+                                    const updated = [...variants];
+                                    updated[index] = { ...updated[index], colorHex: "#000000", colorImage: "", colorImageFile: null, colorImagePreview: "" };
+                                    onChange(updated);
+                                };
+
+                                const handleSwatchImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+                                    const file = e.target.files?.[0];
+                                    if (!file) return;
+                                    const preview = URL.createObjectURL(file);
+                                    const updated = [...variants];
+                                    updated[index] = { ...updated[index], colorImageFile: file, colorImagePreview: preview, colorImage: "" };
+                                    onChange(updated);
+                                    e.target.value = "";
+                                };
+
+                                const removeSwatchImage = () => {
+                                    const updated = [...variants];
+                                    updated[index] = { ...updated[index], colorImage: "", colorImageFile: null, colorImagePreview: "" };
+                                    onChange(updated);
+                                };
+
+                                return (
+                                    <div className="flex gap-2 items-center flex-wrap">
+                                        {/* Toggle Cor / Imagem */}
+                                        <div className="flex rounded-md border border-slate-300 overflow-hidden">
+                                            <button
+                                                type="button"
+                                                onClick={switchToHex}
+                                                className={cn(
+                                                    "px-2.5 py-1 text-xs font-medium transition-colors",
+                                                    !useImageMode ? "bg-blue-500 text-white" : "bg-white text-slate-500 hover:bg-slate-50"
+                                                )}
+                                            >
+                                                Cor
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={switchToImage}
+                                                className={cn(
+                                                    "px-2.5 py-1 text-xs font-medium transition-colors border-l border-slate-300",
+                                                    useImageMode ? "bg-blue-500 text-white" : "bg-white text-slate-500 hover:bg-slate-50"
+                                                )}
+                                            >
+                                                <ImageIcon className="h-3 w-3 inline mr-1" />
+                                                Imagem
+                                            </button>
+                                        </div>
+
+                                        {/* Hex mode */}
+                                        {!useImageMode && (
+                                            <>
+                                                <input
+                                                    type="color"
+                                                    value={variant.colorHex}
+                                                    onChange={(e) => updateVariant(index, "colorHex", e.target.value)}
+                                                    className="h-9 w-10 rounded border cursor-pointer"
+                                                />
+                                                <Input
+                                                    value={variant.colorHex}
+                                                    onChange={(e) => updateVariant(index, "colorHex", e.target.value)}
+                                                    placeholder="#000000"
+                                                    className="bg-white w-[100px] font-mono text-sm"
+                                                />
+                                            </>
+                                        )}
+
+                                        {/* Image mode */}
+                                        {useImageMode && (
+                                            <>
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    className="hidden"
+                                                    ref={(el) => { swatchFileRefs.current[index] = el; }}
+                                                    onChange={handleSwatchImage}
+                                                />
+                                                {imagePreview && (
+                                                    <div className="relative group">
+                                                        <img
+                                                            src={imagePreview}
+                                                            alt="Swatch"
+                                                            className="w-9 h-9 rounded-full object-cover border-2 border-slate-300"
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={removeSwatchImage}
+                                                            className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        >
+                                                            <X className="h-2.5 w-2.5" />
+                                                        </button>
+                                                    </div>
+                                                )}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => swatchFileRefs.current[index]?.click()}
+                                                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors cursor-pointer"
+                                                >
+                                                    <Upload className="h-3.5 w-3.5" />
+                                                    {imagePreview ? "Trocar" : "Enviar imagem"}
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
+                                );
+                            })()}
+                        </div>
+
+                        {/* SKU */}
+                        <div className="w-40">
+                            <label className="text-sm font-medium mb-1 block">SKU (opcional)</label>
+                            <Input
+                                placeholder="SKU da variante"
+                                value={variant.sku}
+                                onChange={(e) => updateVariant(index, "sku", e.target.value)}
+                                className="bg-white"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {/* Price Override */}
+                        <div>
+                            <label className="text-sm font-medium mb-1 block">Preço (deixe vazio para usar o preço principal)</label>
+                            <Input
+                                placeholder="0.00"
+                                value={variant.price}
+                                onChange={(e) => updateVariant(index, "price", e.target.value)}
+                                className="bg-white"
+                            />
+                        </div>
+
+                        {/* Stock */}
+                        <div>
+                            <label className="text-sm font-medium mb-1 block">Estoque</label>
+                            <Input
+                                type="number"
+                                value={variant.stock}
+                                onChange={(e) => updateVariant(index, "stock", parseInt(e.target.value) || 0)}
+                                className="bg-white"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Variant Images */}
+                    <div>
+                        <label className="text-sm font-medium mb-2 block">Fotos desta Cor</label>
+                        <input
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            className="hidden"
+                            ref={(el) => { fileRefs.current[index] = el; }}
+                            onChange={(e) => handleVariantFileChange(index, e)}
+                        />
+
+                        {variant.existingImages.length === 0 && variant.newFilePreviews.length === 0 ? (
+                            <button
+                                type="button"
+                                onClick={() => fileRefs.current[index]?.click()}
+                                className="w-full border-2 border-dashed border-amber-300 bg-amber-50/50 rounded-lg p-4 flex flex-col items-center justify-center gap-1.5 text-amber-600 hover:bg-amber-50 hover:border-amber-400 transition-colors cursor-pointer"
+                            >
+                                <ImageIcon className="h-6 w-6" />
+                                <span className="text-xs font-medium">Adicionar fotos desta cor</span>
+                                <span className="text-[11px] text-amber-500">
+                                    Sem fotos, as fotos principais do produto serão usadas
+                                </span>
+                            </button>
+                        ) : (
+                            <div className="flex flex-wrap gap-2">
+                                {variant.existingImages.map((url, imgIdx) => (
+                                    <div key={`existing-${imgIdx}`} className="relative w-16 h-16 rounded border overflow-hidden group">
+                                        <img src={url} alt="" className="w-full h-full object-cover" />
+                                        <button
+                                            type="button"
+                                            onClick={() => removeExistingVariantImage(index, imgIdx)}
+                                            className="absolute inset-0 bg-red-500/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
+                                        >
+                                            <X className="h-4 w-4 text-white" />
+                                        </button>
+                                    </div>
+                                ))}
+                                {variant.newFilePreviews.map((url, fileIdx) => (
+                                    <div key={`new-${fileIdx}`} className="relative w-16 h-16 rounded border overflow-hidden group">
+                                        <img src={url} alt="" className="w-full h-full object-cover" />
+                                        <button
+                                            type="button"
+                                            onClick={() => removeNewVariantFile(index, fileIdx)}
+                                            className="absolute inset-0 bg-red-500/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
+                                        >
+                                            <X className="h-4 w-4 text-white" />
+                                        </button>
+                                    </div>
+                                ))}
+                                <button
+                                    type="button"
+                                    onClick={() => fileRefs.current[index]?.click()}
+                                    className="w-16 h-16 rounded border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:border-gray-400 transition-colors"
+                                >
+                                    <Plus className="h-5 w-5" />
+                                </button>
+                            </div>
+                        )}
+                        <p className="text-xs text-muted-foreground mt-1">
+                            A primeira foto será usada como miniatura da cor na loja.
+                        </p>
+                    </div>
+                </div>
+            ))}
+
+            <Button
+                type="button"
+                variant="outline"
+                onClick={addVariant}
+                className="w-full border-dashed"
+            >
+                <Palette className="h-4 w-4 mr-2" />
+                Adicionar Outra Cor
+            </Button>
+
+            {variants.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-2">
+                    Nenhuma cor adicional. O produto será exibido apenas com a cor principal definida acima.
+                </p>
+            )}
+        </div>
+    );
+}
+
 const formSchema = z.object({
     name: z.string().min(2, "Nome obrigatório"),
     description: z.string().optional(),
@@ -192,6 +588,27 @@ export function ProductForm({ categories = [], initialData }: { categories?: any
             seoTitle: initialData?.seoTitle || "",
             seoDescription: initialData?.seoDescription || "",
         },
+    });
+
+    // Color Variants State
+    const [colorVariants, setColorVariants] = useState<ColorVariantState[]>(() => {
+        if (!initialData?.variants || initialData.variants.length === 0) return [];
+        return initialData.variants.map((v: any, i: number) => ({
+            id: v.id,
+            name: v.name || "",
+            colorHex: v.colorImage ? "" : (v.colorHex || "#000000"),
+            colorImage: v.colorImage || "",
+            colorImageFile: null,
+            colorImagePreview: "",
+            existingImages: Array.isArray(v.images) ? v.images : [],
+            newFiles: [],
+            newFilePreviews: [],
+            price: v.price ? String(v.price) : "",
+            stock: v.stock || 0,
+            sku: v.sku || "",
+            order: v.order ?? i,
+            isDefault: v.isDefault || false,
+        }));
     });
 
     // Image Handling State
@@ -284,6 +701,54 @@ export function ProductForm({ categories = [], initialData }: { categories?: any
                         formData.append("forceSave", "true");
                     }
 
+                    // Append color variants as JSON
+                    if (colorVariants.length > 0) {
+                        const variantsData = colorVariants.map((v, i) => ({
+                            id: v.id || undefined,
+                            name: v.name,
+                            colorHex: v.colorHex,
+                            colorImage: v.colorImage || undefined,
+                            images: v.existingImages, // existing URLs only; new files handled separately
+                            price: v.price ? parseFloat(v.price.replace(",", ".")) : null,
+                            stock: v.stock,
+                            sku: v.sku || undefined,
+                            order: i,
+                            isDefault: v.isDefault || false,
+                        }));
+                        formData.append("variantsJson", JSON.stringify(variantsData));
+
+                        // Append new variant image files with mapping
+                        const fileMapping: Record<string, number> = {};
+                        let fileIndex = 0;
+                        for (let vi = 0; vi < colorVariants.length; vi++) {
+                            for (const file of colorVariants[vi].newFiles) {
+                                formData.append("variantImageFiles", file);
+                                fileMapping[String(fileIndex)] = vi;
+                                fileIndex++;
+                            }
+                        }
+                        if (fileIndex > 0) {
+                            formData.append("variantImageMapping", JSON.stringify(fileMapping));
+                        }
+
+                        // Append color swatch image files with variant index mapping
+                        const colorImageMapping: Record<string, number> = {};
+                        let colorImageIdx = 0;
+                        for (let vi = 0; vi < colorVariants.length; vi++) {
+                            if (colorVariants[vi].colorImageFile) {
+                                formData.append("variantColorImageFiles", colorVariants[vi].colorImageFile!);
+                                colorImageMapping[String(colorImageIdx)] = vi;
+                                colorImageIdx++;
+                            }
+                        }
+                        if (colorImageIdx > 0) {
+                            formData.append("variantColorImageMapping", JSON.stringify(colorImageMapping));
+                        }
+                    } else {
+                        // Send empty array to clear all variants if user removed them
+                        formData.append("variantsJson", "[]");
+                    }
+
                     // @ts-ignore
                     const res = await upsertProduct(formData);
 
@@ -306,8 +771,13 @@ export function ProductForm({ categories = [], initialData }: { categories?: any
 
                     setStatus("success");
                     // Optional: redirect or reset? The action redirects, but typically we wait.
-                } catch (error) {
-                    console.error(error);
+                } catch (error: any) {
+                    console.error("SAVE ERROR:", error?.message || error, error);
+                    if (error?.digest?.includes("NEXT_REDIRECT")) {
+                        // redirect() throws — this is NOT an error
+                        setStatus("success");
+                        return;
+                    }
                     setStatus("error");
                 }
             });
@@ -466,6 +936,187 @@ export function ProductForm({ categories = [], initialData }: { categories?: any
                             ))}
                         </div>
                     )}
+
+                    {/* Fixed color picker for main photos */}
+                    <div className="mt-4 p-3 border rounded-lg bg-slate-50 space-y-2">
+                        <label className="text-xs font-medium text-slate-600">Cor destas fotos (opcional)</label>
+                        {(() => {
+                            const defaultVariant = colorVariants.find(v => v.isDefault);
+                            const defaultIndex = defaultVariant ? colorVariants.indexOf(defaultVariant) : -1;
+
+                            // Determine mode: "image" if colorHex is empty (user chose image mode), else "hex"
+                            const useImageMode = defaultVariant ? !defaultVariant.colorHex : false;
+
+                            const handleColorChange = (field: "name" | "colorHex", value: string) => {
+                                if (defaultIndex >= 0) {
+                                    const updated = [...colorVariants];
+                                    updated[defaultIndex] = { ...updated[defaultIndex], [field]: value };
+                                    setColorVariants(updated);
+                                } else {
+                                    const newVariant = createEmptyVariant(0);
+                                    newVariant.isDefault = true;
+                                    if (field === "name") newVariant.name = value;
+                                    if (field === "colorHex") newVariant.colorHex = value;
+                                    setColorVariants([newVariant, ...colorVariants]);
+                                }
+                            };
+
+                            const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                const preview = URL.createObjectURL(file);
+                                if (defaultIndex >= 0) {
+                                    const updated = [...colorVariants];
+                                    updated[defaultIndex] = { ...updated[defaultIndex], colorImageFile: file, colorImagePreview: preview, colorImage: "" };
+                                    setColorVariants(updated);
+                                } else {
+                                    const newVariant = createEmptyVariant(0);
+                                    newVariant.isDefault = true;
+                                    newVariant.colorImageFile = file;
+                                    newVariant.colorImagePreview = preview;
+                                    setColorVariants([newVariant, ...colorVariants]);
+                                }
+                            };
+
+                            const switchToImageMode = () => {
+                                if (defaultIndex >= 0) {
+                                    const updated = [...colorVariants];
+                                    updated[defaultIndex] = { ...updated[defaultIndex], colorHex: "" };
+                                    setColorVariants(updated);
+                                } else {
+                                    const newVariant = createEmptyVariant(0);
+                                    newVariant.isDefault = true;
+                                    newVariant.colorHex = "";
+                                    setColorVariants([newVariant, ...colorVariants]);
+                                }
+                            };
+
+                            const switchToHexMode = () => {
+                                if (defaultIndex >= 0) {
+                                    const updated = [...colorVariants];
+                                    updated[defaultIndex] = { ...updated[defaultIndex], colorHex: "#000000", colorImage: "", colorImageFile: null, colorImagePreview: "" };
+                                    setColorVariants(updated);
+                                }
+                            };
+
+                            const removeImage = () => {
+                                if (defaultIndex >= 0) {
+                                    const updated = [...colorVariants];
+                                    updated[defaultIndex] = { ...updated[defaultIndex], colorImage: "", colorImageFile: null, colorImagePreview: "" };
+                                    setColorVariants(updated);
+                                }
+                            };
+
+                            const clearDefaultColor = () => {
+                                if (defaultIndex >= 0) {
+                                    setColorVariants(colorVariants.filter((_, i) => i !== defaultIndex));
+                                }
+                            };
+
+                            const colorName = defaultVariant?.name || "";
+                            const colorHex = defaultVariant?.colorHex || "#000000";
+                            const imagePreview = defaultVariant?.colorImagePreview || defaultVariant?.colorImage || "";
+
+                            return (
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <Input
+                                        placeholder="Ex: Azul, Preto"
+                                        value={colorName}
+                                        onChange={(e) => handleColorChange("name", e.target.value)}
+                                        className="h-8 text-sm bg-white max-w-[180px]"
+                                    />
+                                    {/* Toggle between hex and image */}
+                                    <div className="flex rounded-md border border-slate-300 overflow-hidden">
+                                        <button
+                                            type="button"
+                                            onClick={switchToHexMode}
+                                            className={cn(
+                                                "px-2.5 py-1 text-xs font-medium transition-colors",
+                                                !useImageMode ? "bg-blue-500 text-white" : "bg-white text-slate-500 hover:bg-slate-50"
+                                            )}
+                                        >
+                                            Cor
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={switchToImageMode}
+                                            className={cn(
+                                                "px-2.5 py-1 text-xs font-medium transition-colors border-l border-slate-300",
+                                                useImageMode ? "bg-blue-500 text-white" : "bg-white text-slate-500 hover:bg-slate-50"
+                                            )}
+                                        >
+                                            <ImageIcon className="h-3 w-3 inline mr-1" />
+                                            Imagem
+                                        </button>
+                                    </div>
+
+                                    {/* Hex color picker - inline */}
+                                    {!useImageMode && (
+                                        <div className="flex items-center gap-1.5">
+                                            <input
+                                                type="color"
+                                                value={colorHex}
+                                                onChange={(e) => handleColorChange("colorHex", e.target.value)}
+                                                className="w-8 h-8 rounded cursor-pointer border border-slate-300"
+                                            />
+                                            <Input
+                                                value={colorHex}
+                                                onChange={(e) => handleColorChange("colorHex", e.target.value)}
+                                                className="h-8 text-sm bg-white w-[100px] font-mono"
+                                            />
+                                        </div>
+                                    )}
+
+                                    {/* Image swatch picker - inline */}
+                                    {useImageMode && (
+                                        <>
+                                            {imagePreview ? (
+                                                <div className="relative group">
+                                                    <img
+                                                        src={imagePreview}
+                                                        alt="Swatch"
+                                                        className="w-8 h-8 rounded-full object-cover border-2 border-slate-300"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={removeImage}
+                                                        className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    >
+                                                        <X className="h-2.5 w-2.5" />
+                                                    </button>
+                                                </div>
+                                            ) : null}
+                                            <label className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors">
+                                                <Upload className="h-3.5 w-3.5" />
+                                                {imagePreview ? "Trocar" : "Enviar imagem"}
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={handleImageSelect}
+                                                    className="hidden"
+                                                />
+                                            </label>
+                                        </>
+                                    )}
+
+                                    {defaultVariant && (
+                                        <button
+                                            type="button"
+                                            onClick={clearDefaultColor}
+                                            className="text-slate-400 hover:text-red-500 transition-colors p-1"
+                                            title="Remover cor"
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </button>
+                                    )}
+                                </div>
+                            );
+                        })()}
+                        <p className="text-[11px] text-slate-400">
+                            Opcional. Se não definir uma cor, o produto aparecerá sem seletor de cor na loja. Se definir, esta cor já virá selecionada ao abrir o produto.
+                        </p>
+                    </div>
+
                 </div>
 
                 {/* Pricing & Costs */}
@@ -522,6 +1173,25 @@ export function ProductForm({ categories = [], initialData }: { categories?: any
                             </FormItem>
                         )} />
                     </div>
+                </div>
+
+                {/* Color Variants - only non-default variants */}
+                <div className="bg-white p-6 rounded-lg border shadow-sm space-y-4">
+                    <div className="flex items-center gap-2">
+                        <Palette className="h-5 w-5 text-blue-500" />
+                        <h2 className="font-bold text-lg">Outras Cores do Produto</h2>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                        Adicione as outras cores disponíveis. Cada cor terá suas próprias fotos.
+                        A cor principal já foi definida na seção de fotos acima.
+                    </p>
+                    <ColorVariantsEditor
+                        variants={colorVariants.filter(v => !v.isDefault)}
+                        onChange={(nonDefaultVariants) => {
+                            const defaultVariant = colorVariants.find(v => v.isDefault);
+                            setColorVariants(defaultVariant ? [defaultVariant, ...nonDefaultVariants] : nonDefaultVariants);
+                        }}
+                    />
                 </div>
 
                 {/* Shipping */}

@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import {
     Type, Image as ImageIcon, Layout, Code, ShoppingBag, MapPin, Instagram, Megaphone, ChevronLeft, Check,
     Calendar, QrCode, Bike, ClipboardList, Utensils, MessageCircle, Award, Star, FileText, Gift, Heart,
-    RefreshCw, Scissors, Percent, Monitor, Users, MessageSquare, Truck, Sparkles
+    RefreshCw, Scissors, Percent, Monitor, Users, MessageSquare, Truck, Sparkles, Tag, Newspaper
 } from "lucide-react";
 import { BlockType } from "@/types/page-builder";
 import { cn } from "@/lib/utils";
@@ -71,7 +71,10 @@ const AVAILABLE_BLOCKS = [
     { type: "promo", label: "Painel Promocional", icon: Megaphone, description: "Avisos, Ofertas e Countdowns", hasVariants: true },
     { type: "text", label: "Texto Rico", icon: Type, description: "Parágrafos, títulos e sobre a loja", hasVariants: true },
     { type: "html", label: "HTML Personalizado", icon: Code, description: "Código livre (Scripts, Iframes)", hasVariants: false },
-    { type: "columns", label: "Colunas", icon: Layout, description: "Layout flexível", hasVariants: true }
+    { type: "columns", label: "Colunas", icon: Layout, description: "Layout flexível", hasVariants: true },
+    { type: "promo-banner", label: "Banner Promocional", icon: ImageIcon, description: "Banner full-width com imagem e texto", hasVariants: false },
+    { type: "brands", label: "Marcas", icon: Tag, description: "Vitrine de marcas parceiras", hasVariants: true },
+    { type: "blog-posts", label: "Blog / Posts", icon: Newspaper, description: "Últimas postagens e artigos", hasVariants: false }
 ] as const;
 
 // Block variants with visual mockups
@@ -175,6 +178,21 @@ const BLOCK_VARIANTS: Record<string, { id: string; name: string; description: st
                                 <div className="w-1/2 h-1 bg-slate-200 rounded" />
                             </div>
                             <div className="w-6 h-3 bg-blue-500 rounded self-center" />
+                        </div>
+                    ))}
+                </div>
+            )
+        },
+        {
+            id: "showcase",
+            name: "Showcase",
+            description: "Cards com nome grande atrás do produto",
+            mockup: (
+                <div className="w-full h-20 bg-white rounded p-2 flex items-center gap-1 overflow-hidden">
+                    {[...Array(4)].map((_, i) => (
+                        <div key={i} className="flex-1 bg-slate-50 rounded h-full flex items-center justify-center relative">
+                            <div className="absolute text-[10px] font-black text-slate-200 uppercase">ABC</div>
+                            <div className="w-6 h-5 bg-slate-300 rounded relative z-10" />
                         </div>
                     ))}
                 </div>
@@ -382,6 +400,35 @@ const BLOCK_VARIANTS: Record<string, { id: string; name: string; description: st
                         <div className="w-full h-1.5 bg-slate-400 rounded mb-1" />
                         <div className="w-full h-1 bg-slate-300 rounded" />
                     </div>
+                </div>
+            )
+        }
+    ],
+    brands: [
+        {
+            id: "default",
+            name: "Logos / Texto",
+            description: "Nomes das marcas em texto elegante",
+            mockup: (
+                <div className="w-full h-16 bg-slate-50 rounded flex items-center justify-center gap-4 px-4">
+                    <div className="w-12 h-3 bg-slate-300 rounded" />
+                    <div className="w-10 h-3 bg-slate-300 rounded" />
+                    <div className="w-14 h-3 bg-slate-300 rounded" />
+                    <div className="w-10 h-3 bg-slate-300 rounded" />
+                </div>
+            )
+        },
+        {
+            id: "lifestyle",
+            name: "Lifestyle",
+            description: "Fotos com nome da marca em overlay",
+            mockup: (
+                <div className="w-full h-20 bg-white rounded flex gap-2 p-2">
+                    {[1, 2, 3].map((i) => (
+                        <div key={i} className="flex-1 bg-gradient-to-t from-black/50 to-slate-200 rounded relative">
+                            <div className="absolute bottom-1 left-1 w-8 h-1.5 bg-white/80 rounded" />
+                        </div>
+                    ))}
                 </div>
             )
         }

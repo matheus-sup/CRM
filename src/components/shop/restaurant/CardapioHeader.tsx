@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Search, ShoppingBag, User, Menu, X } from "lucide-react";
+import { ShoppingBag, User, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCart } from "@/lib/store/cart";
@@ -28,7 +28,6 @@ interface CardapioHeaderProps {
 
 export function CardapioHeader({ config, categories }: CardapioHeaderProps) {
     const { toggleCart, items } = useCart();
-    const [searchQuery, setSearchQuery] = useState("");
     const [showLogin, setShowLogin] = useState(false);
 
     const themeColor = config?.themeColor || "#18181b";
@@ -93,19 +92,8 @@ export function CardapioHeader({ config, categories }: CardapioHeaderProps) {
                         </span>
                     </div>
 
-                    {/* Desktop Search */}
-                    <div className="hidden md:flex flex-1 max-w-md mx-4">
-                        <div className="relative w-full">
-                            <Input
-                                type="search"
-                                placeholder="Buscar no cardápio..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="h-9 w-full rounded-lg bg-white/10 border-0 text-white placeholder:text-white/60 pl-9 pr-4 focus-visible:ring-white/30"
-                            />
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/60" />
-                        </div>
-                    </div>
+                    {/* Spacer */}
+                    <div className="hidden md:flex flex-1" />
 
                     {/* Actions */}
                     <div className="flex items-center gap-2">
@@ -170,19 +158,6 @@ export function CardapioHeader({ config, categories }: CardapioHeaderProps) {
                 </div>
             </div>
 
-            {/* Mobile Search */}
-            <div className="md:hidden px-4 pb-3">
-                <div className="relative">
-                    <Input
-                        type="search"
-                        placeholder="Buscar no cardápio..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="h-9 w-full rounded-lg bg-white/10 border-0 text-white placeholder:text-white/60 pl-9 pr-4 focus-visible:ring-white/30"
-                    />
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/60" />
-                </div>
-            </div>
         </header>
     );
 }

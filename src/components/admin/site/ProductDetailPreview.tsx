@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ShieldCheck, RefreshCw, Truck, Minus, Plus, ShoppingCart, ImageIcon } from "lucide-react";
+import { ShieldCheck, RefreshCw, Truck, Minus, Plus, ShoppingCart, ImageIcon, ChevronUp, ChevronDown } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 
@@ -107,8 +107,27 @@ export function ProductDetailPreview({ config, product, onSectionClick }: Produc
             <div className="grid gap-12 lg:grid-cols-2">
                 {/* Left Column: Gallery */}
                 <div className={cn(
-                    galleryLayout === "side" ? "flex gap-4" : "space-y-4"
+                    (galleryLayout === "side" || galleryLayout === "dots") ? "flex gap-4" : "space-y-4"
                 )}>
+                    {/* Dots Layout - Dot navigation on left */}
+                    {galleryLayout === "dots" && (
+                        <div className="flex flex-col items-center justify-center gap-1 py-4">
+                            <ChevronUp className="h-4 w-4 text-slate-400" />
+                            <div className="flex flex-col items-center gap-2 py-2">
+                                {[0, 1, 2, 3].map((i) => (
+                                    <div
+                                        key={i}
+                                        className={cn(
+                                            "rounded-full transition-all",
+                                            i === 0 ? "w-2.5 h-2.5 bg-slate-800" : "w-1.5 h-1.5 bg-slate-300"
+                                        )}
+                                    />
+                                ))}
+                            </div>
+                            <ChevronDown className="h-4 w-4 text-slate-400" />
+                        </div>
+                    )}
+
                     {/* Side Layout - Thumbnails on left */}
                     {galleryLayout === "side" && (
                         <div className="flex flex-col gap-2">
@@ -138,7 +157,7 @@ export function ProductDetailPreview({ config, product, onSectionClick }: Produc
                     <div className={cn(
                         "aspect-square bg-slate-100 overflow-hidden relative",
                         btnRoundedClass,
-                        galleryLayout === "side" ? "flex-1" : ""
+                        (galleryLayout === "side" || galleryLayout === "dots") ? "flex-1" : ""
                     )}>
                         {mainImage ? (
                             <Image

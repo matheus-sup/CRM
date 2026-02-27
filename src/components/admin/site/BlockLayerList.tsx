@@ -24,6 +24,7 @@ const getBlockIcon = (type: string) => {
         case "html": return Code;
         case "product-grid": return Box;
         case "columns": return Layout;
+        case "promo-banner": return ImageIcon;
         default: return Settings2;
     }
 };
@@ -34,6 +35,7 @@ const getBlockLabel = (block: PageBlock) => {
     if (block.type === "text") return "Texto Rico";
     if (block.type === "html") return "HTML Personalizado";
     if (block.type === "product-grid") return "Grid de Produtos";
+    if (block.type === "promo-banner") return block.content?.title || "Banner Promocional";
     return "Bloco";
 };
 

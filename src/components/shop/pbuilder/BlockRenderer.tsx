@@ -120,7 +120,14 @@ function HeroDefault({ content, styles }: any) {
     const hasImage = !!currentSlideData.imageUrl;
 
     return (
-        <div className="w-full relative overflow-hidden">
+        <div
+            className="w-full relative overflow-hidden"
+            style={{
+                background: styles.background || undefined,
+                backgroundColor: !styles.background ? (styles.backgroundColor || undefined) : undefined,
+                minHeight: styles.minHeight || undefined
+            }}
+        >
             {/* Background Image */}
             {hasImage && (
                 <Image
@@ -137,11 +144,14 @@ function HeroDefault({ content, styles }: any) {
             )}
 
             <SlideTransition isTransitioning={isTransitioning} transition={transition} slideDirection={slideDirection}>
-                <div className={cn(
-                    "w-full flex flex-col justify-center px-4 sm:px-6 pt-16 sm:pt-20 md:pt-32 pb-10 sm:pb-12 relative z-[1]",
-                    alignClass,
-                    hasImage && "min-h-[300px] sm:min-h-[400px] md:min-h-[500px]"
-                )}>
+                <div
+                    className={cn(
+                        "w-full flex flex-col justify-center px-6 sm:px-12 md:px-20 lg:px-28 pt-16 sm:pt-20 md:pt-32 pb-10 sm:pb-12 relative z-[1]",
+                        alignClass,
+                        hasImage && "min-h-[300px] sm:min-h-[400px] md:min-h-[500px]"
+                    )}
+                    style={{ minHeight: !hasImage && styles.minHeight ? styles.minHeight : undefined }}
+                >
                     <h1
                         data-field="title"
                         className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-2 sm:mb-4 drop-shadow-sm cursor-pointer hover:opacity-80 transition-opacity"
@@ -160,21 +170,29 @@ function HeroDefault({ content, styles }: any) {
                     )}
                     {currentSlideData.buttonText && (
                         <Link href={currentSlideData.buttonLink || "/produtos"}>
-                            <button
-                                data-field="buttonText"
-                                className="mt-4 sm:mt-6 md:mt-8 px-5 sm:px-6 md:px-8 py-2 sm:py-2.5 md:py-3 rounded-full font-bold text-sm sm:text-base transition-transform hover:scale-105 shadow-lg cursor-pointer"
-                                style={{ backgroundColor: styles.buttonColor || "#ffffff", color: styles.buttonTextColor || "#000000" }}
-                            >
-                                {currentSlideData.buttonText}
-                            </button>
+                            {styles.buttonColor === "transparent" ? (
+                                <button
+                                    data-field="buttonText"
+                                    className="mt-4 sm:mt-6 md:mt-8 px-5 sm:px-6 md:px-8 py-2 sm:py-2.5 md:py-3 font-semibold text-xs sm:text-sm tracking-[0.2em] uppercase transition-all hover:bg-white/10 cursor-pointer border"
+                                    style={{ borderColor: (styles.buttonTextColor || "#ffffff") + "99", color: styles.buttonTextColor || "#ffffff", backgroundColor: "transparent" }}
+                                >
+                                    {currentSlideData.buttonText}
+                                </button>
+                            ) : (
+                                <button
+                                    data-field="buttonText"
+                                    className="mt-4 sm:mt-6 md:mt-8 px-5 sm:px-6 md:px-8 py-2 sm:py-2.5 md:py-3 rounded-full font-bold text-sm sm:text-base transition-transform hover:scale-105 shadow-lg cursor-pointer"
+                                    style={{ backgroundColor: styles.buttonColor || "#ffffff", color: styles.buttonTextColor || "#000000" }}
+                                >
+                                    {currentSlideData.buttonText}
+                                </button>
+                            )}
                         </Link>
                     )}
                 </div>
             </SlideTransition>
             {slides.length > 1 && (
                 <>
-                    <button onClick={prevSlide} className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-black rounded-full p-2 sm:p-3 shadow-lg z-10"><ChevronLeft className="h-4 w-4 sm:h-6 sm:w-6" /></button>
-                    <button onClick={nextSlide} className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-black rounded-full p-2 sm:p-3 shadow-lg z-10"><ChevronRight className="h-4 w-4 sm:h-6 sm:w-6" /></button>
                     <div className="absolute bottom-4 sm:bottom-8 left-1/2 -translate-x-1/2 flex gap-1.5 sm:gap-2 z-10">
                         {slides.map((_: any, i: number) => (
                             <button key={i} onClick={() => goToSlide(i)} className={cn("h-1.5 sm:h-2 rounded-full transition-all", i === currentSlide ? "w-6 sm:w-8 bg-white" : "w-1.5 sm:w-2 bg-white/50")} />
@@ -559,9 +577,10 @@ const ProductGridBlock = ({ content, products, isAdmin, config, variant, styles 
     ) : null;
 
     const cardSize = content.cardSize || 200;
+    const resolvedVariant = variant || styles?.variant || "grid";
 
     // ── CAROUSEL VARIANT ──
-    if (variant === "carousel") {
+    if (resolvedVariant === "carousel") {
         return (
             <ProductCarouselLayout
                 products={filteredProducts}
@@ -575,9 +594,20 @@ const ProductGridBlock = ({ content, products, isAdmin, config, variant, styles 
     }
 
     // ── LIST VARIANT ──
-    if (variant === "list") {
+    if (resolvedVariant === "list") {
         return (
             <ProductListLayout products={filteredProducts} config={mergedConfig} title={title} cardSize={cardSize} />
+        );
+    }
+
+    // ── SHOWCASE VARIANT (ZF Vision style: big name behind product) ──
+    if (resolvedVariant === "showcase") {
+        return (
+            <ProductShowcaseLayout
+                products={filteredProducts}
+                config={mergedConfig}
+                title={title}
+            />
         );
     }
 
@@ -593,10 +623,10 @@ const ProductGridBlock = ({ content, products, isAdmin, config, variant, styles 
                     "gap-2 sm:gap-3 md:gap-4",
                     isHorizontalCards
                         ? "flex flex-col max-w-2xl mx-auto"
-                        : "grid"
+                        : "grid justify-center"
                 )}
                 style={isHorizontalCards ? undefined : {
-                    gridTemplateColumns: `repeat(auto-fill, minmax(min(${cardSize}px, 45vw), 1fr))`
+                    gridTemplateColumns: `repeat(auto-fit, minmax(min(${cardSize}px, 45vw), ${cardSize}px))`
                 }}
             >
                 {filteredProducts.map((product) => (
@@ -698,6 +728,105 @@ const ProductCarouselLayout = ({ products, config, title, autoScroll, autoScroll
                         </div>
                     ))}
                 </div>
+            </div>
+        </div>
+    );
+};
+
+// ── PRODUCT SHOWCASE LAYOUT (ZF Vision style) ──
+const ProductShowcaseLayout = ({ products, config, title }: {
+    products: any[], config?: any, title: React.ReactNode
+}) => {
+    const scrollRef = useRef<HTMLDivElement>(null);
+    const [canScrollLeft, setCanScrollLeft] = useState(false);
+    const [canScrollRight, setCanScrollRight] = useState(false);
+
+    const checkScroll = useCallback(() => {
+        const el = scrollRef.current;
+        if (!el) return;
+        setCanScrollLeft(el.scrollLeft > 4);
+        setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
+    }, []);
+
+    useEffect(() => {
+        checkScroll();
+        const el = scrollRef.current;
+        if (!el) return;
+        el.addEventListener("scroll", checkScroll, { passive: true });
+        const ro = new ResizeObserver(checkScroll);
+        ro.observe(el);
+        return () => { el.removeEventListener("scroll", checkScroll); ro.disconnect(); };
+    }, [checkScroll]);
+
+    const scroll = (dir: "left" | "right") => {
+        const el = scrollRef.current;
+        if (!el) return;
+        el.scrollBy({ left: dir === "left" ? -320 : 320, behavior: "smooth" });
+    };
+
+    return (
+        <div className="py-8 sm:py-10">
+            {title}
+            <div className="relative group/showcase">
+                <div
+                    ref={scrollRef}
+                    className="flex gap-4 sm:gap-5 overflow-x-auto px-4 sm:px-6 pb-2 [&::-webkit-scrollbar]:hidden"
+                    style={{ scrollbarWidth: "none", justifyContent: "safe center" }}
+                >
+                    {products.map((product) => {
+                        const img = product.images?.[0]?.url || product.images?.[0] || "";
+                        const name = product.name || "";
+                        const slug = product.slug || product.id;
+                        return (
+                            <Link
+                                key={product.id}
+                                href={`/produto/${slug}`}
+                                className="group flex-shrink-0 w-[200px] sm:w-[240px] md:w-[260px]"
+                            >
+                                <div className="relative bg-gray-50 rounded-xl overflow-hidden aspect-square flex items-end justify-center">
+                                    {/* Big name text behind product */}
+                                    <span className="absolute inset-0 flex items-center justify-center text-[3rem] sm:text-[4rem] md:text-[4.5rem] font-black uppercase leading-none text-gray-200/80 select-none pointer-events-none tracking-tight text-center px-2">
+                                        {name.split(" ")[0]}
+                                    </span>
+                                    {/* Product image */}
+                                    {img ? (
+                                        <div className="relative z-10 w-[75%] h-[65%] mb-4 transition-transform duration-300 group-hover:scale-105">
+                                            <Image
+                                                src={img}
+                                                alt={name}
+                                                fill
+                                                sizes="260px"
+                                                className="object-contain drop-shadow-lg"
+                                                loading="lazy"
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className="relative z-10 w-[75%] h-[65%] mb-4 bg-gray-200 rounded" />
+                                    )}
+                                </div>
+                                <div className="mt-2 text-center">
+                                    <p className="text-sm font-medium text-gray-800 truncate">{name}</p>
+                                </div>
+                            </Link>
+                        );
+                    })}
+                </div>
+                {canScrollLeft && (
+                    <button
+                        onClick={() => scroll("left")}
+                        className="absolute left-2 top-[45%] -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/90 shadow-lg flex items-center justify-center hover:bg-white transition-all opacity-0 group-hover/showcase:opacity-100"
+                    >
+                        <ChevronLeft className="w-5 h-5 text-gray-700" />
+                    </button>
+                )}
+                {canScrollRight && (
+                    <button
+                        onClick={() => scroll("right")}
+                        className="absolute right-2 top-[45%] -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/90 shadow-lg flex items-center justify-center hover:bg-white transition-all opacity-0 group-hover/showcase:opacity-100"
+                    >
+                        <ChevronRight className="w-5 h-5 text-gray-700" />
+                    </button>
+                )}
             </div>
         </div>
     );
@@ -920,6 +1049,61 @@ const ToolBlock = ({ type, content, styles, isAdmin }: { type: string; content: 
 };
 
 // =============================================================================
+// COLUMNS BLOCK - Side-by-side content/images
+// =============================================================================
+const ColumnsBlock = ({ content, styles }: { content: any, styles: any }) => {
+    const columns = content.columns || [];
+    if (columns.length === 0) return null;
+
+    const colCount = columns.length;
+
+    return (
+        <div className="w-full">
+            <div className="container mx-auto px-3 sm:px-4">
+                <div className={cn(
+                    "grid gap-2 sm:gap-3 md:gap-4",
+                    colCount === 2 ? "grid-cols-1 sm:grid-cols-2" : colCount === 3 ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-1 sm:grid-cols-2 md:grid-cols-4"
+                )}>
+                    {columns.map((col: any) => (
+                        <div key={col.id} className="relative group overflow-hidden rounded-lg sm:rounded-xl">
+                            {col.image ? (
+                                <Link href={col.link || "#"}>
+                                    <div className="relative aspect-[16/9] sm:aspect-[4/3]">
+                                        <Image
+                                            src={col.image}
+                                            alt={col.content || "Banner"}
+                                            fill
+                                            sizes={colCount === 2 ? "(max-width: 640px) 100vw, 50vw" : "33vw"}
+                                            className="object-cover transition-transform duration-500 group-hover:scale-105"
+                                            loading="lazy"
+                                        />
+                                        {col.content && (
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-4 sm:p-6">
+                                                <span className="text-white font-bold text-sm sm:text-base md:text-lg">{col.content}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </Link>
+                            ) : (
+                                <div className="aspect-[16/9] sm:aspect-[4/3] bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center">
+                                    {col.content ? (
+                                        <div className="p-4 sm:p-6 text-center">
+                                            <span className="text-slate-500 font-medium text-sm sm:text-base">{col.content}</span>
+                                        </div>
+                                    ) : (
+                                        <span className="text-slate-400 text-sm">Banner</span>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// =============================================================================
 // NEWSLETTER BLOCK - Multiple variants
 // =============================================================================
 const NewsletterBlock = ({ content, styles }: { content: any, styles: any }) => {
@@ -1070,17 +1254,191 @@ function NewsletterSplit({ content, styles }: any) {
     );
 }
 
+// =============================================================================
+// PROMO BANNER BLOCK - Full-width image banner with text overlay (mid-page CTA)
+// =============================================================================
+const PromoBannerBlock = ({ content, styles }: { content: any, styles: any }) => {
+    const title = content.title || "";
+    const subtitle = content.subtitle || "";
+    const buttonText = content.buttonText || "";
+    const buttonLink = content.buttonLink || "";
+    const image = content.image || styles.backgroundImage || "";
+    const textAlign = styles.textAlign || "center";
+    const textColor = styles.textColor || "#ffffff";
+    const overlayOpacity = content.overlayOpacity ?? 0.4;
+    const minHeight = styles.minHeight || "400px";
+
+    return (
+        <div className="w-full relative overflow-hidden" style={{ minHeight }}>
+            {image ? (
+                <Image
+                    src={image}
+                    alt={title || "Banner"}
+                    fill
+                    sizes="100vw"
+                    className="object-cover"
+                    loading="lazy"
+                />
+            ) : (
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-600 to-slate-800" />
+            )}
+            <div
+                className="absolute inset-0"
+                style={{ backgroundColor: `rgba(0,0,0,${overlayOpacity})` }}
+            />
+            <div
+                className={cn(
+                    "relative z-10 flex flex-col justify-center h-full container mx-auto px-6 py-16",
+                    textAlign === "left" && "items-start text-left",
+                    textAlign === "center" && "items-center text-center",
+                    textAlign === "right" && "items-end text-right"
+                )}
+                style={{ minHeight }}
+            >
+                {title && (
+                    <h2
+                        data-field="title"
+                        className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight max-w-xl"
+                        style={{ color: textColor }}
+                    >
+                        {title}
+                    </h2>
+                )}
+                {subtitle && (
+                    <p
+                        data-field="subtitle"
+                        className="mt-3 text-base sm:text-lg md:text-xl max-w-lg opacity-90"
+                        style={{ color: textColor }}
+                    >
+                        {subtitle}
+                    </p>
+                )}
+                {buttonText && (
+                    <Link
+                        href={buttonLink || "#"}
+                        className="mt-6 inline-block px-8 py-3 text-sm font-semibold tracking-widest uppercase transition-all hover:opacity-80 rounded"
+                        style={{
+                            backgroundColor: styles.buttonColor || "transparent",
+                            color: styles.buttonTextColor || textColor,
+                            border: styles.buttonColor === "transparent" || !styles.buttonColor
+                                ? `1px solid ${(styles.buttonTextColor || textColor)}99`
+                                : "none"
+                        }}
+                    >
+                        {buttonText}
+                    </Link>
+                )}
+            </div>
+        </div>
+    );
+};
+
+const BrandsLifestyle = ({ content, displayBrands, brandsData, styles }: { content: any, displayBrands: any[], brandsData: any, styles: any }) => {
+    const scrollRef = useRef<HTMLDivElement>(null);
+    const [canScrollLeft, setCanScrollLeft] = useState(false);
+    const [canScrollRight, setCanScrollRight] = useState(false);
+
+    const checkScroll = useCallback(() => {
+        const el = scrollRef.current;
+        if (!el) return;
+        setCanScrollLeft(el.scrollLeft > 4);
+        setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
+    }, []);
+
+    useEffect(() => {
+        checkScroll();
+        const el = scrollRef.current;
+        if (!el) return;
+        el.addEventListener("scroll", checkScroll, { passive: true });
+        const ro = new ResizeObserver(checkScroll);
+        ro.observe(el);
+        return () => { el.removeEventListener("scroll", checkScroll); ro.disconnect(); };
+    }, [checkScroll]);
+
+    const scroll = (dir: "left" | "right") => {
+        const el = scrollRef.current;
+        if (!el) return;
+        const amount = 320;
+        el.scrollBy({ left: dir === "left" ? -amount : amount, behavior: "smooth" });
+    };
+
+    return (
+        <div className="py-10 w-full">
+            {content.title && (
+                <div className="container mx-auto px-4">
+                    <h2
+                        data-field="title"
+                        className="text-xl md:text-2xl font-medium mb-6 text-center"
+                        style={{ color: styles.headingColor || '#111827' }}
+                    >
+                        {content.title}
+                    </h2>
+                </div>
+            )}
+            <div className="relative group/brands">
+                <div
+                    ref={scrollRef}
+                    data-brands-scroll=""
+                    className="flex gap-4 overflow-x-auto snap-x snap-mandatory px-4 sm:px-6 lg:px-10 [&::-webkit-scrollbar]:hidden"
+                    style={{ scrollbarWidth: "none", justifyContent: "safe center" }}
+                >
+                    {displayBrands.map((brand) => {
+                        const brandInfo = brandsData[brand.id] || {};
+                        const brandImage = brandInfo.image || brand.imageUrl;
+                        const inner = (
+                            <div className="relative snap-start flex-shrink-0 w-[260px] md:w-[300px] aspect-[4/5] rounded-lg overflow-hidden group cursor-pointer">
+                                {brandImage ? (
+                                    <Image src={brandImage} alt={brand.name} fill sizes="300px" className="object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                                ) : (
+                                    <div className="w-full h-full bg-gradient-to-br from-slate-200 to-slate-300" />
+                                )}
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                                <div className="absolute bottom-0 left-0 right-0 p-5">
+                                    <span className="text-white text-lg md:text-xl font-bold tracking-wide uppercase drop-shadow-lg">
+                                        {brand.name}
+                                    </span>
+                                </div>
+                            </div>
+                        );
+                        return brandInfo.link ? (
+                            <Link key={brand.id} href={brandInfo.link}>{inner}</Link>
+                        ) : (
+                            <div key={brand.id}>{inner}</div>
+                        );
+                    })}
+                </div>
+                    {canScrollLeft && (
+                        <button
+                            onClick={() => scroll("left")}
+                            className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/90 shadow-lg flex items-center justify-center hover:bg-white transition-all opacity-0 group-hover/brands:opacity-100"
+                        >
+                            <ChevronLeft className="w-5 h-5 text-gray-700" />
+                        </button>
+                    )}
+                    {canScrollRight && (
+                        <button
+                            onClick={() => scroll("right")}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/90 shadow-lg flex items-center justify-center hover:bg-white transition-all opacity-0 group-hover/brands:opacity-100"
+                        >
+                            <ChevronRight className="w-5 h-5 text-gray-700" />
+                        </button>
+                    )}
+                </div>
+        </div>
+    );
+};
+
 const BrandsBlock = ({ content, brands, styles }: { content: any, brands: any[], styles: any }) => {
+    const variant = styles.variant || "default";
+
     // Determine which brands to show
     let displayBrands: any[] = [];
 
     if (content.selectionMode === "manual" && content.selectedBrandIds?.length > 0) {
-        // Manual mode: show selected brands in order
         displayBrands = content.selectedBrandIds
             .map((id: string) => brands.find(b => b.id === id))
             .filter(Boolean);
     } else {
-        // Auto mode: show all brands with limit
         const limit = content.limit || 6;
         displayBrands = brands.slice(0, limit);
     }
@@ -1089,6 +1447,12 @@ const BrandsBlock = ({ content, brands, styles }: { content: any, brands: any[],
 
     const brandsData = content.brandsData || {};
 
+    // Lifestyle variant: large cards with images and brand name overlay (like NOVA/YORK)
+    if (variant === "lifestyle") {
+        return <BrandsLifestyle content={content} displayBrands={displayBrands} brandsData={brandsData} styles={styles} />;
+    }
+
+    // Default variant: text-based brand names
     return (
         <div className="py-10 border-b bg-slate-50/50 w-full">
             <div className="container mx-auto px-4 text-center">
@@ -1109,7 +1473,7 @@ const BrandsBlock = ({ content, brands, styles }: { content: any, brands: any[],
                 <div className="flex flex-wrap justify-center gap-8 md:gap-16 items-center opacity-70 grayscale hover:grayscale-0 transition-all duration-500">
                     {displayBrands.map((brand) => {
                         const brandInfo = brandsData[brand.id] || {};
-                        const content = (
+                        const brandContent = (
                             <div className="text-xl font-bold font-serif" style={{ color: styles.headingColor || '#111827' }}>
                                 {brand.name}
                             </div>
@@ -1117,10 +1481,10 @@ const BrandsBlock = ({ content, brands, styles }: { content: any, brands: any[],
 
                         return brandInfo.link ? (
                             <Link key={brand.id} href={brandInfo.link}>
-                                {content}
+                                {brandContent}
                             </Link>
                         ) : (
-                            <div key={brand.id}>{content}</div>
+                            <div key={brand.id}>{brandContent}</div>
                         );
                     })}
                 </div>
@@ -1159,55 +1523,75 @@ const CategoriesBlock = ({ content, categories, styles }: { content: any, catego
     }
 };
 
-// GRID - Bento style with featured first item (always centered)
+// GRID - Bento style with featured first item, or equal columns for small counts
 function CategoriesGrid({ content, categories, categoriesData, styles }: any) {
-    const titleContent = (
+    const titleContent = content.title ? (
         <h2
             data-field="title"
             className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight cursor-pointer hover:opacity-80 transition-opacity"
             style={{ color: styles.headingColor || '#111827' }}
         >
-            {content.title || "Categorias em Destaque"}
+            {content.title}
         </h2>
-    );
+    ) : null;
+
+    // Equal-column layout for 2-3 items (like NOVA/YORK style large cards)
+    const useEqualLayout = categories.length <= 3;
 
     return (
-        <div className="py-10 sm:py-14 md:py-20 w-full">
+        <div className={cn("w-full", titleContent ? "py-10 sm:py-14 md:py-20" : "py-2 sm:py-3")}>
             <div className="container mx-auto px-3 sm:px-4">
-                <div className="flex items-center justify-center text-center mb-6 sm:mb-8 md:mb-10 gap-4">
-                    {content.viewAllLink ? (
-                        <Link href={content.viewAllLink}>{titleContent}</Link>
-                    ) : titleContent}
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
+                {titleContent && (
+                    <div className="flex items-center justify-center text-center mb-6 sm:mb-8 md:mb-10 gap-4">
+                        {content.viewAllLink ? (
+                            <Link href={content.viewAllLink}>{titleContent}</Link>
+                        ) : titleContent}
+                    </div>
+                )}
+                <div className={cn(
+                    "grid gap-2 sm:gap-3 md:gap-4",
+                    useEqualLayout
+                        ? categories.length === 2 ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1 sm:grid-cols-3"
+                        : "grid-cols-2 sm:grid-cols-3 md:grid-cols-4"
+                )}>
                     {categories.map((cat: any, index: number) => {
                         const catData = categoriesData[cat.id] || {};
                         const displayName = catData.name || cat.name;
                         const displayImage = catData.imageUrl || cat.imageUrl;
                         const displayLink = catData.link || `/search?category=${cat.slug}`;
-                        const isLarge = index === 0;
+                        const isLarge = !useEqualLayout && index === 0;
 
                         return (
                             <Link
                                 href={displayLink}
                                 key={cat.id}
                                 className={cn(
-                                    "relative group rounded-xl sm:rounded-2xl overflow-hidden bg-gray-100 aspect-square",
-                                    isLarge && "col-span-2 row-span-2"
+                                    "relative group overflow-hidden bg-gray-100",
+                                    useEqualLayout
+                                        ? "rounded-lg sm:rounded-xl aspect-[4/3] sm:aspect-[3/4]"
+                                        : cn("rounded-xl sm:rounded-2xl aspect-square", isLarge && "col-span-2 row-span-2")
                                 )}
                             >
                                 {displayImage ? (
-                                    <Image src={displayImage} alt={displayName} fill sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw" className="object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" />
+                                    <Image src={displayImage} alt={displayName} fill sizes={useEqualLayout ? "(max-width: 640px) 100vw, 33vw" : "(max-width: 640px) 50vw, 25vw"} className="object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" />
                                 ) : (
-                                    <div className="absolute inset-0 bg-slate-200 group-hover:scale-105 transition-transform duration-500 flex items-center justify-center text-slate-400 font-bold text-base sm:text-lg">
+                                    <div className="absolute inset-0 bg-gradient-to-br from-slate-300 to-slate-400 group-hover:scale-105 transition-transform duration-500 flex items-center justify-center text-white/60 font-bold text-4xl sm:text-5xl">
                                         {displayName.charAt(0)}
                                     </div>
                                 )}
-                                <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4 md:p-6 bg-gradient-to-t from-black/80 to-transparent text-center">
-                                    <span className={cn("font-bold block", isLarge ? "text-lg sm:text-xl md:text-2xl" : "text-sm sm:text-base md:text-lg")} style={{ color: styles.cardTextColor || '#ffffff' }}>
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                                <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5 md:p-6 text-center">
+                                    <span className={cn(
+                                        "font-bold block",
+                                        useEqualLayout ? "text-lg sm:text-xl md:text-2xl" : isLarge ? "text-lg sm:text-xl md:text-2xl" : "text-sm sm:text-base md:text-lg"
+                                    )} style={{ color: styles.cardTextColor || '#ffffff' }}>
                                         {displayName}
                                     </span>
-                                    {isLarge && <span className="text-xs sm:text-sm mt-1 inline-block opacity-80" style={{ color: styles.cardTextColor || '#ffffff' }}>Explorar →</span>}
+                                    {(isLarge || useEqualLayout) && (
+                                        <span className="text-xs sm:text-sm mt-1 inline-block opacity-80" style={{ color: styles.cardTextColor || '#ffffff' }}>
+                                            Explorar →
+                                        </span>
+                                    )}
                                 </div>
                             </Link>
                         );
@@ -1322,14 +1706,125 @@ function CategoriesCircular({ content, categories, categoriesData, styles }: any
     );
 }
 
+// =============================================================================
+// BLOG POSTS BLOCK - Show blog/content posts (like "Últimas do blog")
+// =============================================================================
+const BlogPostsBlock = ({ content, styles }: { content: any, styles: any }) => {
+    const posts = content.posts || [];
+    const columns = content.columns || 2;
+
+    if (posts.length === 0) {
+        // Placeholder for admin preview
+        return (
+            <div className="py-10 w-full">
+                <div className="container mx-auto px-4">
+                    {content.title && (
+                        <div className="mb-6">
+                            <h2 className="text-xl md:text-2xl font-medium text-center" style={{ color: styles.headingColor || '#111827' }}>
+                                {content.title}
+                            </h2>
+                        </div>
+                    )}
+                    <div className={cn("grid gap-6", columns === 3 ? "md:grid-cols-3" : "md:grid-cols-2")}>
+                        {[1, 2].map((i) => (
+                            <div key={i} className="group">
+                                <div className="aspect-[16/10] bg-slate-100 rounded-lg mb-3" />
+                                <p className="text-sm text-slate-400">Adicione posts no editor</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="py-10 w-full">
+            <div className="container mx-auto px-4">
+                {content.title && (
+                    <div className="mb-6">
+                        <h2
+                            data-field="title"
+                            className="text-xl md:text-2xl font-medium text-center"
+                            style={{ color: styles.headingColor || '#111827' }}
+                        >
+                            {content.title}
+                        </h2>
+                        {content.linkText && content.linkUrl && (
+                            <div className="flex justify-center mt-2">
+                                <Link
+                                    href={content.linkUrl}
+                                    className="text-sm flex items-center gap-1 hover:underline"
+                                    style={{ color: styles.textColor || '#6b7280' }}
+                                >
+                                    {content.linkText} <span aria-hidden="true">&rarr;</span>
+                                </Link>
+                            </div>
+                        )}
+                    </div>
+                )}
+                <div className={cn("grid gap-6", columns === 3 ? "md:grid-cols-3" : "md:grid-cols-2")}>
+                    {posts.slice(0, content.limit || 4).map((post: any) => (
+                        <div key={post.id} className="group">
+                            {post.url ? (
+                                <Link href={post.url} className="block">
+                                    {post.image && (
+                                        <div className="relative aspect-[16/10] rounded-lg overflow-hidden mb-3">
+                                            <Image
+                                                src={post.image}
+                                                alt={post.title}
+                                                fill
+                                                sizes="(max-width: 768px) 100vw, 50vw"
+                                                className="object-cover transition-transform duration-500 group-hover:scale-105"
+                                                loading="lazy"
+                                            />
+                                        </div>
+                                    )}
+                                    <h3
+                                        className="text-sm md:text-base font-medium group-hover:underline"
+                                        style={{ color: styles.headingColor || '#111827' }}
+                                    >
+                                        {post.title}
+                                    </h3>
+                                </Link>
+                            ) : (
+                                <>
+                                    {post.image && (
+                                        <div className="relative aspect-[16/10] rounded-lg overflow-hidden mb-3">
+                                            <Image
+                                                src={post.image}
+                                                alt={post.title}
+                                                fill
+                                                sizes="(max-width: 768px) 100vw, 50vw"
+                                                className="object-cover"
+                                                loading="lazy"
+                                            />
+                                        </div>
+                                    )}
+                                    <h3
+                                        className="text-sm md:text-base font-medium"
+                                        style={{ color: styles.headingColor || '#111827' }}
+                                    >
+                                        {post.title}
+                                    </h3>
+                                </>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 interface BlockRendererProps {
     blocks: PageBlock[];
-    isAdmin?: boolean; // If true, shows hover effects/edit controls (future)
+    isAdmin?: boolean;
     onSelectBlock?: (blockId: string) => void;
     products?: any[];
     categories?: any[];
     brands?: any[];
-    config?: any; // Store config for component styles
+    config?: any;
 }
 
 export function BlockRenderer({ blocks, isAdmin, onSelectBlock, products = [], categories = [], brands = [], config }: BlockRendererProps) {
@@ -1338,7 +1833,7 @@ export function BlockRenderer({ blocks, isAdmin, onSelectBlock, products = [], c
     return (
         <div className="flex flex-col w-full">
             {blocks.map((block) => {
-                const { styles } = block;
+                const styles = block.styles || {} as any;
 
                 // Construct inline styles from block settings
                 const containerStyle: React.CSSProperties = {
@@ -1395,10 +1890,13 @@ export function BlockRenderer({ blocks, isAdmin, onSelectBlock, products = [], c
                             {block.type === "product-grid" && <ProductGridBlock content={block.content} products={products} config={config} variant={block.variant} styles={styles} />}
                             {block.type === "brands" && <BrandsBlock content={block.content} brands={brands} styles={styles} />}
                             {block.type === "categories" && <CategoriesBlock content={block.content} categories={categories} styles={styles} />}
+                            {block.type === "blog-posts" && <BlogPostsBlock content={block.content} styles={styles} />}
+                            {block.type === "columns" && <ColumnsBlock content={block.content} styles={styles} />}
                             {block.type === "newsletter" && <NewsletterBlock content={block.content} styles={styles} />}
                             {block.type === "instagram" && <InstagramBlock content={block.content} />}
                             {block.type === "map" && <MapBlock content={block.content} />}
                             {block.type === "promo" && <PromoBlock content={block.content} styles={styles} />}
+                            {block.type === "promo-banner" && <PromoBannerBlock content={block.content} styles={styles} />}
 
                             {/* Tool Blocks */}
                             {(block.type === "tool-scheduling" || block.type === "tool-salon") && (

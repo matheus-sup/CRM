@@ -1639,6 +1639,235 @@ export function BlockPropertyEditor({ block, onUpdate, onDelete, onBack, focusFi
                     </div>
                 )}
 
+                {/* --- BLOG POSTS BLOCK EDITOR --- */}
+                {block.type === "blog-posts" && (
+                    <div className="space-y-4">
+                        <div className="space-y-1">
+                            <Label>Título da Seção</Label>
+                            <Input
+                                ref={titleRef}
+                                value={data.content.title || ""}
+                                onChange={(e) => updateContent("title", e.target.value)}
+                                placeholder="Últimas do blog"
+                            />
+                        </div>
+
+                        <div className="space-y-1">
+                            <Label>Texto do Link (ex: Ver tudo)</Label>
+                            <Input
+                                value={data.content.linkText || ""}
+                                onChange={(e) => updateContent("linkText", e.target.value)}
+                                placeholder="Ver tudo"
+                            />
+                        </div>
+
+                        <div className="space-y-1">
+                            <Label>URL do Link</Label>
+                            <Input
+                                value={data.content.linkUrl || ""}
+                                onChange={(e) => updateContent("linkUrl", e.target.value)}
+                                placeholder="/blog"
+                            />
+                        </div>
+
+                        <div className="space-y-1">
+                            <Label>Colunas</Label>
+                            <select
+                                className="w-full text-sm border rounded h-9 px-2"
+                                value={data.content.columns || 2}
+                                onChange={(e) => updateContent("columns", Number(e.target.value))}
+                            >
+                                <option value={2}>2 colunas</option>
+                                <option value={3}>3 colunas</option>
+                            </select>
+                        </div>
+
+                        {/* Posts list */}
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <Label className="font-semibold">Posts</Label>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                        const posts = data.content.posts || [];
+                                        const newPost = {
+                                            id: `post-${Date.now()}`,
+                                            title: "",
+                                            image: "",
+                                            url: ""
+                                        };
+                                        const newData = {
+                                            ...data,
+                                            content: { ...data.content, posts: [...posts, newPost] }
+                                        };
+                                        setData(newData);
+                                        onUpdate(newData);
+                                    }}
+                                >
+                                    + Adicionar post
+                                </Button>
+                            </div>
+
+                            {(data.content.posts || []).map((post: any, index: number) => (
+                                <div key={post.id} className="border rounded-lg p-3 space-y-2 bg-slate-50">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs font-semibold text-slate-500">Post {index + 1}</span>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                                            onClick={() => {
+                                                const posts = [...(data.content.posts || [])];
+                                                posts.splice(index, 1);
+                                                const newData = { ...data, content: { ...data.content, posts } };
+                                                setData(newData);
+                                                onUpdate(newData);
+                                            }}
+                                        >
+                                            <X className="h-3 w-3" />
+                                        </Button>
+                                    </div>
+
+                                    <Input
+                                        value={post.title || ""}
+                                        onChange={(e) => {
+                                            const posts = [...(data.content.posts || [])];
+                                            posts[index] = { ...posts[index], title: e.target.value };
+                                            const newData = { ...data, content: { ...data.content, posts } };
+                                            setData(newData);
+                                            onUpdate(newData);
+                                        }}
+                                        placeholder="Título do post"
+                                    />
+
+                                    <Input
+                                        value={post.url || ""}
+                                        onChange={(e) => {
+                                            const posts = [...(data.content.posts || [])];
+                                            posts[index] = { ...posts[index], url: e.target.value };
+                                            const newData = { ...data, content: { ...data.content, posts } };
+                                            setData(newData);
+                                            onUpdate(newData);
+                                        }}
+                                        placeholder="URL do post (ex: /blog/meu-artigo)"
+                                    />
+
+                                    {/* Image picker */}
+                                    <div className="flex items-center gap-2">
+                                        {post.image ? (
+                                            <div className="relative w-20 h-14 rounded overflow-hidden border">
+                                                <img src={post.image} alt="" className="w-full h-full object-cover" />
+                                                <button
+                                                    className="absolute top-0 right-0 bg-red-500 text-white p-0.5 rounded-bl"
+                                                    onClick={() => {
+                                                        const posts = [...(data.content.posts || [])];
+                                                        posts[index] = { ...posts[index], image: "" };
+                                                        const newData = { ...data, content: { ...data.content, posts } };
+                                                        setData(newData);
+                                                        onUpdate(newData);
+                                                    }}
+                                                >
+                                                    <X className="h-3 w-3" />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <Dialog>
+                                                <DialogTrigger asChild>
+                                                    <Button variant="outline" size="sm" className="gap-1">
+                                                        <ImageIcon className="h-3 w-3" />
+                                                        Imagem
+                                                    </Button>
+                                                </DialogTrigger>
+                                                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                                                    <DialogHeader>
+                                                        <DialogTitle>Selecionar Imagem</DialogTitle>
+                                                    </DialogHeader>
+                                                    <MediaLibrary
+                                                        onSelect={(url: string) => {
+                                                            const posts = [...(data.content.posts || [])];
+                                                            posts[index] = { ...posts[index], image: url };
+                                                            const newData = { ...data, content: { ...data.content, posts } };
+                                                            setData(newData);
+                                                            onUpdate(newData);
+                                                        }}
+                                                    />
+                                                </DialogContent>
+                                            </Dialog>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* --- PROMO BANNER BLOCK EDITOR --- */}
+                {block.type === "promo-banner" && (
+                    <div className="space-y-4">
+                        <CompactImagePicker
+                            value={data.content.image || ""}
+                            onChange={(url) => updateContent("image", url)}
+                            label="Imagem de Fundo"
+                        />
+
+                        <div className="space-y-1">
+                            <Label>Título</Label>
+                            <Input
+                                ref={titleRef}
+                                value={data.content.title || ""}
+                                onChange={(e) => updateContent("title", e.target.value)}
+                                placeholder="Estilo & proteção."
+                            />
+                        </div>
+
+                        <div className="space-y-1">
+                            <Label>Subtítulo</Label>
+                            <Textarea
+                                value={data.content.subtitle || ""}
+                                onChange={(e) => updateContent("subtitle", e.target.value)}
+                                placeholder="Texto complementar do banner"
+                                rows={2}
+                            />
+                        </div>
+
+                        <div className="space-y-1">
+                            <Label>Texto do Botão</Label>
+                            <Input
+                                value={data.content.buttonText || ""}
+                                onChange={(e) => updateContent("buttonText", e.target.value)}
+                                placeholder="EXPLORAR"
+                            />
+                            <p className="text-xs text-slate-500">Deixe vazio para ocultar o botão</p>
+                        </div>
+
+                        <div className="space-y-1">
+                            <Label>Link do Botão</Label>
+                            <SharedLinkSelector
+                                value={data.content.buttonLink || ""}
+                                onChange={(val) => updateContent("buttonLink", val)}
+                            />
+                        </div>
+
+                        <div className="space-y-1">
+                            <Label className="text-xs">Opacidade do Overlay</Label>
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="80"
+                                    value={Math.round((data.content.overlayOpacity ?? 0.4) * 100)}
+                                    onChange={(e) => updateContent("overlayOpacity", Number(e.target.value) / 100)}
+                                    className="flex-1"
+                                />
+                                <span className="text-xs text-slate-500 w-10 text-right">
+                                    {Math.round((data.content.overlayOpacity ?? 0.4) * 100)}%
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* --- NEWSLETTER BLOCK EDITOR --- */}
                 {block.type === "newsletter" && (
                     <div className="space-y-4">
@@ -1721,6 +1950,42 @@ export function BlockPropertyEditor({ block, onUpdate, onDelete, onBack, focusFi
                             value={data.styles.headingColor || "#111827"}
                             onChange={(val) => updateStyle("headingColor", val)}
                         />
+                    )}
+
+                    {block.type === "promo-banner" && (
+                        <>
+                            <ColorPickerInput
+                                id="text-color"
+                                label="Cor do Texto"
+                                value={data.styles.textColor || "#ffffff"}
+                                onChange={(val) => updateStyle("textColor", val)}
+                            />
+                            <ColorPickerInput
+                                id="button-color"
+                                label="Cor do Botão"
+                                value={data.styles.buttonColor || "transparent"}
+                                onChange={(val) => updateStyle("buttonColor", val)}
+                            />
+                            <ColorPickerInput
+                                id="button-text-color"
+                                label="Cor do Texto do Botão"
+                                value={data.styles.buttonTextColor || "#ffffff"}
+                                onChange={(val) => updateStyle("buttonTextColor", val)}
+                            />
+                            <div className="space-y-1">
+                                <Label className="text-xs">Altura Mínima</Label>
+                                <select
+                                    className="w-full text-sm border rounded h-9 px-2"
+                                    value={data.styles.minHeight || "400px"}
+                                    onChange={(e) => updateStyle("minHeight", e.target.value)}
+                                >
+                                    <option value="300px">Baixo (300px)</option>
+                                    <option value="400px">Médio (400px)</option>
+                                    <option value="500px">Alto (500px)</option>
+                                    <option value="600px">Extra Alto (600px)</option>
+                                </select>
+                            </div>
+                        </>
                     )}
 
                     {block.type === "newsletter" && (

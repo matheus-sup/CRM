@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Search, ShoppingBag, User, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,6 +34,8 @@ export function Header({ config, categories, editorMode, onFieldClick }: HeaderP
             return <MinimalHeader config={config} categories={categories} editorMode={editorMode} onFieldClick={onFieldClick} />;
         case "restaurant":
             return <RestaurantHeader config={config} categories={categories} editorMode={editorMode} onFieldClick={onFieldClick} />;
+        case "optica":
+            return <OpticaHeader config={config} categories={categories} editorMode={editorMode} onFieldClick={onFieldClick} />;
         case "classic":
         default:
             return <ClassicHeader config={config} categories={categories} editorMode={editorMode} onFieldClick={onFieldClick} />;
@@ -493,14 +496,167 @@ function MinimalHeader({ config, categories, editorMode, onFieldClick }: { confi
 }
 
 // =============================================================================
+// OPTICA HEADER - Text logo with slash, centered nav, minimal icons (like NOVA/YORK)
+// =============================================================================
+function OpticaHeader({ config, categories, editorMode, onFieldClick }: { config?: any, categories?: any[], editorMode?: boolean, onFieldClick?: (field: string) => void }) {
+    const { toggleCart, items } = useCart();
+    const [scrolled, setScrolled] = useState(false);
+    const [searchOpen, setSearchOpen] = useState(false);
+    const pathname = usePathname();
+
+    // Only use transparent mode on home page (where hero exists)
+    const isHomePage = pathname === "/" || pathname.startsWith("/preview/");
+    const useTransparent = isHomePage && !scrolled;
+
+    useEffect(() => {
+        const handleScroll = () => setScrolled(window.scrollY > 20);
+        window.addEventListener("scroll", handleScroll);
+        return () => window.removeEventListener("scroll", handleScroll);
+    }, []);
+
+    const storeName = config?.storeName || "Loja";
+    const logoUrl = config?.logoUrl;
+
+    const showSearch = config?.showHeaderSearch !== false && config?.showHeaderSearch !== "false";
+    const showCart = config?.showHeaderCart !== false && config?.showHeaderCart !== "false";
+    const showAccount = config?.showHeaderAccount !== false && config?.showHeaderAccount !== "false";
+
+    const handleFieldClick = (field: string) => (e: React.MouseEvent) => {
+        if (editorMode && onFieldClick) {
+            e.preventDefault();
+            e.stopPropagation();
+            onFieldClick(field);
+        }
+    };
+
+    const editorClass = editorMode ? "cursor-pointer hover:ring-2 hover:ring-blue-400 hover:ring-offset-2 rounded transition-all" : "";
+
+    return (
+        <header
+            data-section="header"
+            data-style="optica"
+            className={cn(
+                "fixed top-0 left-0 right-0 z-50 w-full transition-all duration-500",
+                !useTransparent ? "shadow-md backdrop-blur-md" : ""
+            )}
+            style={{
+                backgroundColor: useTransparent
+                    ? "transparent"
+                    : (config?.headerColor || "var(--background)")
+            }}
+        >
+            <div className="container mx-auto px-4">
+                <div className="flex items-center justify-between h-14">
+                    <MobileMenu config={config} storeName={storeName} />
+
+                    {/* Left: Text Logo */}
+                    <div className="shrink-0">
+                        <Link href={editorMode ? "#" : "/"} className="flex items-baseline" onClick={editorMode ? handleFieldClick("headerText") : undefined}>
+                            {(config?.headerShowLogo !== false && logoUrl) ? (
+                                <img
+                                    src={logoUrl}
+                                    alt={storeName}
+                                    className={cn("object-contain transition-all duration-300", editorClass)}
+                                    style={{ width: `${Math.min(120, Math.max(30, config?.headerLogoWidth || 55))}px`, height: 'auto' }}
+                                    data-field="headerLogoWidth"
+                                />
+                            ) : (
+                                <span
+                                    className={cn("text-xl md:text-2xl tracking-tight leading-none transition-colors duration-500", editorClass)}
+                                    style={{ color: useTransparent ? "#ffffff" : (config?.menuColor || "var(--foreground)") }}
+                                    data-field="headerText"
+                                >
+                                    <span className="font-bold">{(config?.headerText || storeName).split("/")[0]}</span>
+                                    {(config?.headerText || storeName).includes("/") && (
+                                        <span className="font-light">/{(config?.headerText || storeName).split("/").slice(1).join("/")}</span>
+                                    )}
+                                    {!(config?.headerText || storeName).includes("/") && !logoUrl && (
+                                        <span className="font-light"> {config?.headerSubtext || ""}</span>
+                                    )}
+                                </span>
+                            )}
+                        </Link>
+                    </div>
+
+                    {/* Center: Navigation */}
+                    <NavMenu config={config} className="hidden md:flex justify-center gap-6 lg:gap-8" inline editorMode={editorMode} onFieldClick={onFieldClick} style={{ color: useTransparent ? "#ffffff" : undefined }} />
+
+                    {/* Right: Minimal Icons */}
+                    <div className="flex items-center gap-3">
+                        {showSearch && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-10 w-10 rounded-full hover:bg-white/10"
+                                onClick={() => setSearchOpen(!searchOpen)}
+                            >
+                                <Search className="h-6 w-6 transition-colors duration-500" style={{ color: useTransparent ? "#ffffff" : (config?.menuColor || "var(--foreground)") }} />
+                            </Button>
+                        )}
+                        {showAccount && (
+                            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full hover:bg-white/10 hidden md:flex" asChild>
+                                <Link href="/minha-conta">
+                                    <User className="h-6 w-6 transition-colors duration-500" style={{ color: useTransparent ? "#ffffff" : (config?.menuColor || "var(--foreground)") }} />
+                                </Link>
+                            </Button>
+                        )}
+                        {showCart && (
+                            <div className="relative">
+                                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full hover:bg-white/10" onClick={editorMode ? undefined : toggleCart}>
+                                    <ShoppingBag className="h-6 w-6 transition-colors duration-500" style={{ color: useTransparent ? "#ffffff" : (config?.menuColor || "var(--foreground)") }} />
+                                    {items.length > 0 && (
+                                        <span
+                                            className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold"
+                                            style={{ backgroundColor: config?.cartCountBg || config?.themeColor || "#000", color: config?.cartCountText || "white" }}
+                                        >
+                                            {items.length}
+                                        </span>
+                                    )}
+                                </Button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Expandable Search */}
+                {showSearch && searchOpen && (
+                    <div className="pb-4">
+                        <div
+                            className="relative rounded-full overflow-hidden shadow-sm border"
+                            style={{ borderColor: config?.themeColor || "#000" }}
+                        >
+                            <Input
+                                type="search"
+                                placeholder={config?.headerSearchPlaceholder || "O que você está buscando?"}
+                                className="h-11 text-sm pr-10 border-0 bg-white text-foreground placeholder:text-muted-foreground focus-visible:ring-0 pl-5"
+                                autoFocus
+                            />
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="absolute right-0 top-0 h-11 w-11"
+                                onClick={() => setSearchOpen(false)}
+                                style={{ color: config?.themeColor || "#000" }}
+                            >
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </header>
+    );
+}
+
+// =============================================================================
 // SHARED COMPONENTS
 // =============================================================================
 
-function NavMenu({ config, className, inline, minimal, editorMode, onFieldClick }: { config: any; className?: string; inline?: boolean; minimal?: boolean; editorMode?: boolean; onFieldClick?: (field: string) => void }) {
+function NavMenu({ config, className, inline, minimal, editorMode, onFieldClick, style }: { config: any; className?: string; inline?: boolean; minimal?: boolean; editorMode?: boolean; onFieldClick?: (field: string) => void; style?: React.CSSProperties }) {
     const menuItems = config?.menus?.find((m: any) => m.handle === 'main')?.items || [];
 
     const linkClass = cn(
-        "transition-colors outline-none focus-visible:outline-none",
+        "transition-colors duration-500 outline-none focus-visible:outline-none",
         minimal ? "text-sm font-medium" : "text-sm font-semibold tracking-wider uppercase",
         editorMode && "cursor-pointer hover:ring-2 hover:ring-blue-400 hover:ring-offset-2 rounded px-2 py-1"
     );
@@ -513,7 +669,7 @@ function NavMenu({ config, className, inline, minimal, editorMode, onFieldClick 
         }
     };
 
-    const linkColor = config?.menuLinkColor || config?.menuColor || "var(--foreground)";
+    const linkColor = style?.color || config?.menuLinkColor || config?.menuColor || "var(--foreground)";
     const hoverColor = config?.menuLinkHoverColor || config?.themeColor || "var(--primary)";
 
     const content = menuItems.length > 0 ? (

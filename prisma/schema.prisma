@@ -380,12 +380,17 @@ model ProductVariant {
   id             String    @id @default(cuid())
   productId      String
   product        Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
-  
-  name           String    // e.g., "Red", "Large"
+
+  name           String    // Color name e.g., "Cinza Mesclado", "Preto"
+  colorHex       String?   // Hex color for swatch e.g., "#333333"
+  colorImage     String?   // Image URL for swatch (alternative to colorHex)
+  images         String?   // JSON array of image URLs for this color variant
   price          Decimal?  // Override product price if different
   stock          Int       @default(0)
   sku            String?
-  
+  order          Int       @default(0) // Sort order for display
+  isDefault      Boolean   @default(false) // Pre-select this variant on product page
+
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 }

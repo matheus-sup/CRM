@@ -150,9 +150,57 @@ export function HeaderMinimalPreview() {
     );
 }
 
+export function HeaderOpticaPreview() {
+    return (
+        <div className="w-full h-full flex flex-col bg-white p-2 scale-90">
+            <div className="flex items-center justify-between px-2 py-2 border-b">
+                {/* Text logo with slash */}
+                <div className="flex items-baseline gap-0">
+                    <div className="w-8 h-3 bg-slate-800 rounded" />
+                    <span className="text-[6px] text-slate-400 mx-0.5">/</span>
+                    <div className="w-6 h-3 bg-slate-300 rounded" />
+                </div>
+                {/* Center nav links */}
+                <div className="flex gap-2">
+                    <div className="w-10 h-1.5 bg-slate-300 rounded" />
+                    <div className="w-10 h-1.5 bg-slate-300 rounded" />
+                    <div className="w-8 h-1.5 bg-slate-300 rounded" />
+                </div>
+                {/* Right icons */}
+                <div className="flex gap-1">
+                    <div className="w-3 h-3 bg-slate-200 rounded-full" />
+                    <div className="w-3 h-3 bg-slate-200 rounded-full" />
+                    <div className="w-3 h-3 bg-slate-200 rounded-full" />
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // ============================================================================
 // CARD STYLE PREVIEWS
 // ============================================================================
+
+export function CardOpticaPreview() {
+    return (
+        <div className="w-full h-full flex flex-col bg-white p-2 scale-90">
+            <div className="grid grid-cols-2 gap-2">
+                {[1, 2].map((i) => (
+                    <div key={i} className="flex flex-col items-center">
+                        <div className="w-full aspect-square bg-[#f5f5f5] rounded-sm mb-1" />
+                        <div className="w-3/4 h-1.5 bg-slate-200 rounded mb-0.5" />
+                        <div className="w-1/2 h-1 bg-slate-300 rounded mb-0.5" />
+                        <div className="text-[5px] text-slate-400 mb-0.5">12x de R$331</div>
+                        <div className="flex gap-0.5">
+                            <div className="w-1.5 h-1.5 rounded-full bg-gray-800" />
+                            <div className="w-1.5 h-1.5 rounded-full bg-amber-700" />
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
 
 export function CardStandardPreview() {
     return (

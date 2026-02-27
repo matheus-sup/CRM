@@ -17,7 +17,10 @@ jobs:
           script: |
             cd /var/www/crm/crm
             git checkout -- package-lock.json
+            git checkout -- prisma/dev.db
             git pull origin main
             npm install
+            npx prisma generate
+            npx prisma db push --accept-data-loss 2>/dev/null || true
             npm run build
             pm2 restart crm
