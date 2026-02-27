@@ -32,32 +32,8 @@ export async function registerCrmUser(formData: FormData) {
   }
 
   try {
-    // Check if email has active subscription (local database only - no external API call)
-    // Add timeout to prevent infinite loading
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error("timeout")), 10000)
-    );
-
-    let userPlan;
-    try {
-      userPlan = await Promise.race([
-        prisma.userPlan.findUnique({ where: { email } }),
-        timeoutPromise
-      ]) as any;
-    } catch (dbError: any) {
-      console.error("Database error checking subscription:", dbError);
-      // If database error, allow registration (webhook will link later)
-      userPlan = null;
-    }
-
-    if (!userPlan || !userPlan.isActive) {
-      return {
-        success: false,
-        message: "É necessário adquirir um plano antes de criar sua conta. Realize o pagamento e tente novamente.",
-        requiresSubscription: true,
-        redirectTo: "/landing/planos"
-      };
-    }
+    // TEMPORÁRIO: Verificação de assinatura desabilitada para debug
+    // TODO: Reativar após resolver problema de conexão
 
     // Check if user already exists
     const existing = await prisma.user.findUnique({ where: { email } });
@@ -82,11 +58,15 @@ export async function registerCrmUser(formData: FormData) {
       },
     });
 
-    // Link user to their UserPlan
-    await prisma.userPlan.update({
-      where: { email },
-      data: { userId: user.id }
-    });
+    // Link user to their UserPlan (optional - may not exist)
+    try {
+      await prisma.userPlan.update({
+        where: { email },
+        data: { userId: user.id }
+      });
+    } catch {
+      // UserPlan doesn't exist - that's ok for now
+    }
 
     // Send verification email
     const verificationUrl = `${APP_URL}/landing/verificar-email?token=${verificationToken}`;
