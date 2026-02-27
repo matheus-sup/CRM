@@ -1297,3 +1297,181 @@ model LensTreatment {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
+
+// ===== SOLAR ENERGY SYSTEM =====
+
+// Orçamentos de Energia Solar
+model SolarOrcamento {
+  id              Int      @id @default(autoincrement())
+
+  // Cliente
+  nomeCliente     String
+  telefone        String?
+  email           String?
+  endereco        String?
+  cidade          String?
+
+  // Dados do Sistema
+  valorConta      Decimal  @default(0)  // Valor da conta de luz
+  consumo         Decimal  @default(0)  // kWh mensal
+  potencia        Decimal  @default(0)  // kWp do sistema
+  qtdPlacas       Int      @default(0)  // Quantidade de placas
+  custoSistema    Decimal  @default(0)  // Valor total do sistema
+  economiaMensal  Decimal  @default(0)  // Economia mensal estimada
+  economiaAnual   Decimal  @default(0)  // Economia anual estimada
+  retornoAnos     Decimal  @default(0)  // Tempo de retorno (payback)
+
+  // Status do orçamento
+  status          String   @default("orcamento_gerado")
+  // Possíveis status:
+  // orcamento_gerado, orcamento_aprovado, visita_tecnica,
+  // projeto_analise, instalacao_agendada, instalacao_andamento,
+  // instalacao_concluida, homologacao, concluido, cancelado
+
+  // Observações e histórico
+  observacoes     String?
+  historico       String?  // JSON com histórico de status
+
+  // Follow-up
+  followUpData    DateTime?
+  followUpNota    String?
+
+  // Datas
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relacionamentos
+  cliente         SolarCliente? @relation(fields: [clienteId], references: [id])
+  clienteId       String?
+  envios          SolarEnvio[]
+  compromissos    SolarCompromisso[]
+  arquivos        SolarArquivo[]
+}
+
+// Clientes de Energia Solar
+model SolarCliente {
+  id              String   @id @default(cuid())
+  nome            String
+  telefone        String?
+  email           String?
+  endereco        String?
+  cidade          String?
+  cpfCnpj         String?
+  observacoes     String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  orcamentos      SolarOrcamento[]
+}
+
+// Envios de Orçamentos (WhatsApp, Email)
+model SolarEnvio {
+  id              String   @id @default(cuid())
+  tipo            String   // "whatsapp", "email"
+  destino         String   // Telefone ou email
+  status          String   @default("enviado") // "enviado", "entregue", "lido", "erro"
+
+  createdAt       DateTime @default(now())
+
+  orcamento       SolarOrcamento @relation(fields: [orcamentoId], references: [id], onDelete: Cascade)
+  orcamentoId     Int
+}
+
+// Arquivos anexados ao orçamento
+model SolarArquivo {
+  id              String   @id @default(cuid())
+  nome            String   // Nome original do arquivo
+  nomeArmazenado  String   // Nome único para armazenamento
+  tipo            String   // MIME type (image/png, application/pdf, etc.)
+  tamanho         Int      // Tamanho em bytes
+  categoria       String   @default("outros") // "projeto", "contrato", "foto", "planilha", "outros"
+  descricao       String?
+
+  createdAt       DateTime @default(now())
+
+  orcamento       SolarOrcamento @relation(fields: [orcamentoId], references: [id], onDelete: Cascade)
+  orcamentoId     Int
+}
+
+// Compromissos/Agenda
+model SolarCompromisso {
+  id              String   @id @default(cuid())
+  titulo          String
+  tipo            String   // "visita_tecnica", "instalacao", "reuniao", "follow_up", "outro"
+  data            DateTime
+  horaInicio      String?
+  horaFim         String?
+  local           String?
+  descricao       String?
+
+  concluido       Boolean  @default(false)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  orcamento       SolarOrcamento? @relation(fields: [orcamentoId], references: [id], onDelete: SetNull)
+  orcamentoId     Int?
+}
+
+// Estoque de Materiais Solar
+model SolarEstoque {
+  id              String   @id @default(cuid())
+  nome            String
+  categoria       String   @default("outros")
+  unidade         String   @default("un")
+  quantidade      Int      @default(0)
+  valorUnitario   Decimal  @default(0)
+  estoqueMinimo   Int      @default(0)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  movimentacoes   SolarMovimentacao[]
+}
+
+// Movimentações de Estoque
+model SolarMovimentacao {
+  id              String   @id @default(cuid())
+  tipo            String   // "entrada", "saida"
+  quantidade      Int
+  motivo          String?
+
+  createdAt       DateTime @default(now())
+
+  estoque         SolarEstoque @relation(fields: [estoqueId], references: [id], onDelete: Cascade)
+  estoqueId       String
+}
+
+// Categorias de Estoque Solar
+model SolarCategoria {
+  id              String   @id @default(cuid())
+  nome            String   @unique
+
+  createdAt       DateTime @default(now())
+}
+
+// Configurações do Sistema Solar
+model SolarConfig {
+  id              String   @id @default("solar-config")
+
+  // Constantes de cálculo
+  tarifa          Decimal  @default(0.90)      // R$/kWh
+  geracaoPorKwp   Decimal  @default(101)       // kWh por kWp por mês
+  taxaMinima      Int      @default(50)        // kWh taxa mínima
+  potenciaPlaca   Int      @default(580)       // Watts por placa
+
+  // Preços por quantidade de placas (JSON)
+  tabelaPrecos    String?  // JSON com faixas de preço
+
+  // Configurações de PDF
+  pdfLogoUrl      String?
+  pdfTemplateUrl  String?
+  pdfCores        String?  // JSON com cores do PDF
+
+  // WhatsApp
+  whatsappNumero  String?
+  whatsappMensagem String?
+
+  updatedAt       DateTime @updatedAt
+}

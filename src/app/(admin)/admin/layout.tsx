@@ -28,7 +28,7 @@ export default function AdminLayout({
             `}} />
 
             {/* Desktop Sidebar (Hidden on mobile) */}
-            <div className="hidden md:flex h-screen sticky top-0">
+            <div className="hidden md:flex h-screen sticky top-0 z-20">
                 <Sidebar />
             </div>
 

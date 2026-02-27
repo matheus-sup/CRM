@@ -248,7 +248,7 @@ export async function seedTools() {
       description: "Sistema completo de agendamentos para seus clientes. Ideal para salões, barbearias, clínicas e consultórios.",
       icon: "Calendar",
       category: "scheduling",
-      price: 10,
+      price: 30,
       features: JSON.stringify([
         "Agenda visual com calendário",
         "Confirmação automática por WhatsApp",
@@ -266,7 +266,7 @@ export async function seedTools() {
       description: "Cardápio digital interativo acessado por QR Code. Perfeito para restaurantes, bares e cafeterias.",
       icon: "QrCode",
       category: "menu",
-      price: 10,
+      price: 5,
       features: JSON.stringify([
         "QR Code personalizado",
         "Fotos dos pratos",
@@ -284,7 +284,7 @@ export async function seedTools() {
       description: "Sistema de delivery próprio sem taxas de marketplaces. Seu cliente pede direto pelo seu site.",
       icon: "Bike",
       category: "delivery",
-      price: 10,
+      price: 55,
       features: JSON.stringify([
         "Carrinho de compras",
         "Rastreamento de pedidos",
@@ -464,7 +464,7 @@ export async function seedTools() {
       description: "Central de atendimento via WhatsApp com IA. Automatize respostas e gerencie conversas.",
       icon: "MessageSquare",
       category: "support",
-      price: 15,
+      price: 20,
       features: JSON.stringify([
         "Integração com WhatsApp Business",
         "Bot com inteligência artificial",
@@ -477,6 +477,26 @@ export async function seedTools() {
       ]),
       order: 13,
     },
+    // Chat Online / Chatbot
+    {
+      slug: "chatbot-online",
+      name: "Chat Online / Chatbot",
+      description: "Chat online com chatbot inteligente para seu site. Atenda clientes 24/7 automaticamente.",
+      icon: "MessageCircle",
+      category: "support",
+      price: 25,
+      features: JSON.stringify([
+        "Widget de chat no site",
+        "Chatbot com IA",
+        "Respostas automáticas",
+        "Personalização de cores",
+        "Histórico de conversas",
+        "Atendimento 24/7",
+        "Integração com CRM",
+        "Relatórios de atendimento"
+      ]),
+      order: 14,
+    },
     // Venda de Lentes - Óticas
     {
       slug: "venda-lentes-oticas",
@@ -484,7 +504,7 @@ export async function seedTools() {
       description: "Sistema completo para venda de lentes de grau. Ideal para óticas e lojas de óculos.",
       icon: "Glasses",
       category: "optics",
-      price: 10,
+      price: 40,
       features: JSON.stringify([
         "Seleção de tipo de lente (grau/sem grau)",
         "Espessuras configuráveis (1.56, 1.59, 1.67, 1.74)",
@@ -495,7 +515,27 @@ export async function seedTools() {
         "Envio de receita após compra",
         "Cores e textos personalizáveis"
       ]),
-      order: 14,
+      order: 15,
+    },
+    // Energia Solar
+    {
+      slug: "calculadoras-solar",
+      name: "Calculadoras de Energia Solar",
+      description: "Ferramentas completas para simulação de economia, dimensionamento e ROI de sistemas fotovoltaicos.",
+      icon: "Sun",
+      category: "solar",
+      price: 40,
+      features: JSON.stringify([
+        "Calculadora de consumo mensal",
+        "Simulador de economia (1, 5, 10, 25 anos)",
+        "Dimensionador de sistema (kWp e painéis)",
+        "Calculadora de ROI (retorno sobre investimento)",
+        "Tabela de preços escalonada por quantidade",
+        "Parâmetros configuráveis (tarifa, geração)",
+        "Interface intuitiva e responsiva",
+        "Cálculos precisos baseados na região"
+      ]),
+      order: 16,
     },
   ];
 

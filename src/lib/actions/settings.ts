@@ -296,7 +296,11 @@ export async function discardDraft() {
         const live = await getStoreConfig();
         if (!live) return { success: false, message: "Erro ao buscar versão publicada." };
 
-        const { id, createdAt, updatedAt, ...dataToClone } = live;
+        // Remove ID/Dates and relational fields that cannot be saved directly
+        const { id, createdAt, updatedAt, menus, products, categories, banners, ...dataToClone } = live as any;
+
+        // Ensure decimals are handled
+        if (dataToClone.minPurchaseValue) dataToClone.minPurchaseValue = Number(dataToClone.minPurchaseValue);
 
         // Start fresh draft
         await prisma.storeConfig.upsert({

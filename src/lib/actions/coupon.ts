@@ -8,7 +8,13 @@ export async function getCoupons() {
         const coupons = await prisma.coupon.findMany({
             orderBy: { createdAt: "desc" },
         });
-        return { success: true, coupons };
+        // Serialize Decimal fields to numbers for client components
+        const serializedCoupons = coupons.map(coupon => ({
+            ...coupon,
+            value: Number(coupon.value),
+            minOrderValue: Number(coupon.minOrderValue),
+        }));
+        return { success: true, coupons: serializedCoupons };
     } catch (error) {
         console.error("Erro ao buscar cupons:", error);
         return { success: false, error: "Erro ao buscar cupons" };

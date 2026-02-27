@@ -19,7 +19,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const v = Date.now();
 
   return {
-    title: config.storeName || "Minha Loja",
+    title: config.storeName || "NeoAutomation",
     description: config.description || "Sua loja de cosméticos favorita",
     icons: {
       icon: [

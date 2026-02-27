@@ -41,7 +41,7 @@ export function ModernHeader({ config, categories }: { config?: any, categories?
     // Let's go with: Transparent (White Text) -> Scrolled (White BG, Black Text)
     // This requires the standard Hero to be dark/image-heavy.
 
-    const isHomePage = pathname === "/";
+    const isHomePage = pathname === "/loja";
     const isTransparent = isHomePage && !scrolled && !searchOpen;
 
     return (
@@ -71,7 +71,7 @@ export function ModernHeader({ config, categories }: { config?: any, categories?
                     </div>
 
                     {/* Center: Logo */}
-                    <Link href="/" className="flex-1 flex justify-center text-center">
+                    <Link href="/loja" className="flex-1 flex justify-center text-center">
                         {(config?.headerShowLogo !== false && logoUrl) ? (
                             <img
                                 src={logoUrl}
@@ -91,14 +91,14 @@ export function ModernHeader({ config, categories }: { config?: any, categories?
                     {/* Right: Cart & User */}
                     <div className="flex items-center justify-end gap-2 flex-1">
                         <Button variant="ghost" size="icon" asChild className={cn("hidden md:flex", isTransparent ? "text-white hover:bg-white/10" : "text-black hover:bg-black/5")}>
-                            <Link href="/minha-conta">
+                            <Link href="/loja/minha-conta">
                                 <User className="w-5 h-5" />
                             </Link>
                         </Button>
 
                         <div className="relative">
                             <Button variant="ghost" size="icon" asChild className={cn(isTransparent ? "text-white hover:bg-white/10" : "text-black hover:bg-black/5")}>
-                                <Link href="/carrinho">
+                                <Link href="/loja/carrinho">
                                     <ShoppingBag className="w-5 h-5" />
                                     {items.length > 0 && (
                                         <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-pink-600 text-[10px] font-bold text-white">
@@ -227,7 +227,7 @@ function MobileMenu({ config, storeName, categories }: { config: any, storeName:
 
                     <div className="p-6 border-t bg-slate-50">
                         <SheetClose asChild>
-                            <Link href="/minha-conta">
+                            <Link href="/loja/minha-conta">
                                 <Button className="w-full rounded-full font-bold">Minha Conta</Button>
                             </Link>
                         </SheetClose>

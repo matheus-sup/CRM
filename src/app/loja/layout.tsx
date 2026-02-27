@@ -97,7 +97,7 @@ export default async function ShopLayout({
                 </main>
 
                 <CartSheet />
-            </div>
+                            </div>
         );
     }
 
@@ -116,7 +116,7 @@ export default async function ShopLayout({
                 </main>
 
                 <CartSheet />
-            </div>
+                            </div>
         );
     }
 
@@ -141,6 +141,6 @@ export default async function ShopLayout({
             <ChatWidget />
             <CartSheet />
             <Footer config={serializedConfig} menus={footerMenus} />
-        </div>
+                    </div>
     );
 }

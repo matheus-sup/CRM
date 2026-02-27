@@ -254,26 +254,29 @@ export function PdvManager({ initialProducts, sellers = [] }: PdvManagerProps) {
         };
     }, [cart, products, selectedSellerId, handleSearchSubmit]);
 
-    const selectedSeller = sellers.find(s => s.id === selectedSellerId);
+    // Handle "Loja" as a virtual seller
+    const selectedSeller = selectedSellerId === "loja"
+        ? { id: "loja", name: "Loja", email: null, phone: null, isActive: true }
+        : sellers.find(s => s.id === selectedSellerId);
 
     return (
         <>
-            <div className="flex h-[calc(100vh-6rem)] overflow-hidden bg-zinc-100 dark:bg-zinc-950 rounded-lg border border-zinc-200 dark:border-zinc-800">
+            <div className="flex h-full overflow-hidden bg-zinc-100 dark:bg-zinc-950 rounded-lg border border-zinc-200 dark:border-zinc-800">
                 {/* Left Content: Main Area */}
                 <div className="flex-1 flex flex-col min-w-0">
                     {/* Top Bar */}
-                    <div className="p-4 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 shadow-sm">
-                        <div className="flex gap-4 items-center">
+                    <div className="p-3 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 shadow-sm shrink-0">
+                        <div className="flex gap-3 items-center">
                             {/* Barcode Input */}
                             <div className="relative flex-1">
-                                <Barcode className={`absolute left-3 top-1/2 -translate-y-1/2 w-6 h-6 ${lastError ? "text-red-500" : "text-primary"}`} />
+                                <Barcode className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${lastError ? "text-red-500" : "text-blue-600"}`} />
                                 <Input
                                     ref={searchInputRef}
                                     placeholder="Digite o código ou escaneie o código de barras..."
-                                    className={`pl-12 h-14 text-xl font-mono bg-zinc-50 dark:bg-zinc-800 ${
+                                    className={`pl-10 h-12 text-lg font-mono bg-white dark:bg-zinc-800 ${
                                         lastError
                                             ? "border-red-300 dark:border-red-700 focus-visible:ring-red-500"
-                                            : "border-zinc-200 dark:border-zinc-700 focus-visible:ring-pink-500"
+                                            : "border-blue-200 dark:border-blue-700 focus-visible:ring-blue-500"
                                     }`}
                                     value={search}
                                     onChange={(e) => {
@@ -292,139 +295,142 @@ export function PdvManager({ initialProducts, sellers = [] }: PdvManagerProps) {
 
                             {/* Seller Select */}
                             <div className="flex items-center gap-2">
-                                <User className="w-5 h-5 text-black dark:text-white" />
-                                {sellers.length > 0 ? (
-                                    <Select value={selectedSellerId} onValueChange={setSelectedSellerId}>
-                                        <SelectTrigger className={`w-[180px] h-14 bg-zinc-50 dark:bg-zinc-800 ${
-                                            !selectedSellerId
-                                                ? "border-red-300 dark:border-red-700 ring-1 ring-red-200"
-                                                : "border-zinc-200 dark:border-zinc-700"
-                                        }`}>
-                                            <SelectValue placeholder="Vendedor *" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {sellers.map((seller) => (
-                                                <SelectItem key={seller.id} value={seller.id}>
-                                                    {seller.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                ) : (
-                                    <a
-                                        href="/admin/pedidos"
-                                        className="px-4 py-3 h-14 flex items-center gap-2 bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-md text-red-700 dark:text-red-300 text-sm hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
-                                    >
-                                        <AlertCircle className="w-4 h-4" />
-                                        Cadastrar vendedor
-                                    </a>
-                                )}
+                                <User className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                <Select value={selectedSellerId} onValueChange={setSelectedSellerId}>
+                                    <SelectTrigger className={`w-[180px] h-12 bg-white dark:bg-zinc-800 font-medium ${
+                                        !selectedSellerId
+                                            ? "border-red-300 dark:border-red-700 ring-1 ring-red-200"
+                                            : "border-blue-200 dark:border-blue-700 focus:ring-blue-500"
+                                    }`}>
+                                        <SelectValue placeholder="Vendedor *" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-white dark:bg-zinc-800 border-blue-200 dark:border-blue-700">
+                                        <SelectItem
+                                            key="loja"
+                                            value="loja"
+                                            className="font-medium text-blue-600 dark:text-blue-400 focus:bg-blue-50 dark:focus:bg-blue-900/30"
+                                        >
+                                            Loja
+                                        </SelectItem>
+                                        {sellers.map((seller) => (
+                                            <SelectItem
+                                                key={seller.id}
+                                                value={seller.id}
+                                                className="focus:bg-blue-50 dark:focus:bg-blue-900/30"
+                                            >
+                                                {seller.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
                         </div>
                     </div>
 
                     {/* Main Content Area */}
-                    <div className="flex-1 p-6 overflow-auto">
-                        {/* Last Added Feedback */}
-                        {lastAdded && (
-                            <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl flex items-center gap-3 animate-pulse">
-                                <Package className="w-6 h-6 text-green-600" />
-                                <div>
-                                    <p className="font-medium text-green-800 dark:text-green-200">Produto adicionado!</p>
-                                    <p className="text-green-700 dark:text-green-300">{lastAdded.name} - R$ {lastAdded.price.toFixed(2)}</p>
-                                </div>
-                            </div>
-                        )}
+                    <div className="flex-1 p-4 flex flex-col gap-4 overflow-hidden">
+                        {/* Feedback Messages */}
+                        {(lastAdded || lastError || !selectedSellerId) && (
+                            <div className="shrink-0 space-y-2">
+                                {/* Last Added Feedback */}
+                                {lastAdded && (
+                                    <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg flex items-center gap-3 animate-pulse">
+                                        <Package className="w-5 h-5 text-green-600 shrink-0" />
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-medium text-green-800 dark:text-green-200">Produto adicionado:</span>
+                                            <span className="text-green-700 dark:text-green-300">{lastAdded.name} - R$ {lastAdded.price.toFixed(2)}</span>
+                                        </div>
+                                    </div>
+                                )}
 
-                        {/* Error Feedback */}
-                        {lastError && (
-                            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex items-center gap-3">
-                                <AlertCircle className="w-6 h-6 text-red-600" />
-                                <div>
-                                    <p className="font-medium text-red-800 dark:text-red-200">{lastError}</p>
-                                    <p className="text-sm text-red-600 dark:text-red-300">Verifique se o SKU ou código de barras está correto.</p>
-                                </div>
-                            </div>
-                        )}
+                                {/* Error Feedback */}
+                                {lastError && (
+                                    <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-3">
+                                        <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+                                        <span className="font-medium text-red-800 dark:text-red-200">{lastError}</span>
+                                    </div>
+                                )}
 
-                        {/* Seller Warning */}
-                        {!selectedSellerId && (
-                            <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl flex items-center gap-3">
-                                <AlertCircle className="w-6 h-6 text-amber-600" />
-                                <span className="text-amber-700 dark:text-amber-300">
-                                    {sellers.length === 0
-                                        ? "Nenhum vendedor cadastrado. Acesse Pedidos > Vendedores para cadastrar."
-                                        : "Selecione um vendedor para habilitar a finalização da venda"}
-                                </span>
+                                {/* Seller Warning */}
+                                {!selectedSellerId && (
+                                    <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg flex items-center gap-3">
+                                        <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+                                        <span className="text-amber-700 dark:text-amber-300 text-sm">
+                                            {sellers.length === 0
+                                                ? "Selecione 'Loja' ou cadastre vendedores em Pedidos > Vendedores."
+                                                : "Selecione um vendedor ou 'Loja' para habilitar a finalização da venda"}
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                         )}
 
                         {/* Customer Quick Registration */}
-                        <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                                    <UserPlus className="w-6 h-6 text-blue-600" />
+                        <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-4 shrink-0">
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                                    <UserPlus className="w-5 h-5 text-blue-600" />
                                 </div>
                                 <div>
-                                    <h2 className="text-lg font-semibold text-zinc-900 dark:text-white">Dados do Cliente</h2>
-                                    <p className="text-sm text-zinc-500">Opcional - para nota fiscal ou cadastro</p>
+                                    <h2 className="text-base font-semibold text-zinc-900 dark:text-white">Dados do Cliente</h2>
+                                    <p className="text-xs text-zinc-500">Opcional - para nota fiscal ou cadastro</p>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="customerName" className="text-sm font-medium">Nome</Label>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <div className="space-y-1">
+                                    <Label htmlFor="customerName" className="text-xs font-medium">Nome</Label>
                                     <Input
                                         id="customerName"
                                         value={customerName}
                                         onChange={(e) => setCustomerName(e.target.value)}
                                         placeholder="Nome do cliente"
-                                        className="h-12"
+                                        className="h-10"
                                     />
                                 </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="customerPhone" className="text-sm font-medium">Telefone</Label>
+                                <div className="space-y-1">
+                                    <Label htmlFor="customerPhone" className="text-xs font-medium">Telefone</Label>
                                     <Input
                                         id="customerPhone"
                                         value={customerPhone}
                                         onChange={(e) => setCustomerPhone(e.target.value)}
                                         placeholder="(11) 99999-9999"
-                                        className="h-12"
+                                        className="h-10"
                                     />
                                 </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="customerCpf" className="text-sm font-medium">CPF</Label>
+                                <div className="space-y-1">
+                                    <Label htmlFor="customerCpf" className="text-xs font-medium">CPF</Label>
                                     <Input
                                         id="customerCpf"
                                         value={customerCpf}
                                         onChange={(e) => setCustomerCpf(e.target.value)}
                                         placeholder="000.000.000-00"
-                                        className="h-12"
+                                        className="h-10"
                                     />
                                 </div>
                             </div>
                         </div>
 
                         {/* Instructions */}
-                        <div className="mt-6 p-6 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700">
+                        <div className="flex-1 flex items-center justify-center p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-lg border border-dashed border-zinc-300 dark:border-zinc-700">
                             <div className="text-center">
-                                <Barcode className="w-16 h-16 mx-auto text-zinc-300 dark:text-zinc-600 mb-4" />
-                                <h3 className="text-lg font-medium text-zinc-600 dark:text-zinc-400 mb-2">
+                                <Barcode className="w-12 h-12 mx-auto text-zinc-300 dark:text-zinc-600 mb-3" />
+                                <h3 className="text-base font-medium text-zinc-600 dark:text-zinc-400 mb-1">
                                     Escaneie ou digite o código do produto
                                 </h3>
                                 <p className="text-sm text-zinc-500 dark:text-zinc-500 max-w-md mx-auto">
-                                    Use o leitor de código de barras ou digite o SKU/código de barras do produto e pressione Enter para adicionar ao carrinho.
+                                    Use o leitor de código de barras ou digite o SKU/código de barras e pressione Enter
                                 </p>
                             </div>
                         </div>
                     </div>
 
                     {/* Keyboard Shortcuts */}
-                    <div className="p-3 bg-zinc-800 text-zinc-400 text-sm flex justify-center gap-8">
-                        <span><kbd className="bg-zinc-700 px-2 py-1 rounded text-zinc-300 font-mono">F2</kbd> Buscar</span>
-                        <span><kbd className="bg-zinc-700 px-2 py-1 rounded text-zinc-300 font-mono">F4</kbd> Limpar</span>
-                        <span><kbd className="bg-zinc-700 px-2 py-1 rounded text-zinc-300 font-mono">F9</kbd> Finalizar</span>
-                        <span><kbd className="bg-zinc-700 px-2 py-1 rounded text-zinc-300 font-mono">Enter</kbd> Adicionar</span>
+                    <div className="py-2 px-3 bg-zinc-800 text-zinc-400 text-xs flex justify-center gap-6 shrink-0">
+                        <span><kbd className="bg-zinc-700 px-1.5 py-0.5 rounded text-zinc-300 font-mono text-xs">F2</kbd> Buscar</span>
+                        <span><kbd className="bg-zinc-700 px-1.5 py-0.5 rounded text-zinc-300 font-mono text-xs">F4</kbd> Limpar</span>
+                        <span><kbd className="bg-zinc-700 px-1.5 py-0.5 rounded text-zinc-300 font-mono text-xs">F9</kbd> Finalizar</span>
+                        <span><kbd className="bg-zinc-700 px-1.5 py-0.5 rounded text-zinc-300 font-mono text-xs">Enter</kbd> Adicionar</span>
                     </div>
                 </div>
 

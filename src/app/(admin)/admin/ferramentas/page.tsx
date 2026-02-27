@@ -31,6 +31,7 @@ import {
   Power,
   MoreVertical,
   Glasses,
+  Sun,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -67,6 +68,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   MessageSquare,
   Truck,
   Glasses,
+  Sun,
 };
 
 type Tool = {
@@ -90,8 +92,8 @@ export default function FerramentasPage() {
   const [userPlan] = useState("STARTER"); // TODO: Get from auth
   const [purchasedTools, setPurchasedTools] = useState<string[]>([]);
 
-  // TEMPORÁRIO: Liberar todas as ferramentas para o plano Starter
-  const TEMP_FREE_TOOLS = true;
+  // Ferramentas pagas - requer compra individual
+  const TEMP_FREE_TOOLS = false;
   const isProfessional = TEMP_FREE_TOOLS || userPlan === "PROFESSIONAL" || userPlan === "ENTERPRISE";
 
   useEffect(() => {
@@ -101,15 +103,10 @@ export default function FerramentasPage() {
   async function loadTools() {
     setLoading(true);
     try {
+      // Sempre executa seed para garantir que novas ferramentas sejam adicionadas
+      await seedTools();
       const data = await getTools();
-      if (data.length === 0) {
-        // Seed default tools if none exist
-        await seedTools();
-        const seededData = await getTools();
-        setTools(seededData);
-      } else {
-        setTools(data);
-      }
+      setTools(data);
 
       // Carrega ferramentas já ativadas (TEMPORÁRIO: usuário de teste)
       const userTools = await getTestUserTools();
@@ -130,6 +127,8 @@ export default function FerramentasPage() {
       toast.success("Ferramenta ativada com sucesso!");
       // Atualiza a lista de ferramentas compradas
       setPurchasedTools((prev) => [...prev, toolId]);
+      // Dispara evento para atualizar o sidebar
+      window.dispatchEvent(new CustomEvent('tools-updated'));
       // Refresh para atualizar o sidebar e outras áreas
       router.refresh();
     } catch (error: unknown) {
@@ -150,6 +149,8 @@ export default function FerramentasPage() {
       toast.success("Ferramenta desativada com sucesso!");
       // Remove da lista de ferramentas compradas
       setPurchasedTools((prev) => prev.filter((id) => id !== toolId));
+      // Dispara evento para atualizar o sidebar
+      window.dispatchEvent(new CustomEvent('tools-updated'));
       // Refresh para atualizar o sidebar e outras áreas
       router.refresh();
     } catch (error: unknown) {
@@ -163,10 +164,15 @@ export default function FerramentasPage() {
     }
   }
 
-  const categories = Array.from(new Set(tools.map((t) => t.category)));
+  // Ferramentas ocultas
+  const hiddenTools = ["orcamentos-online", "lista-presentes", "clube-assinaturas", "gift-cards"];
+  const filteredTools = tools.filter(t => !hiddenTools.includes(t.slug));
+
+  const categories = Array.from(new Set(filteredTools.map((t) => t.category)))
+    .filter(cat => cat !== "logistics" && cat !== "marketing" && cat !== "retail");
 
   const groupedTools = categories.reduce((acc, category) => {
-    acc[category] = tools.filter((t) => t.category === category);
+    acc[category] = filteredTools.filter((t) => t.category === category);
     return acc;
   }, {} as Record<string, Tool[]>);
 
@@ -252,7 +258,7 @@ export default function FerramentasPage() {
         <Tabs defaultValue="all" className="space-y-6">
           <TabsList className="bg-white border p-1 h-auto flex-wrap">
             <TabsTrigger value="all" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
-              Todas
+              Ativadas
             </TabsTrigger>
             {categories.map((cat) => (
               <TabsTrigger
@@ -266,29 +272,44 @@ export default function FerramentasPage() {
           </TabsList>
 
           <TabsContent value="all" className="mt-6">
-            <div className="space-y-10">
-              {categories.map((category) => (
-                <div key={category}>
-                  <h2 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
-                    {toolCategories[category] || category}
-                    <Badge variant="secondary">{groupedTools[category].length}</Badge>
-                  </h2>
-                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {groupedTools[category].map((tool) => (
-                      <ToolCard
-                        key={tool.id}
-                        tool={tool}
-                        isPurchased={purchasedTools.includes(tool.id)}
-                        isProfessional={isProfessional}
-                        purchasing={purchasing === tool.id}
-                        onPurchase={() => handlePurchase(tool.id)}
-                        onDeactivate={() => handleDeactivate(tool.id)}
-                      />
-                    ))}
+            {/* Na aba "Todas", mostrar apenas as ferramentas ativadas */}
+            {(() => {
+              const activatedTools = filteredTools.filter(t => purchasedTools.includes(t.id));
+              const activatedCategories = Array.from(new Set(activatedTools.map(t => t.category)));
+              const groupedActivatedTools = activatedCategories.reduce((acc, category) => {
+                acc[category] = activatedTools.filter((t) => t.category === category);
+                return acc;
+              }, {} as Record<string, Tool[]>);
+
+              if (activatedTools.length === 0) {
+                return (
+                  <div className="text-center py-16 bg-white rounded-xl border border-dashed border-slate-300">
+                    <div className="p-4 bg-slate-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                      <Sparkles className="w-8 h-8 text-slate-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-slate-700 mb-2">Nenhuma ferramenta ativada</h3>
+                    <p className="text-slate-500 text-sm mb-4">Explore as categorias e ative suas primeiras ferramentas</p>
                   </div>
+                );
+              }
+
+              return (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                  {activatedTools.map((tool) => (
+                    <ToolCard
+                      key={tool.id}
+                      tool={tool}
+                      isPurchased={true}
+                      isProfessional={isProfessional}
+                      purchasing={purchasing === tool.id}
+                      onPurchase={() => handlePurchase(tool.id)}
+                      onDeactivate={() => handleDeactivate(tool.id)}
+                      compact
+                    />
+                  ))}
                 </div>
-              ))}
-            </div>
+              );
+            })()}
           </TabsContent>
 
           {categories.map((category) => (
@@ -321,6 +342,7 @@ function ToolCard({
   purchasing,
   onPurchase,
   onDeactivate,
+  compact = false,
 }: {
   tool: Tool;
   isPurchased: boolean;
@@ -328,6 +350,7 @@ function ToolCard({
   purchasing: boolean;
   onPurchase: () => void;
   onDeactivate: () => void;
+  compact?: boolean;
 }) {
   const IconComponent = iconMap[tool.icon] || Sparkles;
 
@@ -336,9 +359,70 @@ function ToolCard({
     "agendamentos-online": "/admin/agendamentos",
     "chat-whatsapp": "/admin/chat",
     "venda-lentes-oticas": "/admin/ferramentas/lentes",
+    "calculadoras-solar": "/admin/ferramentas/solar",
   };
 
   const configRoute = configRoutes[tool.slug];
+
+  // Modo compacto para a aba "Todas"
+  if (compact) {
+    return (
+      <Card className="group hover:shadow-md transition-all duration-200 border-slate-200 overflow-hidden">
+        <CardContent className="p-4">
+          <div className="flex flex-col items-center text-center">
+            <div className="p-3 bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl mb-3 group-hover:from-blue-100 group-hover:to-purple-100 transition-colors">
+              <IconComponent className="w-6 h-6 text-blue-600" />
+            </div>
+            <h3 className="font-semibold text-sm text-slate-900 mb-1 line-clamp-2">{tool.name}</h3>
+            <Badge className="bg-green-100 text-green-700 border-green-200 text-xs mb-3">
+              Ativo
+            </Badge>
+            <div className="flex gap-1 w-full">
+              {configRoute ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 text-xs h-8"
+                  onClick={() => window.location.href = configRoute}
+                >
+                  <Settings className="w-3 h-3 mr-1" />
+                  Config
+                </Button>
+              ) : (
+                <Button variant="outline" size="sm" className="flex-1 text-xs h-8" disabled>
+                  <Settings className="w-3 h-3 mr-1" />
+                  Config
+                </Button>
+              )}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <MoreVertical className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {configRoute && (
+                    <DropdownMenuItem onClick={() => window.open(configRoute, "_blank")}>
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      Abrir em nova aba
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem
+                    onClick={onDeactivate}
+                    className="text-red-600 focus:text-red-600"
+                    disabled={purchasing}
+                  >
+                    <Power className="w-4 h-4 mr-2" />
+                    Desativar
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="group hover:shadow-lg transition-all duration-300 border-slate-200 overflow-hidden">

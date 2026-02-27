@@ -48,10 +48,15 @@ export async function createBatch(params: {
 
 // Buscar lotes de um produto ordenados por validade (FEFO)
 export async function getProductBatches(productId: string) {
-    return await prisma.productBatch.findMany({
+    const batches = await prisma.productBatch.findMany({
         where: { productId, quantity: { gt: 0 } },
         orderBy: { expiresAt: "asc" },
     });
+    // Serialize Decimal fields for client components
+    return batches.map(batch => ({
+        ...batch,
+        unitCost: batch.unitCost ? Number(batch.unitCost) : null,
+    }));
 }
 
 // Consumir estoque usando FEFO (First Expired, First Out)

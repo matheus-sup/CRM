@@ -676,7 +676,7 @@ export default function CheckoutPage() {
                                         <div key={item.id} className="flex gap-3">
                                             <div className="h-14 w-14 bg-slate-100 rounded border flex items-center justify-center shrink-0 overflow-hidden">
                                                 {item.image ? (
-                                                    <Link href={item.slug ? `/produto/${item.slug}` : '#'} className="block h-full w-full">
+                                                    <Link href={item.slug ? `/loja/produto/${item.slug}` : '#'} className="block h-full w-full">
                                                         <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
                                                     </Link>
                                                 ) : (
@@ -684,7 +684,7 @@ export default function CheckoutPage() {
                                                 )}
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <Link href={item.slug ? `/produto/${item.slug}` : '#'} className="hover:underline">
+                                                <Link href={item.slug ? `/loja/produto/${item.slug}` : '#'} className="hover:underline">
                                                     <div className="font-medium text-sm truncate">{item.name}</div>
                                                 </Link>
 

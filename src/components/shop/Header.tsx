@@ -93,7 +93,7 @@ function ClassicHeader({ config, categories, editorMode, onFieldClick }: { confi
 
                     {/* Left: Logo */}
                     <div className="shrink-0">
-                        <Link href={editorMode ? "#" : "/"} className="flex flex-col items-start gap-1" onClick={editorMode ? handleFieldClick("headerText") : undefined}>
+                        <Link href={editorMode ? "#" : "/loja"} className="flex flex-col items-start gap-1" onClick={editorMode ? handleFieldClick("headerText") : undefined}>
                             {(config?.headerShowLogo !== false && logoUrl) ? (
                                 <img
                                     src={logoUrl}
@@ -169,7 +169,7 @@ function ClassicHeader({ config, categories, editorMode, onFieldClick }: { confi
                                 {editorMode ? (
                                     <User className="h-6 w-6" style={{ color: config?.menuColor || "var(--foreground)" }} />
                                 ) : (
-                                    <Link href="/minha-conta">
+                                    <Link href="/loja/minha-conta">
                                         <User className="h-6 w-6" style={{ color: config?.menuColor || "var(--foreground)" }} />
                                     </Link>
                                 )}
@@ -275,7 +275,7 @@ function CenteredHeader({ config, categories, editorMode, onFieldClick }: { conf
                     <div className="flex items-center gap-2">
                         {showAccount && (
                             <Button variant="ghost" size="sm" className="gap-2 text-sm hidden md:flex" asChild>
-                                <Link href="/minha-conta" style={{ color: config?.menuColor || "var(--foreground)" }}>
+                                <Link href="/loja/minha-conta" style={{ color: config?.menuColor || "var(--foreground)" }}>
                                     <User className="h-4 w-4" />
                                     Conta
                                 </Link>
@@ -328,7 +328,7 @@ function CenteredHeader({ config, categories, editorMode, onFieldClick }: { conf
 
                 {/* Center: Logo */}
                 <div className="flex justify-center py-4">
-                    <Link href="/" className="flex flex-col items-center gap-1">
+                    <Link href="/loja" className="flex flex-col items-center gap-1">
                         {(config?.headerShowLogo !== false && logoUrl) ? (
                             <img
                                 src={logoUrl}
@@ -403,7 +403,7 @@ function MinimalHeader({ config, categories, editorMode, onFieldClick }: { confi
                     <MobileMenu config={config} storeName={storeName} />
 
                     {/* Left: Logo */}
-                    <Link href="/" className="flex flex-col items-start gap-0">
+                    <Link href="/loja" className="flex flex-col items-start gap-0">
                         {(config?.headerShowLogo !== false && logoUrl) ? (
                             <img
                                 src={logoUrl}
@@ -442,7 +442,7 @@ function MinimalHeader({ config, categories, editorMode, onFieldClick }: { confi
                         )}
                         {showAccount && (
                             <Button variant="ghost" size="icon" className="h-9 w-9 hidden md:flex" asChild>
-                                <Link href="/minha-conta">
+                                <Link href="/loja/minha-conta">
                                     <User className="h-4 w-4" style={{ color: config?.menuColor || "var(--foreground)" }} />
                                 </Link>
                             </Button>
@@ -551,7 +551,7 @@ function OpticaHeader({ config, categories, editorMode, onFieldClick }: { config
 
                     {/* Left: Text Logo */}
                     <div className="shrink-0">
-                        <Link href={editorMode ? "#" : "/"} className="flex items-baseline" onClick={editorMode ? handleFieldClick("headerText") : undefined}>
+                        <Link href={editorMode ? "#" : "/loja"} className="flex items-baseline" onClick={editorMode ? handleFieldClick("headerText") : undefined}>
                             {(config?.headerShowLogo !== false && logoUrl) ? (
                                 <img
                                     src={logoUrl}
@@ -595,7 +595,7 @@ function OpticaHeader({ config, categories, editorMode, onFieldClick }: { config
                         )}
                         {showAccount && (
                             <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full hover:bg-white/10 hidden md:flex" asChild>
-                                <Link href="/minha-conta">
+                                <Link href="/loja/minha-conta">
                                     <User className="h-6 w-6 transition-colors duration-500" style={{ color: useTransparent ? "#ffffff" : (config?.menuColor || "var(--foreground)") }} />
                                 </Link>
                             </Button>
@@ -691,7 +691,7 @@ function NavMenu({ config, className, inline, minimal, editorMode, onFieldClick,
             ))
     ) : (
         <>
-            <Link href={editorMode ? "#" : "/"} className={linkClass} style={{ color: linkColor }} onClick={handleMenuClick} data-field="menuLinks" onMouseEnter={(e) => (e.currentTarget.style.color = hoverColor)} onMouseLeave={(e) => (e.currentTarget.style.color = linkColor)}>INÍCIO</Link>
+            <Link href={editorMode ? "#" : "/loja"} className={linkClass} style={{ color: linkColor }} onClick={handleMenuClick} data-field="menuLinks" onMouseEnter={(e) => (e.currentTarget.style.color = hoverColor)} onMouseLeave={(e) => (e.currentTarget.style.color = linkColor)}>INÍCIO</Link>
             <Link href={editorMode ? "#" : "/produtos"} className={linkClass} style={{ color: linkColor }} onClick={handleMenuClick} data-field="menuLinks" onMouseEnter={(e) => (e.currentTarget.style.color = hoverColor)} onMouseLeave={(e) => (e.currentTarget.style.color = linkColor)}>PRODUTOS</Link>
             <Link href={editorMode ? "#" : "/contato"} className={linkClass} style={{ color: linkColor }} onClick={handleMenuClick} data-field="menuLinks" onMouseEnter={(e) => (e.currentTarget.style.color = hoverColor)} onMouseLeave={(e) => (e.currentTarget.style.color = linkColor)}>CONTATO</Link>
         </>
@@ -760,7 +760,7 @@ function RestaurantHeader({ config, categories, editorMode, onFieldClick }: { co
                     </div>
 
                     {/* Logo + Store Info */}
-                    <Link href={editorMode ? "#" : "/"} className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 md:flex-none" onClick={editorMode ? handleFieldClick("headerText") : undefined}>
+                    <Link href={editorMode ? "#" : "/loja"} className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 md:flex-none" onClick={editorMode ? handleFieldClick("headerText") : undefined}>
                         {logoUrl ? (
                             <img
                                 src={logoUrl}
@@ -915,7 +915,7 @@ function RestaurantMobileMenu({ config, storeName, categories }: { config: any; 
                             </Link>
                         </SheetClose>
                         <SheetClose asChild>
-                            <Link href="/minha-conta" className="flex items-center gap-2 sm:gap-3 py-2 px-2 sm:px-3 rounded-lg text-sm text-muted-foreground hover:bg-muted">
+                            <Link href="/loja/minha-conta" className="flex items-center gap-2 sm:gap-3 py-2 px-2 sm:px-3 rounded-lg text-sm text-muted-foreground hover:bg-muted">
                                 <User className="h-4 w-4" />
                                 Minha Conta
                             </Link>
@@ -973,7 +973,7 @@ function MobileMenu({ config, storeName }: { config: any; storeName: string }) {
 
                     <div className="pt-4 border-t">
                         <SheetClose asChild>
-                            <Link href="/minha-conta" className="flex items-center gap-3 text-sm text-muted-foreground">
+                            <Link href="/loja/minha-conta" className="flex items-center gap-3 text-sm text-muted-foreground">
                                 <User className="h-4 w-4" />
                                 Minha Conta
                             </Link>

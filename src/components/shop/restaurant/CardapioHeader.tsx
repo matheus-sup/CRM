@@ -134,7 +134,7 @@ export function CardapioHeader({ config, categories }: CardapioHeaderProps) {
                                     </Button>
                                     <p className="text-center text-sm text-gray-500">
                                         Não tem conta?{" "}
-                                        <Link href="/cadastro" className="font-medium" style={{ color: themeColor }}>
+                                        <Link href="/loja/cadastro" className="font-medium" style={{ color: themeColor }}>
                                             Criar conta
                                         </Link>
                                     </p>

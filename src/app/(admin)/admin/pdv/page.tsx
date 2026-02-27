@@ -28,12 +28,14 @@ export default async function PdvPage() {
     const isProfessional = userPlan.plan === "PROFESSIONAL" || userPlan.plan === "ENTERPRISE";
 
     return (
-        <div className="p-4">
-            <div className="flex items-center gap-4 mb-4">
+        <div className="fixed inset-0 top-16 left-0 md:left-64 flex flex-col overflow-hidden bg-slate-50 z-10">
+            <div className="flex items-center gap-4 px-4 py-2 shrink-0 bg-slate-50">
                 <h1 className="text-xl font-bold text-slate-800">PDV (Frente de Caixa)</h1>
                 <DownloadPdvButton isProfessional={isProfessional} />
             </div>
-            <PdvManager initialProducts={products} sellers={sellers} />
+            <div className="flex-1 px-4 pb-2 overflow-hidden">
+                <PdvManager initialProducts={products} sellers={sellers} />
+            </div>
         </div>
     );
 }

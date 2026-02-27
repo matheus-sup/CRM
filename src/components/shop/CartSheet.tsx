@@ -112,7 +112,7 @@ export function CartSheet() {
 
                             <div className="space-y-3">
                                 <SheetClose asChild>
-                                    <Link href="/carrinho" className="block w-full">
+                                    <Link href="/loja/carrinho" className="block w-full">
                                         <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-12 text-base rounded-lg">
                                             continuar
                                         </Button>

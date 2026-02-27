@@ -17,9 +17,13 @@ export default async function StandalonePdvPage() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 p-6">
-            <h1 className="text-2xl font-bold text-slate-800 mb-6">PDV (Frente de Caixa)</h1>
-            <PdvManager initialProducts={products} />
+        <div className="h-screen flex flex-col bg-slate-50 overflow-hidden">
+            <div className="px-4 py-2 shrink-0">
+                <h1 className="text-xl font-bold text-slate-800">PDV (Frente de Caixa)</h1>
+            </div>
+            <div className="flex-1 px-4 pb-2 overflow-hidden">
+                <PdvManager initialProducts={products} />
+            </div>
         </div>
     );
 }

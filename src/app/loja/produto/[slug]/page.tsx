@@ -81,13 +81,13 @@ export default async function ProductDetailsPage({
             {/* Breadcrumb */}
             {showBreadcrumb && (
                 <nav className="flex items-center text-sm text-slate-500 mb-8 space-x-2">
-                    <Link href="/" className="hover:text-primary transition-colors">Início</Link>
+                    <Link href="/loja" className="hover:text-primary transition-colors">Início</Link>
                     <span>/</span>
-                    <Link href="/produtos" className="hover:text-primary transition-colors">Produtos</Link>
+                    <Link href="/loja/produtos" className="hover:text-primary transition-colors">Produtos</Link>
                     <span>/</span>
                     {product.category && (
                         <>
-                            <Link href={`/produtos?category=${product.category.id}`} className="hover:text-primary transition-colors">
+                            <Link href={`/loja/produtos?category=${product.category.id}`} className="hover:text-primary transition-colors">
                                 {product.category.name}
                             </Link>
                             <span>/</span>
@@ -123,7 +123,7 @@ export default async function ProductDetailsPage({
                     <div>
                         {product.brand && (
                             <Link
-                                href={`/produtos?brand=${product.brand.id}`}
+                                href={`/loja/produtos?brand=${product.brand.id}`}
                                 className="text-sm font-medium uppercase tracking-wide mb-2 block"
                                 style={{ color: brandColor }}
                             >

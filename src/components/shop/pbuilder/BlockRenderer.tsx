@@ -31,7 +31,7 @@ const HeroBlock = ({ content, styles, variant }: { content: any, styles: any, va
 
 // Shared hook for carousel with smooth transitions
 function useHeroCarousel(content: any) {
-    const slides = content.slides || [{ id: "default", title: content.title || "Banner", subtitle: content.subtitle, buttonText: content.buttonText, buttonLink: content.buttonLink || "/produtos" }];
+    const slides = content.slides || [{ id: "default", title: content.title || "Banner", subtitle: content.subtitle, buttonText: content.buttonText, buttonLink: content.buttonLink || "/loja/produtos" }];
     const [currentSlide, setCurrentSlide] = useState(0);
     const [isTransitioning, setIsTransitioning] = useState(false);
     const [slideDirection, setSlideDirection] = useState<"next" | "prev">("next");
@@ -169,7 +169,7 @@ function HeroDefault({ content, styles }: any) {
                         </p>
                     )}
                     {currentSlideData.buttonText && (
-                        <Link href={currentSlideData.buttonLink || "/produtos"}>
+                        <Link href={currentSlideData.buttonLink || "/loja/produtos"}>
                             {styles.buttonColor === "transparent" ? (
                                 <button
                                     data-field="buttonText"
@@ -243,7 +243,7 @@ function HeroMinimal({ content, styles }: any) {
                                         </p>
                                     )}
                                     {slide.buttonText && (
-                                        <Link href={slide.buttonLink || "/produtos"}>
+                                        <Link href={slide.buttonLink || "/loja/produtos"}>
                                             <button
                                                 data-field="buttonText"
                                                 className="px-6 py-2.5 text-sm font-medium rounded border transition-colors hover:opacity-80 cursor-pointer"
@@ -295,7 +295,7 @@ function HeroMinimal({ content, styles }: any) {
                                 </p>
                             )}
                             {slide.buttonText && (
-                                <Link href={slide.buttonLink || "/produtos"}>
+                                <Link href={slide.buttonLink || "/loja/produtos"}>
                                     <button
                                         data-field="buttonText"
                                         className="px-6 py-2.5 text-sm font-medium rounded border transition-colors hover:opacity-80 cursor-pointer"
@@ -355,7 +355,7 @@ function HeroSplit({ content, styles }: any) {
                     )}
                     <div className="flex items-center gap-4">
                         {currentSlideData.buttonText && (
-                            <Link href={currentSlideData.buttonLink || "/produtos"}>
+                            <Link href={currentSlideData.buttonLink || "/loja/produtos"}>
                                 <button
                                     data-field="buttonText"
                                     className="px-8 py-3 rounded-lg font-semibold transition-transform hover:scale-105 cursor-pointer"
@@ -780,7 +780,7 @@ const ProductShowcaseLayout = ({ products, config, title }: {
                         return (
                             <Link
                                 key={product.id}
-                                href={`/produto/${slug}`}
+                                href={`/loja/produto/${slug}`}
                                 className="group flex-shrink-0 w-[200px] sm:w-[240px] md:w-[260px]"
                             >
                                 <div className="relative bg-gray-50 rounded-xl overflow-hidden aspect-square flex items-end justify-center">
@@ -849,7 +849,7 @@ const ProductListLayout = ({ products, config, title, cardSize = 200 }: {
                     return (
                         <Link
                             key={product.id}
-                            href={`/produto/${product.slug}`}
+                            href={`/loja/produto/${product.slug}`}
                             className="group flex items-center gap-4 p-3 rounded-lg border bg-card hover:shadow-md hover:border-primary/20 transition-all"
                         >
                             {/* Image */}

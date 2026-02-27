@@ -33,7 +33,7 @@ export function NewArrivals({ products, title, subtitle }: { products: any[], ti
                     </div>
                 ) : (
                     products.map((product: any) => (
-                        <Link key={product.id} href={`/produto/${product.slug}`} className="group block h-full">
+                        <Link key={product.id} href={`/loja/produto/${product.slug}`} className="group block h-full">
                             <div className="rounded-xl border bg-white p-4 shadow-sm transition-all hover:shadow-lg hover:-translate-y-1 h-full flex flex-col group-hover:border-pink-200">
                                 <div className="mb-4 aspect-4/5 rounded-lg bg-gray-100 relative overflow-hidden">
                                     <div className="absolute inset-0 flex items-center justify-center text-4xl font-bold text-gray-300">

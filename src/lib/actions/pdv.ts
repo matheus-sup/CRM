@@ -21,13 +21,15 @@ interface CheckoutData {
 }
 
 export async function createPdvOrder(data: CheckoutData) {
-    // Validate seller
-    const seller = await prisma.seller.findUnique({
-        where: { id: data.sellerId },
-    });
+    // Validate seller (skip validation for "loja" virtual seller)
+    if (data.sellerId !== "loja") {
+        const seller = await prisma.seller.findUnique({
+            where: { id: data.sellerId },
+        });
 
-    if (!seller) {
-        return { success: false, error: "Vendedor não encontrado" };
+        if (!seller) {
+            return { success: false, error: "Vendedor não encontrado" };
+        }
     }
 
     // Calculate totals
@@ -47,6 +49,11 @@ export async function createPdvOrder(data: CheckoutData) {
     });
     const nextCode = (lastOrder?.code || 1000) + 1;
 
+    // PIX payments are pending until confirmation
+    const isPix = data.paymentMethod === "PIX";
+    const orderStatus = isPix ? "PENDING" : "PAID";
+    const paymentStatus = isPix ? "PENDING" : "APPROVED";
+
     try {
         // Create order with transaction
         const order = await prisma.$transaction(async (tx) => {
@@ -54,12 +61,12 @@ export async function createPdvOrder(data: CheckoutData) {
             const newOrder = await tx.order.create({
                 data: {
                     code: nextCode,
-                    sellerId: data.sellerId,
+                    sellerId: data.sellerId === "loja" ? null : data.sellerId,
                     customerName: data.customerName || "Cliente Loja",
                     customerEmail: "loja@pdv.local",
                     customerPhone: null,
-                    status: "PAID",
-                    paymentStatus: "APPROVED",
+                    status: orderStatus,
+                    paymentStatus: paymentStatus,
                     paymentMethod: data.paymentMethod,
                     subtotal,
                     shippingCost: 0,
@@ -87,27 +94,29 @@ export async function createPdvOrder(data: CheckoutData) {
                 },
             });
 
-            // Update stock for each product
-            for (const item of data.items) {
-                await tx.product.update({
-                    where: { id: item.productId },
-                    data: {
-                        stock: {
-                            decrement: item.quantity,
+            // Only update stock for non-PIX payments (PIX will update on confirmation)
+            if (!isPix) {
+                for (const item of data.items) {
+                    await tx.product.update({
+                        where: { id: item.productId },
+                        data: {
+                            stock: {
+                                decrement: item.quantity,
+                            },
                         },
-                    },
-                });
+                    });
 
-                // Create stock movement record
-                await tx.stockMovement.create({
-                    data: {
-                        productId: item.productId,
-                        type: "OUT",
-                        quantity: -item.quantity,
-                        reason: `Venda PDV #${nextCode}`,
-                        orderId: newOrder.id,
-                    },
-                });
+                    // Create stock movement record
+                    await tx.stockMovement.create({
+                        data: {
+                            productId: item.productId,
+                            type: "OUT",
+                            quantity: -item.quantity,
+                            reason: `Venda PDV #${nextCode}`,
+                            orderId: newOrder.id,
+                        },
+                    });
+                }
             }
 
             return newOrder;
@@ -124,14 +133,139 @@ export async function createPdvOrder(data: CheckoutData) {
                 code: order.code,
                 total: Number(order.total),
                 paymentMethod: order.paymentMethod,
-                sellerName: order.seller?.name,
+                paymentStatus: order.paymentStatus,
+                sellerName: order.seller?.name || "Loja",
                 change: data.paymentMethod === "CASH" && data.amountReceived
                     ? data.amountReceived - Number(order.total)
                     : 0,
+                isPendingPix: isPix,
             },
         };
     } catch (error) {
         console.error("Error creating PDV order:", error);
         return { success: false, error: "Erro ao criar pedido" };
     }
+}
+
+// Confirmar pagamento PIX e atualizar estoque
+export async function confirmPixPayment(orderId: string) {
+    try {
+        const order = await prisma.order.findUnique({
+            where: { id: orderId },
+            include: { items: true },
+        });
+
+        if (!order) {
+            return { success: false, error: "Pedido não encontrado" };
+        }
+
+        if (order.paymentMethod !== "PIX") {
+            return { success: false, error: "Este pedido não é PIX" };
+        }
+
+        if (order.paymentStatus === "APPROVED") {
+            return { success: false, error: "Pagamento já confirmado" };
+        }
+
+        // Update order and stock in transaction
+        await prisma.$transaction(async (tx) => {
+            // Update order status
+            await tx.order.update({
+                where: { id: orderId },
+                data: {
+                    status: "PAID",
+                    paymentStatus: "APPROVED",
+                },
+            });
+
+            // Update stock for each item
+            for (const item of order.items) {
+                await tx.product.update({
+                    where: { id: item.productId },
+                    data: {
+                        stock: {
+                            decrement: item.quantity,
+                        },
+                    },
+                });
+
+                // Create stock movement record
+                await tx.stockMovement.create({
+                    data: {
+                        productId: item.productId,
+                        type: "OUT",
+                        quantity: -item.quantity,
+                        reason: `Venda PDV #${order.code} (PIX confirmado)`,
+                        orderId: order.id,
+                    },
+                });
+            }
+        });
+
+        revalidatePath("/admin/pdv");
+        revalidatePath("/admin/pedidos");
+        revalidatePath("/admin/vendas");
+
+        return { success: true };
+    } catch (error) {
+        console.error("Error confirming PIX payment:", error);
+        return { success: false, error: "Erro ao confirmar pagamento" };
+    }
+}
+
+// Cancelar pedido PIX pendente
+export async function cancelPendingPixOrder(orderId: string) {
+    try {
+        const order = await prisma.order.findUnique({
+            where: { id: orderId },
+        });
+
+        if (!order) {
+            return { success: false, error: "Pedido não encontrado" };
+        }
+
+        if (order.paymentStatus === "APPROVED") {
+            return { success: false, error: "Não é possível cancelar pedido já pago" };
+        }
+
+        await prisma.order.update({
+            where: { id: orderId },
+            data: {
+                status: "CANCELLED",
+                paymentStatus: "CANCELLED",
+            },
+        });
+
+        revalidatePath("/admin/pdv");
+        revalidatePath("/admin/pedidos");
+        revalidatePath("/admin/vendas");
+
+        return { success: true };
+    } catch (error) {
+        console.error("Error cancelling PIX order:", error);
+        return { success: false, error: "Erro ao cancelar pedido" };
+    }
+}
+
+// Buscar pedidos PIX pendentes
+export async function getPendingPixOrders() {
+    const orders = await prisma.order.findMany({
+        where: {
+            paymentMethod: "PIX",
+            paymentStatus: "PENDING",
+            origin: "STORE",
+        },
+        include: {
+            items: true,
+            seller: true,
+        },
+        orderBy: { createdAt: "desc" },
+    });
+
+    return orders.map(order => ({
+        ...order,
+        total: Number(order.total),
+        subtotal: Number(order.subtotal),
+        discount: Number(order.discount),
+    }));
 }

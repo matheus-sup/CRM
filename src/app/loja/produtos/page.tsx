@@ -166,7 +166,7 @@ export default async function ProductsPage({
                                 Tente ajustar os filtros ou buscar por outra categoria.
                             </p>
                             <Button variant="link" className="text-primary" asChild>
-                                <a href="/produtos">Limpar Filtros</a>
+                                <a href="/loja/produtos">Limpar Filtros</a>
                             </Button>
                         </div>
                     )}

@@ -138,6 +138,8 @@ const toolRouteMap: Record<string, string> = {
     "lista-presentes": "/admin/lista-presentes",
     "clube-assinaturas": "/admin/assinaturas",
     "chat-whatsapp": "/admin/chat",
+    "venda-lentes-oticas": "/admin/ferramentas/lentes",
+    "calculadoras-solar": "/admin/ferramentas/solar",
 };
 
 type ActiveTool = {
@@ -153,24 +155,35 @@ export function Sidebar() {
     const [initialized, setInitialized] = useState(false);
 
     // Carregar ferramentas ativas do usuário
-    useEffect(() => {
-        async function loadActiveTools() {
-            try {
-                const userTools = await getTestUserTools();
-                // Filtrar apenas ferramentas habilitadas (isEnabled === true)
-                const tools = userTools
-                    .filter((ut: any) => ut.isEnabled === true)
-                    .map((ut: any) => ({
-                        id: ut.tool.id,
-                        slug: ut.tool.slug,
-                        name: ut.tool.name,
-                    }));
-                setActiveTools(tools);
-            } catch (error) {
-                console.error("Erro ao carregar ferramentas ativas:", error);
-            }
+    const loadActiveTools = async () => {
+        try {
+            const userTools = await getTestUserTools();
+            // Filtrar apenas ferramentas habilitadas (isEnabled === true)
+            const tools = userTools
+                .filter((ut: any) => ut.isEnabled === true)
+                .map((ut: any) => ({
+                    id: ut.tool.id,
+                    slug: ut.tool.slug,
+                    name: ut.tool.name,
+                }));
+            setActiveTools(tools);
+        } catch (error) {
+            console.error("Erro ao carregar ferramentas ativas:", error);
         }
+    };
+
+    // Carregar ao montar e quando pathname muda
+    useEffect(() => {
         loadActiveTools();
+    }, [pathname]);
+
+    // Escutar evento customizado de atualização de ferramentas
+    useEffect(() => {
+        const handleToolsUpdate = () => {
+            loadActiveTools();
+        };
+        window.addEventListener('tools-updated', handleToolsUpdate);
+        return () => window.removeEventListener('tools-updated', handleToolsUpdate);
     }, []);
 
     // Initialize expanded state based on active path (only once)
@@ -204,7 +217,7 @@ export function Sidebar() {
     };
 
     return (
-        <aside className="flex h-screen w-64 flex-col border-r bg-white text-slate-600">
+        <aside className="flex h-screen w-64 flex-col border-r bg-white text-slate-600 z-20 relative">
             <div className="flex h-16 items-center justify-between px-6 border-b">
                 <div className="flex items-center gap-2 text-blue-600">
                     <span className="text-xl font-bold">Admin</span>
@@ -233,50 +246,60 @@ export function Sidebar() {
 
                                 return (
                                     <div key={item.label}>
-                                        <div
-                                            className={cn(
-                                                "flex items-center justify-between gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-100 cursor-pointer",
-                                                isActive ? "bg-blue-50 text-blue-600" : "text-slate-600",
-                                                isLocked && "opacity-50 cursor-not-allowed hover:bg-transparent"
-                                            )}
-                                            onClick={(e) => {
-                                                if (isLocked) {
-                                                    e.preventDefault();
-                                                    return;
-                                                }
-                                                if (hasSubItems) {
+                                        {hasSubItems ? (
+                                            <div
+                                                className={cn(
+                                                    "flex items-center justify-between gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-100 cursor-pointer",
+                                                    isActive ? "bg-blue-50 text-blue-600" : "text-slate-600",
+                                                    isLocked && "opacity-50 cursor-not-allowed hover:bg-transparent"
+                                                )}
+                                                onClick={(e) => {
+                                                    if (isLocked) {
+                                                        e.preventDefault();
+                                                        return;
+                                                    }
                                                     e.preventDefault();
                                                     toggleExpand(item.label);
-                                                }
-                                            }}
-                                        >
-                                            {hasSubItems ? (
+                                                }}
+                                            >
                                                 <div className="flex items-center gap-3 flex-1">
                                                     <item.icon className="h-5 w-5 opacity-70" />
                                                     {item.label}
                                                 </div>
-                                            ) : (
-                                                <Link href={item.href} className="flex items-center gap-3 flex-1">
+                                                {item.badge && (
+                                                    <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-600 border border-blue-200">
+                                                        {item.badge}
+                                                    </span>
+                                                )}
+                                                <ChevronRight className={cn("h-4 w-4 transition-transform opacity-50", isExpanded && "rotate-90")} />
+                                            </div>
+                                        ) : (
+                                            <Link
+                                                href={isLocked ? "#" : item.href}
+                                                className={cn(
+                                                    "flex items-center justify-between gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-100",
+                                                    isActive ? "bg-blue-50 text-blue-600" : "text-slate-600",
+                                                    isLocked && "opacity-50 cursor-not-allowed hover:bg-transparent pointer-events-none"
+                                                )}
+                                                onClick={(e) => isLocked && e.preventDefault()}
+                                            >
+                                                <div className="flex items-center gap-3 flex-1">
                                                     <item.icon className="h-5 w-5 opacity-70" />
                                                     {item.label}
-                                                </Link>
-                                            )}
-
-                                            {item.badge && (
-                                                <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-600 border border-blue-200">
-                                                    {item.badge}
-                                                </span>
-                                            )}
-                                            {item.locked && (
-                                                <Lock className="h-3 w-3 opacity-40" />
-                                            )}
-                                            {item.external && !item.locked && (
-                                                <ExternalLink className="h-3 w-3 opacity-40" />
-                                            )}
-                                            {hasSubItems && (
-                                                <ChevronRight className={cn("h-4 w-4 transition-transform opacity-50", isExpanded && "rotate-90")} />
-                                            )}
-                                        </div>
+                                                </div>
+                                                {item.badge && (
+                                                    <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-600 border border-blue-200">
+                                                        {item.badge}
+                                                    </span>
+                                                )}
+                                                {item.locked && (
+                                                    <Lock className="h-3 w-3 opacity-40" />
+                                                )}
+                                                {item.external && !item.locked && (
+                                                    <ExternalLink className="h-3 w-3 opacity-40" />
+                                                )}
+                                            </Link>
+                                        )}
 
                                         {/* SubItems Rendering */}
                                         {hasSubItems && isExpanded && (

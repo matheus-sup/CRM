@@ -18,7 +18,16 @@ export async function getItemDiscounts() {
             },
             orderBy: { createdAt: "desc" },
         });
-        return { success: true, itemDiscounts };
+        // Serialize Decimal fields to numbers for client components
+        const serializedDiscounts = itemDiscounts.map(discount => ({
+            ...discount,
+            discountPercent: Number(discount.discountPercent),
+            product: discount.product ? {
+                ...discount.product,
+                price: Number(discount.product.price),
+            } : null,
+        }));
+        return { success: true, itemDiscounts: serializedDiscounts };
     } catch (error) {
         console.error("Erro ao buscar descontos por item:", error);
         return { success: false, error: "Erro ao buscar descontos por item" };
@@ -38,7 +47,12 @@ export async function getProductsForDiscount() {
             },
             orderBy: { name: "asc" },
         });
-        return { success: true, products };
+        // Serialize Decimal fields to numbers for client components
+        const serializedProducts = products.map(product => ({
+            ...product,
+            price: Number(product.price),
+        }));
+        return { success: true, products: serializedProducts };
     } catch (error) {
         console.error("Erro ao buscar produtos:", error);
         return { success: false, error: "Erro ao buscar produtos" };

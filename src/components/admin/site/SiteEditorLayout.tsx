@@ -32,7 +32,7 @@ import { Footer } from "@/components/shop/Footer";
 import { EditableFooter } from "@/components/admin/footer/EditableFooter";
 import { TemplateSelector } from "@/components/admin/site/TemplateSelector";
 import { Button } from "@/components/ui/button";
-import { Eye, Check, ChevronLeft, ChevronRight, LayoutTemplate, Palette, Type, PanelTop, Home, Grid, ShoppingBag, ShoppingCart, PanelBottom, Share2, List, FileText, Smartphone, Plus, Layers, MapPin } from "lucide-react";
+import { Eye, Check, ChevronLeft, ChevronRight, LayoutTemplate, Palette, Type, PanelTop, Home, Grid, ShoppingBag, ShoppingCart, PanelBottom, Share2, List, FileText, Smartphone, Plus, Layers, MapPin, Trash2 } from "lucide-react";
 
 // Simple ID generator to avoid 'uuid' package dependency issues
 const uuidv4 = () => {
@@ -272,6 +272,7 @@ export function SiteEditorLayout({ config, banners, products, categories = [], b
     const [previewPage, setPreviewPage] = useState<'home' | 'product' | 'products' | 'cart'>('home');
     const [isPublishing, startPublish] = useTransition();
     const [isDiscarding, startDiscard] = useTransition();
+    const [showDiscardModal, setShowDiscardModal] = useState(false);
 
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error'; visible: boolean } | null>(null);
 
@@ -296,15 +297,18 @@ export function SiteEditorLayout({ config, banners, products, categories = [], b
     };
 
     const handleDiscard = () => {
-        if (!confirm("Tem certeza? Isso apagará todas as alterações feitas no rascunho e voltará para a versão que está no ar hoje.")) return;
+        setShowDiscardModal(true);
+    };
 
+    const confirmDiscard = () => {
+        setShowDiscardModal(false);
         startDiscard(async () => {
             const res = await discardDraft();
             if (res.success) {
-                // Force reload to see reverted config
-                window.location.reload();
+                showToast("Alterações Descartadas", "success");
+                setTimeout(() => router.push('/admin/site'), 1500);
             } else {
-                alert("Erro: " + res.message);
+                showToast("Erro ao descartar: " + res.message, "error");
             }
         });
     };
@@ -628,6 +632,45 @@ export function SiteEditorLayout({ config, banners, products, categories = [], b
                     )}>
                         {toast.type === 'success' && <Check className="h-4 w-4 text-green-400" />}
                         {toast.message}
+                    </div>
+                </div>
+            )}
+
+            {/* Discard Confirmation Modal */}
+            {showDiscardModal && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+                    <div
+                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        onClick={() => setShowDiscardModal(false)}
+                    />
+                    <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="h-1.5 bg-gradient-to-r from-red-500 to-orange-500" />
+                        <div className="p-6">
+                            <div className="w-14 h-14 rounded-xl mx-auto mb-4 flex items-center justify-center bg-red-50">
+                                <Trash2 className="w-7 h-7 text-red-500" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-center text-gray-900 mb-2">
+                                Descartar Alterações?
+                            </h3>
+                            <p className="text-sm text-center text-gray-500 mb-6">
+                                Isso apagará todas as alterações feitas no rascunho e voltará para a versão publicada.
+                            </p>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setShowDiscardModal(false)}
+                                    className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={confirmDiscard}
+                                    disabled={isDiscarding}
+                                    className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-50"
+                                >
+                                    {isDiscarding ? "Descartando..." : "Descartar"}
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}

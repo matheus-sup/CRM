@@ -10,4 +10,5 @@ export const toolCategories: Record<string, string> = {
   optics: "Óticas",
   support: "Atendimento",
   logistics: "Logística",
+  solar: "Energia Solar",
 };

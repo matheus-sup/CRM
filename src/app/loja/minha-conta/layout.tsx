@@ -12,7 +12,7 @@ export default async function DashboardLayout({
     const user = await getCurrentUser();
 
     if (!user) {
-        redirect("/login");
+        redirect("/loja/login");
     }
 
     return (
@@ -26,12 +26,12 @@ export default async function DashboardLayout({
                     </div>
 
                     <nav className="space-y-1">
-                        <Link href="/minha-conta/pedidos">
+                        <Link href="/loja/minha-conta/pedidos">
                             <Button variant="ghost" className="w-full justify-start gap-2 text-slate-600 hover:text-primary hover:bg-primary/5">
                                 <Package className="h-4 w-4" /> Meus Pedidos
                             </Button>
                         </Link>
-                        <Link href="/minha-conta/perfil">
+                        <Link href="/loja/minha-conta/perfil">
                             <Button variant="ghost" className="w-full justify-start gap-2 text-slate-600 hover:text-primary hover:bg-primary/5">
                                 <User className="h-4 w-4" /> Meus Dados
                             </Button>

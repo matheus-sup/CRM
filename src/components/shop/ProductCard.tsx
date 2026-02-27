@@ -70,7 +70,7 @@ function StandardCard({ product, config }: ProductCardProps) {
     };
 
     return (
-        <Link href={`/produto/${product.slug}`} className="group relative block h-full">
+        <Link href={`/loja/produto/${product.slug}`} className="group relative block h-full">
             <div className="flex h-full flex-col gap-4 rounded-xl p-4 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border border-transparent hover:border-primary/10">
                 {/* Image Container */}
                 <div
@@ -193,7 +193,7 @@ function CompactCard({ product, config }: ProductCardProps) {
     const image = product.images?.[0]?.url || "/assets/placeholder-product.png";
 
     return (
-        <Link href={`/produto/${product.slug}`} className="group block h-full">
+        <Link href={`/loja/produto/${product.slug}`} className="group block h-full">
             <div className="flex h-full flex-col">
                 {/* Image */}
                 <div className="relative aspect-[4/5] w-full overflow-hidden bg-transparent">
@@ -232,7 +232,7 @@ function DetailedCard({ product, config }: ProductCardProps) {
     const image = product.images?.[0]?.url || "/assets/placeholder-product.png";
 
     return (
-        <Link href={`/produto/${product.slug}`} className="group block h-full">
+        <Link href={`/loja/produto/${product.slug}`} className="group block h-full">
             <div className="flex h-full flex-col rounded-lg border bg-card overflow-hidden transition-shadow duration-300 hover:shadow-xl">
                 {/* Image with overlay actions */}
                 <div className="relative aspect-square w-full overflow-hidden bg-transparent">
@@ -328,7 +328,7 @@ function HorizontalCard({ product, config }: ProductCardProps) {
     const image = product.images?.[0]?.url || "/assets/placeholder-product.png";
 
     return (
-        <Link href={`/produto/${product.slug}`} className="group block">
+        <Link href={`/loja/produto/${product.slug}`} className="group block">
             <div className="flex gap-2.5 sm:gap-4 p-2 sm:p-3 rounded-lg border bg-card transition-all duration-300 hover:shadow-md hover:border-primary/20">
                 {/* Image - Responsive sizing */}
                 <div className="relative w-16 h-16 xs:w-20 xs:h-20 sm:w-24 sm:h-24 flex-shrink-0 overflow-hidden rounded-md bg-muted">
@@ -419,7 +419,7 @@ function OpticaCard({ product, config }: ProductCardProps) {
     };
 
     return (
-        <Link href={`/produto/${product.slug}`} className="group block h-full">
+        <Link href={`/loja/produto/${product.slug}`} className="group block h-full">
             <div className="flex h-full flex-col">
                 {/* Image Container with hover overlay */}
                 <div

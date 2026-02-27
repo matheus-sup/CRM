@@ -30,7 +30,7 @@ export function CartPageClient({ config }: { config: CartConfig }) {
                 <p className="text-slate-500 mb-8 max-w-md">
                     Parece que você ainda não adicionou nenhum item. Explore nossa loja para encontrar os melhores produtos.
                 </p>
-                <Link href="/produtos">
+                <Link href="/loja/produtos">
                     <Button size="lg" className="gap-2">
                         Começar a Comprar <ArrowRight className="h-4 w-4" />
                     </Button>
@@ -70,7 +70,7 @@ export function CartPageClient({ config }: { config: CartConfig }) {
                                             )}
                                         </div>
                                         <div>
-                                            <Link href={`/produto/${item.slug}`} className="font-medium text-slate-900 hover:text-primary transition-colors">
+                                            <Link href={`/loja/produto/${item.slug}`} className="font-medium text-slate-900 hover:text-primary transition-colors">
                                                 {item.name}
                                             </Link>
                                             <button
@@ -131,7 +131,7 @@ export function CartPageClient({ config }: { config: CartConfig }) {
                         </div>
                     </div>
 
-                    <Link href="/produtos" className="inline-flex items-center text-sm text-slate-500 hover:text-primary transition-colors">
+                    <Link href="/loja/produtos" className="inline-flex items-center text-sm text-slate-500 hover:text-primary transition-colors">
                         <ChevronLeftIcon className="h-4 w-4 mr-1" /> Continuar Comprando
                     </Link>
                 </div>
@@ -188,7 +188,7 @@ export function CartPageClient({ config }: { config: CartConfig }) {
                             </span>
                         </div>
 
-                        <Link href={belowMinimum ? "#" : "/checkout"} className="block w-full">
+                        <Link href={belowMinimum ? "#" : "/loja/checkout"} className="block w-full">
                             <Button
                                 className="w-full h-12 text-base font-bold shadow-md hover:shadow-lg transition-all"
                                 size="lg"

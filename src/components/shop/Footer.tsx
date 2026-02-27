@@ -124,9 +124,9 @@ function FullFooter({ config, menus }: { config?: any; menus?: any[] }) {
                     <div>
                         <h4 className="font-bold uppercase tracking-wider mb-4 opacity-70">Navegação</h4>
                         <ul className="space-y-3 opacity-80">
-                            <li><Link href="/produtos" className="hover:underline">Ver Produtos</Link></li>
-                            <li><Link href="/categorias" className="hover:underline">Categorias</Link></li>
-                            <li><Link href="/pedidos" className="hover:underline">Rastrear Pedido</Link></li>
+                            <li><Link href="/loja/produtos" className="hover:underline">Ver Produtos</Link></li>
+                            <li><Link href="/loja/categorias" className="hover:underline">Categorias</Link></li>
+                            <li><Link href="/loja/pedidos" className="hover:underline">Rastrear Pedido</Link></li>
                             <li><Link href="/contato" className="hover:underline">Fale Conosco</Link></li>
                         </ul>
                     </div>
@@ -208,7 +208,7 @@ function MinimalFooter({ config, menus }: { config?: any; menus?: any[] }) {
 
                         {/* Minimal Links */}
                         <nav className="hidden md:flex items-center gap-6 text-sm">
-                            <Link href="/produtos" className="opacity-70 hover:opacity-100 transition-opacity">Produtos</Link>
+                            <Link href="/loja/produtos" className="opacity-70 hover:opacity-100 transition-opacity">Produtos</Link>
                             <Link href="/contato" className="opacity-70 hover:opacity-100 transition-opacity">Contato</Link>
                             <Link href="/termos" className="opacity-70 hover:opacity-100 transition-opacity">Termos</Link>
                         </nav>
@@ -337,9 +337,9 @@ function ModernFooter({ config, menus }: { config?: any; menus?: any[] }) {
                         <div className="grid grid-cols-2 gap-6 text-sm" style={textStyle}>
                             <div className="space-y-2">
                                 <h5 className="font-semibold opacity-50 uppercase text-xs tracking-wider mb-3">Loja</h5>
-                                <Link href="/produtos" className="block opacity-70 hover:opacity-100">Produtos</Link>
-                                <Link href="/categorias" className="block opacity-70 hover:opacity-100">Categorias</Link>
-                                <Link href="/ofertas" className="block opacity-70 hover:opacity-100">Ofertas</Link>
+                                <Link href="/loja/produtos" className="block opacity-70 hover:opacity-100">Produtos</Link>
+                                <Link href="/loja/categorias" className="block opacity-70 hover:opacity-100">Categorias</Link>
+                                <Link href="/loja/ofertas" className="block opacity-70 hover:opacity-100">Ofertas</Link>
                             </div>
                             <div className="space-y-2">
                                 <h5 className="font-semibold opacity-50 uppercase text-xs tracking-wider mb-3">Ajuda</h5>

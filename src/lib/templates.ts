@@ -14,6 +14,189 @@ export interface Template {
 
 export const templates: Template[] = [
     {
+        id: "energia-solar",
+        name: "Energia Solar",
+        description: "Template profissional para empresas de energia solar, painéis fotovoltaicos e sustentabilidade",
+        badge: "Novo",
+        features: ["Dark theme", "CTA impactante", "Seções de serviços", "Foco em conversão"],
+        colors: {
+            primary: "#ff6b00",
+            secondary: "#111111",
+            background: "#0a0a0a"
+        },
+        config: {
+            themeColor: "#ff6b00",
+            secondaryColor: "#1a1a1a",
+            backgroundColor: "#0a0a0a",
+            headerColor: "#111111",
+            footerBg: "#111111",
+            footerText: "#9ca3af",
+            headingColor: "#ffffff",
+            bodyColor: "#d1d5db",
+            menuColor: "#ffffff",
+            priceColor: "#ff6b00",
+            productBtnBg: "#ff6b00",
+            productBtnText: "#ffffff",
+            siteType: "shop",
+            headerStyle: "minimal",
+            cardStyle: "standard",
+            footerStyle: "full",
+            homeLayout: JSON.stringify([
+                {
+                    id: "hero-solar",
+                    type: "hero",
+                    content: {
+                        slides: [{
+                            id: "slide-1",
+                            title: "Transforme a Luz do Sol em Economia Real",
+                            subtitle: "Reduza até 95% da sua conta de energia com nossos sistemas de energia solar. Soluções completas para residências, comércios e indústrias.",
+                            buttonText: "Solicitar Orçamento",
+                            buttonLink: "/contato"
+                        }],
+                        autoplay: false
+                    },
+                    styles: {
+                        variant: "default",
+                        minHeight: "85vh",
+                        background: "linear-gradient(135deg, #111111 0%, #1a1a1a 50%, #0a0a0a 100%)",
+                        textColor: "#d1d5db",
+                        titleColor: "#ffffff",
+                        textAlign: "center",
+                        buttonColor: "#ff6b00",
+                        buttonTextColor: "#ffffff",
+                        fullWidth: true
+                    }
+                },
+                {
+                    id: "features-solar",
+                    type: "features",
+                    content: {
+                        title: "Por que escolher Energia Solar?",
+                        items: [
+                            { icon: "💰", title: "Economia", description: "Reduza até 95% da sua conta de luz" },
+                            { icon: "🌱", title: "Sustentável", description: "Energia limpa e renovável" },
+                            { icon: "📈", title: "Valorização", description: "Imóvel valoriza até 8%" },
+                            { icon: "🔧", title: "Garantia", description: "25 anos de garantia nos painéis" }
+                        ]
+                    },
+                    styles: {
+                        backgroundColor: "#1a1a1a",
+                        textColor: "#d1d5db",
+                        headingColor: "#ffffff",
+                        accentColor: "#ff6b00",
+                        iconColor: "#ff6b00",
+                        fullWidth: true,
+                        paddingTop: "3rem",
+                        paddingBottom: "3rem"
+                    }
+                },
+                {
+                    id: "categories-solar",
+                    type: "categories",
+                    content: {
+                        title: "Nossas Soluções",
+                        selectionMode: "auto",
+                        limit: 3
+                    },
+                    styles: {
+                        variant: "grid",
+                        headingColor: "#ffffff",
+                        cardTextColor: "#ffffff",
+                        backgroundColor: "#0a0a0a",
+                        fullWidth: true,
+                        paddingTop: "2rem",
+                        paddingBottom: "2rem"
+                    }
+                },
+                {
+                    id: "products-solar",
+                    type: "product-grid",
+                    content: {
+                        collectionType: "featured",
+                        title: "Kits de Energia Solar",
+                        limit: 6
+                    },
+                    styles: {
+                        backgroundColor: "#111111",
+                        textColor: "#ffffff",
+                        accentColor: "#ff6b00",
+                        headingColor: "#ffffff",
+                        fullWidth: true,
+                        paddingTop: "2rem",
+                        paddingBottom: "2rem"
+                    }
+                },
+                {
+                    id: "stats-solar",
+                    type: "text",
+                    content: {
+                        html: `<div style="text-align: center; padding: 3rem 1rem;">
+                            <h2 style="font-size: 2rem; font-weight: 700; color: #ffffff; margin-bottom: 2rem;">Nossos Números</h2>
+                            <div style="display: flex; justify-content: center; gap: 4rem; flex-wrap: wrap;">
+                                <div>
+                                    <div style="font-size: 3rem; font-weight: 800; color: #ff6b00;">500+</div>
+                                    <div style="color: #9ca3af;">Projetos Instalados</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 3rem; font-weight: 800; color: #ff6b00;">15MW</div>
+                                    <div style="color: #9ca3af;">Potência Instalada</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 3rem; font-weight: 800; color: #ff6b00;">98%</div>
+                                    <div style="color: #9ca3af;">Clientes Satisfeitos</div>
+                                </div>
+                            </div>
+                        </div>`
+                    },
+                    styles: {
+                        backgroundColor: "#1a1a1a",
+                        fullWidth: true
+                    }
+                },
+                {
+                    id: "cta-solar",
+                    type: "promo-banner",
+                    content: {
+                        title: "Comece a Economizar Hoje",
+                        subtitle: "Solicite um orçamento gratuito e descubra quanto você pode economizar com energia solar",
+                        buttonText: "Falar com Especialista",
+                        buttonLink: "/contato",
+                        overlayOpacity: 0.7
+                    },
+                    styles: {
+                        backgroundColor: "#ff6b00",
+                        textColor: "#ffffff",
+                        textAlign: "center",
+                        minHeight: "250px",
+                        fullWidth: true,
+                        paddingTop: "0",
+                        paddingBottom: "0"
+                    }
+                },
+                {
+                    id: "newsletter-solar",
+                    type: "newsletter",
+                    content: {
+                        title: "Receba Novidades",
+                        description: "Fique por dentro das últimas novidades em energia solar e ofertas exclusivas",
+                        placeholder: "seu@email.com",
+                        buttonText: "Inscrever"
+                    },
+                    styles: {
+                        variant: "full",
+                        backgroundColor: "#111111",
+                        titleColor: "#ffffff",
+                        textColor: "#9ca3af",
+                        iconColor: "#ff6b00",
+                        buttonColor: "#ff6b00",
+                        buttonTextColor: "#ffffff",
+                        fullWidth: true
+                    }
+                }
+            ])
+        }
+    },
+    {
         id: "restaurant",
         name: "Restaurante & Delivery",
         description: "Tema otimizado para restaurantes, lanchonetes e delivery de comida",

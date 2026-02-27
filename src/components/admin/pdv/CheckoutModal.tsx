@@ -33,6 +33,14 @@ interface CheckoutModalProps {
     customerCpf?: string;
 }
 
+interface OrderResult {
+    code: number;
+    total: number;
+    change: number;
+    sellerName: string;
+    isPendingPix?: boolean;
+}
+
 const paymentMethods: { value: PaymentMethod; label: string; icon: React.ReactNode }[] = [
     { value: "PIX", label: "PIX", icon: <QrCode className="w-6 h-6" /> },
     { value: "CREDIT_CARD", label: "Crédito", icon: <CreditCard className="w-6 h-6" /> },
@@ -46,12 +54,7 @@ export function CheckoutModal({ isOpen, onClose, items, seller, onSuccess, custo
     const [amountReceived, setAmountReceived] = useState<string>("");
     const [customerName, setCustomerName] = useState<string>(initialCustomerName || "");
     const [isPending, startTransition] = useTransition();
-    const [orderResult, setOrderResult] = useState<{
-        code: number;
-        total: number;
-        change: number;
-        sellerName: string;
-    } | null>(null);
+    const [orderResult, setOrderResult] = useState<OrderResult | null>(null);
     const { toast } = useToast();
 
     const subtotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
@@ -120,6 +123,7 @@ export function CheckoutModal({ isOpen, onClose, items, seller, onSuccess, custo
                     total: result.order.total,
                     change: result.order.change,
                     sellerName: result.order.sellerName || seller.name,
+                    isPendingPix: result.order.isPendingPix,
                 });
             } else {
                 toast({
@@ -141,38 +145,78 @@ export function CheckoutModal({ isOpen, onClose, items, seller, onSuccess, custo
                 {orderResult ? (
                     // Success Screen
                     <div className="p-8 text-center">
-                        <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <Check className="w-10 h-10 text-green-600" />
-                        </div>
-                        <h2 className="text-2xl font-bold text-zinc-900 dark:text-white mb-2">
-                            Venda Finalizada!
-                        </h2>
-                        <p className="text-zinc-500 mb-6">Pedido #{orderResult.code}</p>
-
-                        <div className="bg-zinc-50 dark:bg-zinc-800 rounded-xl p-6 mb-6 space-y-3">
-                            <div className="flex justify-between text-lg">
-                                <span className="text-zinc-500">Total</span>
-                                <span className="font-bold text-zinc-900 dark:text-white">
-                                    {formatCurrency(orderResult.total)}
-                                </span>
-                            </div>
-                            {orderResult.change > 0 && (
-                                <div className="flex justify-between text-lg border-t border-zinc-200 dark:border-zinc-700 pt-3">
-                                    <span className="text-zinc-500">Troco</span>
-                                    <span className="font-bold text-green-600">
-                                        {formatCurrency(orderResult.change)}
-                                    </span>
+                        {orderResult.isPendingPix ? (
+                            // PIX Pending - Awaiting Confirmation
+                            <>
+                                <div className="w-20 h-20 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                                    <QrCode className="w-10 h-10 text-amber-600" />
                                 </div>
-                            )}
-                            <div className="flex justify-between text-sm border-t border-zinc-200 dark:border-zinc-700 pt-3">
-                                <span className="text-zinc-500">Vendedor</span>
-                                <span className="text-zinc-700 dark:text-zinc-300">{orderResult.sellerName}</span>
-                            </div>
-                        </div>
+                                <h2 className="text-2xl font-bold text-zinc-900 dark:text-white mb-2">
+                                    Aguardando Pagamento PIX
+                                </h2>
+                                <p className="text-zinc-500 mb-2">Pedido #{orderResult.code}</p>
+                                <p className="text-amber-600 dark:text-amber-400 text-sm mb-6">
+                                    O pedido será confirmado após a aprovação do pagamento
+                                </p>
+
+                                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-6 mb-6 space-y-3">
+                                    <div className="flex justify-between text-lg">
+                                        <span className="text-zinc-500">Total a Receber</span>
+                                        <span className="font-bold text-amber-600">
+                                            {formatCurrency(orderResult.total)}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between text-sm border-t border-amber-200 dark:border-amber-700 pt-3">
+                                        <span className="text-zinc-500">Vendedor</span>
+                                        <span className="text-zinc-700 dark:text-zinc-300">{orderResult.sellerName}</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm border-t border-amber-200 dark:border-amber-700 pt-3">
+                                        <span className="text-zinc-500">Status</span>
+                                        <span className="text-amber-600 dark:text-amber-400 font-medium">Pendente</span>
+                                    </div>
+                                </div>
+
+                                <p className="text-xs text-zinc-500 mb-4">
+                                    Confirme o pagamento em Pedidos quando receber a transferência
+                                </p>
+                            </>
+                        ) : (
+                            // Completed Sale
+                            <>
+                                <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                                    <Check className="w-10 h-10 text-green-600" />
+                                </div>
+                                <h2 className="text-2xl font-bold text-zinc-900 dark:text-white mb-2">
+                                    Venda Finalizada!
+                                </h2>
+                                <p className="text-zinc-500 mb-6">Pedido #{orderResult.code}</p>
+
+                                <div className="bg-zinc-50 dark:bg-zinc-800 rounded-xl p-6 mb-6 space-y-3">
+                                    <div className="flex justify-between text-lg">
+                                        <span className="text-zinc-500">Total</span>
+                                        <span className="font-bold text-zinc-900 dark:text-white">
+                                            {formatCurrency(orderResult.total)}
+                                        </span>
+                                    </div>
+                                    {orderResult.change > 0 && (
+                                        <div className="flex justify-between text-lg border-t border-zinc-200 dark:border-zinc-700 pt-3">
+                                            <span className="text-zinc-500">Troco</span>
+                                            <span className="font-bold text-green-600">
+                                                {formatCurrency(orderResult.change)}
+                                            </span>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between text-sm border-t border-zinc-200 dark:border-zinc-700 pt-3">
+                                        <span className="text-zinc-500">Vendedor</span>
+                                        <span className="text-zinc-700 dark:text-zinc-300">{orderResult.sellerName}</span>
+                                    </div>
+                                </div>
+                            </>
+                        )}
 
                         <Button
                             size="lg"
-                            className="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold h-14"
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-14"
                             onClick={onSuccess}
                         >
                             Nova Venda (ESC)
@@ -204,7 +248,7 @@ export function CheckoutModal({ isOpen, onClose, items, seller, onSuccess, custo
                                             onClick={() => setPaymentMethod(method.value)}
                                             className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${
                                                 paymentMethod === method.value
-                                                    ? "border-pink-500 bg-pink-50 dark:bg-pink-900/20 text-pink-600"
+                                                    ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600"
                                                     : "border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600"
                                             }`}
                                         >
@@ -285,7 +329,7 @@ export function CheckoutModal({ isOpen, onClose, items, seller, onSuccess, custo
                                 )}
                                 <div className="flex justify-between text-xl font-bold pt-2 border-t border-zinc-200 dark:border-zinc-700">
                                     <span>Total</span>
-                                    <span className="text-pink-600">{formatCurrency(total)}</span>
+                                    <span className="text-blue-600">{formatCurrency(total)}</span>
                                 </div>
                             </div>
                         </div>
@@ -293,7 +337,7 @@ export function CheckoutModal({ isOpen, onClose, items, seller, onSuccess, custo
                         <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/50">
                             <Button
                                 size="lg"
-                                className="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold h-14"
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-14"
                                 onClick={handleCheckout}
                                 disabled={isPending || (paymentMethod === "CASH" && amountReceivedValue < total)}
                             >

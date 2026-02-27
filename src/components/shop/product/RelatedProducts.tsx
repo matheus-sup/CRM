@@ -21,7 +21,7 @@ export async function RelatedProducts({ categoryId, currentProductId }: { catego
             <h2 className="text-2xl font-bold mb-6">Você também pode gostar</h2>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
                 {related.map((prod) => (
-                    <Link key={prod.id} href={`/produto/${prod.slug}`} className="group block space-y-3">
+                    <Link key={prod.id} href={`/loja/produto/${prod.slug}`} className="group block space-y-3">
                         <div className="relative aspect-square overflow-hidden rounded-lg bg-slate-100 border">
                             {prod.images[0] ? (
                                 <Image
