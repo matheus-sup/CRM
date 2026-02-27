@@ -69,7 +69,7 @@ export default function PlanosPage() {
         { name: 'API completa', included: true },
       ],
       highlighted: false,
-      cta: 'Falar com Vendas',
+      cta: 'Começar Grátis',
     },
   ]
 
@@ -229,7 +229,7 @@ export default function PlanosPage() {
                 </ul>
 
                 <Link
-                  href={plan.name === 'Enterprise' ? '#contact' : '/landing/login?register=true'}
+                  href="/landing/login?register=true"
                   className={`w-full py-3 rounded-full font-bold transition-all flex items-center justify-center gap-2 ${
                     plan.highlighted
                       ? 'bg-white text-[#5BB5E0] hover:bg-gray-100'

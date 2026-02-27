@@ -21,7 +21,7 @@ export default function LandingNavbar({ transparent = false }: LandingNavbarProp
               <span className="text-2xl font-black text-[#5BB5E0]">A</span>
               <span className="w-2 h-2 rounded-full bg-[#5BB5E0] ml-0.5 -mt-3"></span>
             </div>
-            <span className="text-sm font-semibold text-gray-700">Automation</span>
+            <span className="text-sm font-semibold text-gray-700">Neo Automation</span>
           </Link>
 
           <div className="hidden md:flex items-center gap-8">
