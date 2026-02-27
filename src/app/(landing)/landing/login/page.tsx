@@ -16,8 +16,9 @@ import {
   ExclamationCircleIcon,
   IdentificationIcon,
 } from '@heroicons/react/24/outline'
-import LandingNavbar from '@/components/landing/LandingNavbar'
-import LandingFooter from '@/components/landing/LandingFooter'
+// TEMPORÁRIO: Removido para debug
+// import LandingNavbar from '@/components/landing/LandingNavbar'
+// import LandingFooter from '@/components/landing/LandingFooter'
 // TEMPORÁRIO: Removido imports de landing-auth.ts para debug
 import { registerSimple } from '@/lib/actions/register-simple'
 
@@ -132,7 +133,7 @@ function LoginContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <LandingNavbar />
+      {/* <LandingNavbar /> */}
 
       <div className="pt-24 pb-16 px-4 min-h-screen flex items-center justify-center">
         <div className="w-full max-w-md">
@@ -498,7 +499,7 @@ function LoginContent() {
         </div>
       </div>
 
-      <LandingFooter />
+      {/* <LandingFooter /> */}
     </div>
   )
 }
