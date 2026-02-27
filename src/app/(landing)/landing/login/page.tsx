@@ -19,11 +19,11 @@ import {
 import LandingNavbar from '@/components/landing/LandingNavbar'
 import LandingFooter from '@/components/landing/LandingFooter'
 import {
-  registerCrmUser,
   loginCrmUser,
   requestPasswordReset,
   resendVerificationEmail,
 } from '@/lib/actions/landing-auth'
+import { registerSimple } from '@/lib/actions/register-simple'
 
 function LoginContent() {
   const router = useRouter()
@@ -77,7 +77,7 @@ function LoginContent() {
       return
     }
 
-    const result = await registerCrmUser(formData)
+    const result = await registerSimple(formData)
 
     if (result.success) {
       setMessage({ type: 'success', text: result.message || 'Conta criada com sucesso!' })

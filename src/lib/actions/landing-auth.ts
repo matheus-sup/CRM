@@ -10,33 +10,8 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5001";
 const CRM_SESSION = "crm_session";
 
-// Generate a random token
 function generateToken(): string {
   return crypto.randomBytes(32).toString("hex");
-}
-
-// Register new CRM user
-export async function registerCrmUser(formData: FormData) {
-  // DEBUG: Retorno imediato para testar se server action funciona
-  const name = formData.get("name") as string;
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
-
-  if (!name || !email || !password) {
-    return { success: false, message: "Preencha todos os campos obrigatórios." };
-  }
-
-  if (password.length < 6) {
-    return { success: false, message: "A senha deve ter pelo menos 6 caracteres." };
-  }
-
-  // DEBUG: Testa sem banco de dados
-  return {
-    success: false,
-    message: "DEBUG: Server action funcionando! Email: " + email,
-    requiresSubscription: true,
-    redirectTo: "/landing/planos"
-  };
 }
 
 // Login CRM user
