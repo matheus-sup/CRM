@@ -86,6 +86,11 @@ function LoginContent() {
         setVerificationEmail(formData.get('email') as string)
       }
     } else {
+      // Check if requires subscription - redirect to checkout
+      if ((result as any).requiresSubscription) {
+        router.push((result as any).redirectTo || '/landing/checkout')
+        return
+      }
       setMessage({ type: 'error', text: result.message || 'Erro ao criar conta' })
     }
     setLoading(false)
@@ -231,7 +236,7 @@ function LoginContent() {
               <>
                 <h1 className="text-2xl font-bold text-gray-900 mb-2">Criar Conta</h1>
                 <p className="text-gray-600 mb-6">
-                  Comece seu teste gratuito de 7 dias
+                  Complete seu cadastro para acessar sua conta
                 </p>
 
                 <form onSubmit={handleRegister} className="space-y-4">
@@ -468,7 +473,7 @@ function LoginContent() {
               <div className="w-10 h-10 bg-[#5BB5E0]/10 rounded-full flex items-center justify-center mx-auto mb-2">
                 <CheckCircleIcon className="w-5 h-5 text-[#5BB5E0]" />
               </div>
-              <p className="text-xs text-gray-600">7 dias grátis</p>
+              <p className="text-xs text-gray-600">Pagamento seguro</p>
             </div>
             <div>
               <div className="w-10 h-10 bg-[#5BB5E0]/10 rounded-full flex items-center justify-center mx-auto mb-2">

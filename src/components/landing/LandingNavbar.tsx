@@ -41,7 +41,7 @@ export default function LandingNavbar({ transparent = false }: LandingNavbarProp
               Login
             </Link>
             <Link
-              href="/landing/login?register=true"
+              href="/landing/planos"
               className="bg-[#5BB5E0] text-white px-6 py-2.5 rounded-full font-semibold hover:bg-[#4AA5D0] transition-all hover:shadow-lg hover:shadow-[#5BB5E0]/25"
             >
               Começar Agora
@@ -70,7 +70,7 @@ export default function LandingNavbar({ transparent = false }: LandingNavbarProp
             <Link href="/landing/depoimentos" className="text-gray-600 hover:text-[#5BB5E0] font-medium">Depoimentos</Link>
             <Link href="/landing/login" className="text-gray-600 hover:text-[#5BB5E0] font-medium">Login</Link>
             <Link
-              href="/landing/login?register=true"
+              href="/landing/planos"
               className="bg-[#5BB5E0] text-white px-6 py-2.5 rounded-full font-semibold text-center"
             >
               Começar Agora

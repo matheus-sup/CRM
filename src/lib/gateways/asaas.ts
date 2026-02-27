@@ -98,6 +98,129 @@ export async function createPixCharge(orderId: string, value: number, customerAs
     }
 }
 
+// =============================================
+// Subscription Functions (for SaaS Plans)
+// =============================================
+
+export async function createSubscription(
+    customerAsaasId: string,
+    value: number,
+    billingType: "PIX" | "CREDIT_CARD" | "BOLETO",
+    description: string,
+    externalReference: string,
+    creditCard?: {
+        holderName: string;
+        number: string;
+        expiryMonth: string;
+        expiryYear: string;
+        ccv: string;
+    },
+    creditCardHolderInfo?: {
+        name: string;
+        email: string;
+        cpfCnpj: string;
+        postalCode: string;
+        addressNumber: string;
+        phone: string;
+    },
+    remoteIp?: string
+) {
+    try {
+        const headers = await getHeaders();
+
+        const nextDueDate = new Date();
+        nextDueDate.setDate(nextDueDate.getDate() + 1); // Starts tomorrow
+
+        const body: any = {
+            customer: customerAsaasId,
+            billingType: billingType,
+            value: value,
+            nextDueDate: nextDueDate.toISOString().split('T')[0],
+            cycle: "MONTHLY",
+            description: description,
+            externalReference: externalReference,
+        };
+
+        // If credit card, add card info
+        if (billingType === "CREDIT_CARD" && creditCard && creditCardHolderInfo) {
+            body.creditCard = creditCard;
+            body.creditCardHolderInfo = creditCardHolderInfo;
+            if (remoteIp) body.remoteIp = remoteIp;
+        }
+
+        const res = await fetch(`${ASAAS_API_URL}/subscriptions`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify(body)
+        });
+
+        const data = await res.json();
+        if (data.errors) throw new Error(data.errors[0].description);
+
+        return {
+            subscriptionId: data.id,
+            status: data.status,
+            nextDueDate: data.nextDueDate,
+            value: data.value
+        };
+
+    } catch (e: any) {
+        console.error("Asaas Subscription Error:", e);
+        throw new Error("Erro ao criar assinatura: " + e.message);
+    }
+}
+
+export async function getSubscription(subscriptionId: string) {
+    try {
+        const headers = await getHeaders();
+        const res = await fetch(`${ASAAS_API_URL}/subscriptions/${subscriptionId}`, { headers });
+        const data = await res.json();
+        if (data.errors) throw new Error(data.errors[0].description);
+        return data;
+    } catch (e: any) {
+        console.error("Asaas Get Subscription Error:", e);
+        throw new Error("Erro ao buscar assinatura: " + e.message);
+    }
+}
+
+export async function cancelSubscription(subscriptionId: string) {
+    try {
+        const headers = await getHeaders();
+        const res = await fetch(`${ASAAS_API_URL}/subscriptions/${subscriptionId}`, {
+            method: "DELETE",
+            headers
+        });
+        const data = await res.json();
+        if (data.errors) throw new Error(data.errors[0].description);
+        return { success: true, deleted: data.deleted };
+    } catch (e: any) {
+        console.error("Asaas Cancel Subscription Error:", e);
+        throw new Error("Erro ao cancelar assinatura: " + e.message);
+    }
+}
+
+export async function getPaymentStatus(paymentId: string) {
+    try {
+        const headers = await getHeaders();
+        const res = await fetch(`${ASAAS_API_URL}/payments/${paymentId}`, { headers });
+        const data = await res.json();
+        if (data.errors) throw new Error(data.errors[0].description);
+        return {
+            id: data.id,
+            status: data.status,
+            value: data.value,
+            billingType: data.billingType
+        };
+    } catch (e: any) {
+        console.error("Asaas Get Payment Error:", e);
+        throw new Error("Erro ao buscar pagamento: " + e.message);
+    }
+}
+
+// =============================================
+// Standard Payment Functions
+// =============================================
+
 export async function createCreditCardCharge(
     orderId: string,
     value: number,

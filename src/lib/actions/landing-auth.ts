@@ -5,6 +5,7 @@ import { hash, compare } from "bcryptjs";
 import { cookies } from "next/headers";
 import { Resend } from "resend";
 import crypto from "crypto";
+import { checkSubscriptionStatus } from "./subscription";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5001";
@@ -32,6 +33,17 @@ export async function registerCrmUser(formData: FormData) {
   }
 
   try {
+    // Check if email has active subscription
+    const subscription = await checkSubscriptionStatus(email);
+    if (!subscription.hasSubscription || !subscription.isActive) {
+      return {
+        success: false,
+        message: "É necessário adquirir um plano antes de criar sua conta.",
+        requiresSubscription: true,
+        redirectTo: "/landing/checkout"
+      };
+    }
+
     // Check if user already exists
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
@@ -55,12 +67,18 @@ export async function registerCrmUser(formData: FormData) {
       },
     });
 
+    // Link user to their UserPlan
+    await prisma.userPlan.update({
+      where: { email },
+      data: { userId: user.id }
+    });
+
     // Send verification email
     const verificationUrl = `${APP_URL}/landing/verificar-email?token=${verificationToken}`;
 
     try {
       await resend.emails.send({
-        from: "NA Automation <noreply@naautomation.com.br>",
+        from: "NA Automation <noreply@automacao.art>",
         to: email,
         subject: "Confirme seu email - NA Automation",
         html: `
@@ -237,7 +255,7 @@ export async function requestPasswordReset(email: string) {
 
     try {
       await resend.emails.send({
-        from: "NA Automation <noreply@naautomation.com.br>",
+        from: "NA Automation <noreply@automacao.art>",
         to: email,
         subject: "Redefinir senha - NA Automation",
         html: `
@@ -371,7 +389,7 @@ export async function resendVerificationEmail(email: string) {
 
     try {
       await resend.emails.send({
-        from: "NA Automation <noreply@naautomation.com.br>",
+        from: "NA Automation <noreply@automacao.art>",
         to: email,
         subject: "Confirme seu email - NA Automation",
         html: `

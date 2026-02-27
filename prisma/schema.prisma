@@ -680,15 +680,30 @@ model ToolPurchase {
 // User Subscription Plan
 model UserPlan {
   id          String   @id @default(cuid())
-  userId      String   @unique
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String?  @unique
+  user        User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Dados do cliente (antes de criar conta)
+  email       String   @unique
+  name        String?
+  cpfCnpj     String?
+  phone       String?
 
   plan        String   @default("STARTER") // STARTER, PROFESSIONAL, ENTERPRISE
+  priceMonthly Decimal @default(0)
 
-  startDate   DateTime @default(now())
+  // Asaas Integration
+  asaasCustomerId     String?
+  asaasSubscriptionId String?
+  asaasPaymentId      String? // Último pagamento
+
+  // Status
+  status      String   @default("PENDING") // PENDING, ACTIVE, CANCELLED, OVERDUE
+  startDate   DateTime?
   endDate     DateTime?
+  nextBillingDate DateTime?
 
-  isActive    Boolean  @default(true)
+  isActive    Boolean  @default(false)
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
