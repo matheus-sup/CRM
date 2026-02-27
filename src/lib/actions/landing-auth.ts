@@ -17,11 +17,10 @@ function generateToken(): string {
 
 // Register new CRM user
 export async function registerCrmUser(formData: FormData) {
+  // DEBUG: Retorno imediato para testar se server action funciona
   const name = formData.get("name") as string;
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
-  const company = formData.get("company") as string;
-  const phone = formData.get("phone") as string;
 
   if (!name || !email || !password) {
     return { success: false, message: "Preencha todos os campos obrigatórios." };
@@ -31,113 +30,13 @@ export async function registerCrmUser(formData: FormData) {
     return { success: false, message: "A senha deve ter pelo menos 6 caracteres." };
   }
 
-  try {
-    // TEMPORÁRIO: Verificação de assinatura desabilitada para debug
-    // TODO: Reativar após resolver problema de conexão
-
-    // Check if user already exists
-    const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing) {
-      return { success: false, message: "Este email já está cadastrado." };
-    }
-
-    const hashedPassword = await hash(password, 12);
-    const verificationToken = generateToken();
-    const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
-    // Create user with verification token
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-        role: "ADMIN",
-        emailVerified: null,
-        verificationToken,
-        verificationTokenExpiry: tokenExpiry,
-      },
-    });
-
-    // Link user to their UserPlan (optional - may not exist)
-    try {
-      await prisma.userPlan.update({
-        where: { email },
-        data: { userId: user.id }
-      });
-    } catch {
-      // UserPlan doesn't exist - that's ok for now
-    }
-
-    // Send verification email
-    const verificationUrl = `${APP_URL}/landing/verificar-email?token=${verificationToken}`;
-
-    try {
-      await resend.emails.send({
-        from: "NA Automation <noreply@automacao.art>",
-        to: email,
-        subject: "Confirme seu email - NA Automation",
-        html: `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          </head>
-          <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4;">
-            <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
-              <tr>
-                <td style="padding: 40px 30px; text-align: center; background: linear-gradient(135deg, #5BB5E0 0%, #4AA5D0 100%);">
-                  <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">
-                    <span style="color: #000;">N</span><span style="color: #fff;">A</span> Automation
-                  </h1>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding: 40px 30px;">
-                  <h2 style="color: #333333; margin: 0 0 20px 0; font-size: 24px;">Olá, ${name}!</h2>
-                  <p style="color: #666666; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
-                    Bem-vindo ao NA Automation! Para começar a usar sua conta, confirme seu email clicando no botão abaixo:
-                  </p>
-                  <table width="100%" cellpadding="0" cellspacing="0">
-                    <tr>
-                      <td style="text-align: center; padding: 30px 0;">
-                        <a href="${verificationUrl}" style="display: inline-block; padding: 16px 40px; background-color: #5BB5E0; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: bold; border-radius: 50px;">
-                          Confirmar Email
-                        </a>
-                      </td>
-                    </tr>
-                  </table>
-                  <p style="color: #999999; font-size: 14px; line-height: 1.6; margin: 20px 0 0 0;">
-                    Este link expira em 24 horas. Se você não solicitou esta conta, ignore este email.
-                  </p>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding: 30px; background-color: #f8f9fa; text-align: center;">
-                  <p style="color: #999999; font-size: 12px; margin: 0;">
-                    © 2026 NA Automation. Todos os direitos reservados.
-                  </p>
-                </td>
-              </tr>
-            </table>
-          </body>
-          </html>
-        `,
-      });
-    } catch (emailError) {
-      console.error("Error sending email:", emailError);
-      // Don't fail registration if email fails - user can request new verification
-    }
-
-    return {
-      success: true,
-      message: "Conta criada! Verifique seu email para ativar sua conta.",
-      requiresVerification: true,
-    };
-  } catch (error) {
-    console.error("Registration error:", error);
-    return { success: false, message: "Erro ao criar conta. Tente novamente." };
-  }
+  // DEBUG: Testa sem banco de dados
+  return {
+    success: false,
+    message: "DEBUG: Server action funcionando! Email: " + email,
+    requiresSubscription: true,
+    redirectTo: "/landing/planos"
+  };
 }
 
 // Login CRM user
