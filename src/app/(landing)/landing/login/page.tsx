@@ -18,12 +18,19 @@ import {
 } from '@heroicons/react/24/outline'
 import LandingNavbar from '@/components/landing/LandingNavbar'
 import LandingFooter from '@/components/landing/LandingFooter'
-import {
-  loginCrmUser,
-  requestPasswordReset,
-  resendVerificationEmail,
-} from '@/lib/actions/landing-auth'
+// TEMPORÁRIO: Removido imports de landing-auth.ts para debug
 import { registerSimple } from '@/lib/actions/register-simple'
+
+// Funções stub temporárias
+async function loginCrmUser(formData: FormData) {
+  return { success: false, message: "DEBUG: Login desabilitado temporariamente" };
+}
+async function requestPasswordReset(email: string) {
+  return { success: false, message: "DEBUG: Reset desabilitado temporariamente" };
+}
+async function resendVerificationEmail(email: string) {
+  return { success: false, message: "DEBUG: Reenvio desabilitado temporariamente" };
+}
 
 function LoginContent() {
   const router = useRouter()
