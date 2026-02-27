@@ -239,7 +239,7 @@ export default function FerramentasPage() {
                     <p className="text-sm text-slate-500">
                       {isProfessional
                         ? "Você tem acesso a todas as ferramentas gratuitamente!"
-                        : "Cada ferramenta custa R$ 10/mês. Faça upgrade para o plano Professional e tenha acesso a todas gratuitamente."}
+                        : "Faça upgrade para o plano Profissional e tenha acesso a todas as ferramentas da nossa Loja! Aproveite, é por tempo limitado!"}
                     </p>
                   </div>
                 </div>

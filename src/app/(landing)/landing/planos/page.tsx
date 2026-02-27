@@ -13,7 +13,7 @@ import LandingNavbar from '@/components/landing/LandingNavbar'
 import LandingFooter from '@/components/landing/LandingFooter'
 
 export default function PlanosPage() {
-  const [isAnnual, setIsAnnual] = useState(true)
+  const [isAnnual, setIsAnnual] = useState(false)
 
   const plans = [
     {
@@ -39,7 +39,7 @@ export default function PlanosPage() {
       name: 'Professional',
       description: 'Para negócios em crescimento que precisam de mais recursos',
       monthlyPrice: 197,
-      annualPrice: 157,
+      annualPrice: 197,
       includesFrom: 'Tudo do plano Starter +',
       features: [
         { name: 'Acesso a todas as Ferramentas da Loja', included: true },
@@ -56,8 +56,8 @@ export default function PlanosPage() {
     {
       name: 'Enterprise',
       description: 'Para operações robustas que exigem o máximo',
-      monthlyPrice: 397,
-      annualPrice: 317,
+      monthlyPrice: 497,
+      annualPrice: 397,
       includesFrom: 'Tudo do plano Professional +',
       features: [
         { name: 'Clientes ilimitados', included: true },
