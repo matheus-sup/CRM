@@ -32,6 +32,20 @@ export async function registerCrmUser(formData: FormData) {
   }
 
   try {
+    // Check if email has active subscription (local database only - no external API call)
+    const userPlan = await prisma.userPlan.findUnique({
+      where: { email }
+    });
+
+    if (!userPlan || !userPlan.isActive) {
+      return {
+        success: false,
+        message: "É necessário adquirir um plano antes de criar sua conta. Realize o pagamento e tente novamente.",
+        requiresSubscription: true,
+        redirectTo: "/landing/planos"
+      };
+    }
+
     // Check if user already exists
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
@@ -55,15 +69,11 @@ export async function registerCrmUser(formData: FormData) {
       },
     });
 
-    // Link user to their UserPlan if exists
-    try {
-      await prisma.userPlan.update({
-        where: { email },
-        data: { userId: user.id }
-      });
-    } catch {
-      // UserPlan doesn't exist yet - will be linked when user subscribes
-    }
+    // Link user to their UserPlan
+    await prisma.userPlan.update({
+      where: { email },
+      data: { userId: user.id }
+    });
 
     // Send verification email
     const verificationUrl = `${APP_URL}/landing/verificar-email?token=${verificationToken}`;
