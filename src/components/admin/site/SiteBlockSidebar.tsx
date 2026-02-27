@@ -32,7 +32,6 @@ const TOOL_SLUG_TO_BLOCK: Record<string, BlockType> = {
     "lista-presentes": "tool-wishlist",
     "clube-assinaturas": "tool-subscriptions",
     "programa-fidelidade": "tool-loyalty",
-    "avaliacoes-reviews": "tool-reviews",
     "cupons-promocoes": "tool-coupons",
     "vitrine-digital": "tool-digital-showcase",
     "prova-social": "tool-social-proof",
@@ -74,7 +73,8 @@ const AVAILABLE_BLOCKS = [
     { type: "columns", label: "Colunas", icon: Layout, description: "Layout flexível", hasVariants: true },
     { type: "promo-banner", label: "Banner Promocional", icon: ImageIcon, description: "Banner full-width com imagem e texto", hasVariants: false },
     { type: "brands", label: "Marcas", icon: Tag, description: "Vitrine de marcas parceiras", hasVariants: true },
-    { type: "blog-posts", label: "Blog / Posts", icon: Newspaper, description: "Últimas postagens e artigos", hasVariants: false }
+    { type: "blog-posts", label: "Blog / Posts", icon: Newspaper, description: "Últimas postagens e artigos", hasVariants: false },
+    { type: "testimonials", label: "Depoimentos", icon: Star, description: "Reviews e avaliações de clientes", hasVariants: false }
 ] as const;
 
 // Block variants with visual mockups

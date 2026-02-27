@@ -5,7 +5,10 @@ import {
     createAsaasCustomer,
     createSubscription as createAsaasSubscription,
     getSubscription as getAsaasSubscription,
-    cancelSubscription as cancelAsaasSubscription
+    cancelSubscription as cancelAsaasSubscription,
+    getSubscriptionPayments,
+    getPixQrCode,
+    getPaymentStatus
 } from "@/lib/gateways/asaas";
 import { PLANS, type PlanKey } from "@/lib/constants/plans";
 
@@ -60,7 +63,7 @@ export async function createCheckoutSubscription(data: {
         // Create subscription in Asaas
         const subscription = await createAsaasSubscription(
             asaasCustomerId,
-            planInfo.price,
+            planInfo.monthlyPrice,
             data.billingType,
             `Assinatura ${planInfo.name} - NeoAutomation`,
             data.email,
@@ -78,7 +81,7 @@ export async function createCheckoutSubscription(data: {
                 cpfCnpj: data.cpfCnpj,
                 phone: data.phone,
                 plan: data.plan,
-                priceMonthly: planInfo.price,
+                priceMonthly: planInfo.monthlyPrice,
                 asaasCustomerId: asaasCustomerId,
                 asaasSubscriptionId: subscription.subscriptionId,
                 status: "PENDING",
@@ -90,7 +93,7 @@ export async function createCheckoutSubscription(data: {
                 cpfCnpj: data.cpfCnpj,
                 phone: data.phone,
                 plan: data.plan,
-                priceMonthly: planInfo.price,
+                priceMonthly: planInfo.monthlyPrice,
                 asaasCustomerId: asaasCustomerId,
                 asaasSubscriptionId: subscription.subscriptionId,
                 status: "PENDING",
@@ -99,12 +102,36 @@ export async function createCheckoutSubscription(data: {
             }
         });
 
+        // If PIX, get the QR Code for the first payment
+        let pixData = null;
+        if (data.billingType === "PIX") {
+            // Wait a moment for Asaas to generate the payment
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
+            // Get the first payment of the subscription
+            const payments = await getSubscriptionPayments(subscription.subscriptionId);
+            if (payments.length > 0) {
+                const firstPayment = payments[0];
+                if (firstPayment.billingType === "PIX" && firstPayment.status === "PENDING") {
+                    const qrCode = await getPixQrCode(firstPayment.id);
+                    pixData = {
+                        paymentId: firstPayment.id,
+                        encodedImage: qrCode.encodedImage,
+                        payload: qrCode.payload,
+                        expirationDate: qrCode.expirationDate,
+                        value: firstPayment.value
+                    };
+                }
+            }
+        }
+
         return {
             success: true,
             userPlanId: userPlan.id,
             subscriptionId: subscription.subscriptionId,
             status: subscription.status,
-            nextDueDate: subscription.nextDueDate
+            nextDueDate: subscription.nextDueDate,
+            pixData
         };
 
     } catch (error: any) {
@@ -290,5 +317,30 @@ export async function processAsaasWebhook(event: string, payment: any) {
     } catch (error: any) {
         console.error("Webhook Processing Error:", error);
         return { processed: false, error: error.message };
+    }
+}
+
+// =============================================
+// Check Payment Status (for polling)
+// =============================================
+
+export async function checkPaymentConfirmed(paymentId: string): Promise<{
+    confirmed: boolean;
+    status: string;
+}> {
+    try {
+        const payment = await getPaymentStatus(paymentId);
+        const confirmedStatuses = ["CONFIRMED", "RECEIVED", "RECEIVED_IN_CASH"];
+
+        return {
+            confirmed: confirmedStatuses.includes(payment.status),
+            status: payment.status
+        };
+    } catch (error: any) {
+        console.error("Check Payment Error:", error);
+        return {
+            confirmed: false,
+            status: "ERROR"
+        };
     }
 }

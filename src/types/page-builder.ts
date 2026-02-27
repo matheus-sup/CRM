@@ -15,6 +15,7 @@ export type BlockType =
     | "newsletter"
     | "blog-posts"
     | "promo-banner"
+    | "testimonials"
     // Tool Blocks (Loja de Ferramentas)
     | "tool-scheduling"      // Agendamentos Online
     | "tool-menu"            // Cardápio Digital
@@ -28,7 +29,6 @@ export type BlockType =
     | "tool-wishlist"        // Lista de Presentes
     | "tool-subscriptions"   // Clube de Assinaturas
     | "tool-loyalty"         // Programa de Fidelidade
-    | "tool-reviews"         // Avaliações
     | "tool-coupons"         // Cupons e Promoções
     | "tool-digital-showcase"// Vitrine Digital
     | "tool-social-proof"    // Prova Social
@@ -115,12 +115,6 @@ export interface DeliveryBlockContent extends ToolBlockContent {
     showDeliveryTime?: boolean;
 }
 
-export interface ReviewsBlockContent extends ToolBlockContent {
-    limit?: number;
-    showRating?: boolean;
-    showPhotos?: boolean;
-}
-
 export interface LoyaltyBlockContent extends ToolBlockContent {
     showPoints?: boolean;
     showRewards?: boolean;
@@ -151,5 +145,22 @@ export interface BlogPostsBlockContent {
         url?: string;
     }>;
     limit?: number;
+    columns?: 2 | 3;
+}
+
+export interface TestimonialItem {
+    id: string;
+    name: string;
+    role?: string; // Ex: "Cliente há 2 anos"
+    avatar?: string;
+    text: string;
+    rating: number; // 1-5
+}
+
+export interface TestimonialsBlockContent {
+    title?: string;
+    subtitle?: string;
+    testimonials: TestimonialItem[];
+    layout?: "grid" | "carousel" | "list";
     columns?: 2 | 3;
 }

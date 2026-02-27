@@ -36,7 +36,7 @@ export async function createAsaasCustomer(customerData: { name: string; email?: 
                 cpfCnpj: customerData.cpfCnpj,
                 mobilePhone: customerData.phone,
                 externalReference: customerData.externalId,
-                notificationDisabled: false
+                notificationDisabled: true // Desabilita SMS/email do Asaas
             })
         });
 
@@ -74,7 +74,8 @@ export async function createPixCharge(orderId: string, value: number, customerAs
                 value: value,
                 dueDate: new Date().toISOString().split('T')[0], // Due today
                 externalReference: orderId,
-                description: `Pedido #${orderId}`
+                description: `Pedido #${orderId}`,
+                notificationDisabled: true // Desabilita SMS/email do Asaas
             })
         });
 
@@ -139,6 +140,7 @@ export async function createSubscription(
             cycle: "MONTHLY",
             description: description,
             externalReference: externalReference,
+            notificationDisabled: true, // Desabilita SMS/email do Asaas
         };
 
         // If credit card, add card info
@@ -180,6 +182,36 @@ export async function getSubscription(subscriptionId: string) {
     } catch (e: any) {
         console.error("Asaas Get Subscription Error:", e);
         throw new Error("Erro ao buscar assinatura: " + e.message);
+    }
+}
+
+export async function getSubscriptionPayments(subscriptionId: string) {
+    try {
+        const headers = await getHeaders();
+        const res = await fetch(`${ASAAS_API_URL}/subscriptions/${subscriptionId}/payments`, { headers });
+        const data = await res.json();
+        if (data.errors) throw new Error(data.errors[0].description);
+        return data.data || [];
+    } catch (e: any) {
+        console.error("Asaas Get Subscription Payments Error:", e);
+        throw new Error("Erro ao buscar pagamentos: " + e.message);
+    }
+}
+
+export async function getPixQrCode(paymentId: string) {
+    try {
+        const headers = await getHeaders();
+        const res = await fetch(`${ASAAS_API_URL}/payments/${paymentId}/pixQrCode`, { headers });
+        const data = await res.json();
+        if (data.errors) throw new Error(data.errors[0].description);
+        return {
+            encodedImage: data.encodedImage,
+            payload: data.payload,
+            expirationDate: data.expirationDate
+        };
+    } catch (e: any) {
+        console.error("Asaas Get Pix QR Code Error:", e);
+        throw new Error("Erro ao buscar QR Code PIX: " + e.message);
     }
 }
 
@@ -247,6 +279,7 @@ export async function createCreditCardCharge(
                 dueDate: new Date().toISOString().split('T')[0],
                 externalReference: orderId,
                 description: `Pedido #${orderId}`,
+                notificationDisabled: true, // Desabilita SMS/email do Asaas
                 creditCard: {
                     holderName: cardInfo.holderName,
                     number: cardInfo.number,

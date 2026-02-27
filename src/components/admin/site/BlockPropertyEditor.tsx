@@ -1915,6 +1915,174 @@ export function BlockPropertyEditor({ block, onUpdate, onDelete, onBack, focusFi
                     </div>
                 )}
 
+                {/* --- TESTIMONIALS BLOCK EDITOR --- */}
+                {block.type === "testimonials" && (
+                    <div className="space-y-4">
+                        <div className="space-y-1">
+                            <Label>Título da Seção</Label>
+                            <Input
+                                ref={titleRef}
+                                value={data.content.title || ""}
+                                onChange={(e) => updateContent("title", e.target.value)}
+                                placeholder="O que estão falando da gente"
+                            />
+                        </div>
+
+                        <div className="space-y-1">
+                            <Label>Subtítulo (opcional)</Label>
+                            <Input
+                                ref={subtitleRef}
+                                value={data.content.subtitle || ""}
+                                onChange={(e) => updateContent("subtitle", e.target.value)}
+                                placeholder="Reviews e depoimentos de clientes"
+                            />
+                        </div>
+
+                        <div className="space-y-1">
+                            <Label>Colunas</Label>
+                            <select
+                                className="w-full text-sm border rounded h-9 px-2"
+                                value={data.content.columns || 3}
+                                onChange={(e) => updateContent("columns", parseInt(e.target.value))}
+                            >
+                                <option value={2}>2 colunas</option>
+                                <option value={3}>3 colunas</option>
+                            </select>
+                        </div>
+
+                        <div className="border-t pt-4 space-y-3">
+                            <div className="flex items-center justify-between">
+                                <Label className="font-semibold">Depoimentos</Label>
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                        const testimonials = data.content.testimonials || [];
+                                        const newTestimonial = {
+                                            id: Date.now().toString(),
+                                            name: "",
+                                            role: "",
+                                            avatar: "",
+                                            text: "",
+                                            rating: 5
+                                        };
+                                        updateContent("testimonials", [...testimonials, newTestimonial]);
+                                    }}
+                                >
+                                    + Adicionar Depoimento
+                                </Button>
+                            </div>
+
+                            {(data.content.testimonials || []).length === 0 && (
+                                <p className="text-xs text-muted-foreground text-center py-4 bg-slate-50 rounded">
+                                    Nenhum depoimento adicionado ainda. Clique em "Adicionar Depoimento" para começar.
+                                </p>
+                            )}
+
+                            <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                                {(data.content.testimonials || []).map((item: any, index: number) => (
+                                    <div key={item.id} className="border rounded-lg p-3 bg-slate-50 space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs font-semibold text-slate-600">Depoimento #{index + 1}</span>
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="ghost"
+                                                className="h-6 w-6 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
+                                                onClick={() => {
+                                                    const testimonials = [...(data.content.testimonials || [])];
+                                                    testimonials.splice(index, 1);
+                                                    updateContent("testimonials", testimonials);
+                                                }}
+                                            >
+                                                <Trash2 className="h-3 w-3" />
+                                            </Button>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <div className="space-y-1">
+                                                <Label className="text-xs">Nome *</Label>
+                                                <Input
+                                                    value={item.name}
+                                                    onChange={(e) => {
+                                                        const testimonials = [...(data.content.testimonials || [])];
+                                                        testimonials[index] = { ...item, name: e.target.value };
+                                                        updateContent("testimonials", testimonials);
+                                                    }}
+                                                    placeholder="Maria Silva"
+                                                    className="h-8 text-sm"
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label className="text-xs">Cargo/Info</Label>
+                                                <Input
+                                                    value={item.role || ""}
+                                                    onChange={(e) => {
+                                                        const testimonials = [...(data.content.testimonials || [])];
+                                                        testimonials[index] = { ...item, role: e.target.value };
+                                                        updateContent("testimonials", testimonials);
+                                                    }}
+                                                    placeholder="Cliente há 2 anos"
+                                                    className="h-8 text-sm"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-1">
+                                            <Label className="text-xs">Depoimento *</Label>
+                                            <Textarea
+                                                value={item.text}
+                                                onChange={(e) => {
+                                                    const testimonials = [...(data.content.testimonials || [])];
+                                                    testimonials[index] = { ...item, text: e.target.value };
+                                                    updateContent("testimonials", testimonials);
+                                                }}
+                                                placeholder="Excelente atendimento e produtos de qualidade!"
+                                                rows={2}
+                                                className="text-sm"
+                                            />
+                                        </div>
+
+                                        <div className="flex items-center gap-4">
+                                            <div className="space-y-1 flex-1">
+                                                <Label className="text-xs">Avaliação</Label>
+                                                <div className="flex gap-1">
+                                                    {[1, 2, 3, 4, 5].map((star) => (
+                                                        <button
+                                                            key={star}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const testimonials = [...(data.content.testimonials || [])];
+                                                                testimonials[index] = { ...item, rating: star };
+                                                                updateContent("testimonials", testimonials);
+                                                            }}
+                                                            className={`p-0.5 ${star <= (item.rating || 5) ? "text-yellow-400" : "text-gray-300"}`}
+                                                        >
+                                                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                                            </svg>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <CompactImagePicker
+                                                value={item.avatar || ""}
+                                                onChange={(url) => {
+                                                    const testimonials = [...(data.content.testimonials || [])];
+                                                    testimonials[index] = { ...item, avatar: url };
+                                                    updateContent("testimonials", testimonials);
+                                                }}
+                                                label="Foto (opcional)"
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 <div className="border-t pt-4 my-2"></div>
                 <h4 className="font-semibold text-xs uppercase text-slate-400 mb-3">Estilo / Layout</h4>
 

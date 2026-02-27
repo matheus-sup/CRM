@@ -21,17 +21,7 @@ import {
 // import LandingFooter from '@/components/landing/LandingFooter'
 // TEMPORÁRIO: Removido imports de landing-auth.ts para debug
 import { registerSimple } from '@/lib/actions/register-simple'
-
-// Funções stub temporárias
-async function loginCrmUser(formData: FormData) {
-  return { success: false, message: "DEBUG: Login desabilitado temporariamente" };
-}
-async function requestPasswordReset(email: string) {
-  return { success: false, message: "DEBUG: Reset desabilitado temporariamente" };
-}
-async function resendVerificationEmail(email: string) {
-  return { success: false, message: "DEBUG: Reenvio desabilitado temporariamente" };
-}
+import { loginCrmUser, requestPasswordReset, resendVerificationEmail } from '@/lib/actions/login-simple'
 
 function LoginContent() {
   const router = useRouter()
@@ -61,9 +51,21 @@ function LoginContent() {
     if (result.success) {
       router.push(result.redirectTo || '/admin')
     } else {
-      if (result.requiresVerification) {
+      // Scroll para o topo para mostrar a mensagem de erro
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+
+      // Redireciona para checkout se precisa de assinatura
+      if ((result as any).requiresSubscription && (result as any).redirectTo) {
+        setMessage({ type: 'error', text: result.message || 'Assinatura necessária' })
+        setTimeout(() => {
+          router.push((result as any).redirectTo)
+        }, 4000)
+        setLoading(false)
+        return
+      }
+      if ((result as any).requiresVerification) {
         setNeedsVerification(true)
-        setVerificationEmail(result.email || formData.get('email') as string)
+        setVerificationEmail((result as any).email || formData.get('email') as string)
       }
       setMessage({ type: 'error', text: result.message || 'Erro ao fazer login' })
     }
@@ -88,6 +90,17 @@ function LoginContent() {
     const result = await registerSimple(formData)
 
     if (result.success) {
+      // Scroll para o topo para mostrar a mensagem
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+
+      // Redireciona para escolha do plano após cadastro
+      if ((result as any).requiresSubscription && (result as any).redirectTo) {
+        setMessage({ type: 'success', text: result.message || 'Conta criada! Redirecionando...' })
+        setTimeout(() => {
+          router.push((result as any).redirectTo)
+        }, 4000)
+        return
+      }
       setMessage({ type: 'success', text: result.message || 'Conta criada com sucesso!' })
       if (result.requiresVerification) {
         setNeedsVerification(true)
@@ -99,6 +112,8 @@ function LoginContent() {
         router.push((result as any).redirectTo || '/landing/checkout')
         return
       }
+      // Scroll para o topo para mostrar a mensagem de erro
+      window.scrollTo({ top: 0, behavior: 'smooth' })
       setMessage({ type: 'error', text: result.message || 'Erro ao criar conta' })
     }
     setLoading(false)
@@ -176,18 +191,16 @@ function LoginContent() {
             {/* Message */}
             {message && (
               <div
-                className={`mb-6 p-4 rounded-xl flex items-start gap-3 ${
+                className={`mb-6 p-4 rounded-xl ${
                   message.type === 'success'
                     ? 'bg-green-50 border border-green-200'
                     : 'bg-red-50 border border-red-200'
                 }`}
               >
-                {message.type === 'success' ? (
-                  <CheckCircleIcon className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                ) : (
-                  <ExclamationCircleIcon className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                {message.type === 'success' && (
+                  <CheckCircleIcon className="w-5 h-5 text-green-500 flex-shrink-0 inline mr-2" />
                 )}
-                <p className={`text-sm ${message.type === 'success' ? 'text-green-700' : 'text-red-700'}`}>
+                <p className={`text-sm whitespace-pre-line ${message.type === 'success' ? 'text-green-700' : 'text-red-700'}`}>
                   {message.text}
                 </p>
               </div>

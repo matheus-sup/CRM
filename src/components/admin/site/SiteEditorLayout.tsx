@@ -709,12 +709,15 @@ export function SiteEditorLayout({ config, banners, products, categories = [], b
                     {/* Header of Sidebar */}
                     <div className="h-14 border-b flex items-center justify-between px-4 shrink-0 bg-white">
                         <div className="flex items-center gap-2">
-                            {activeSection ? (
+                            {(activeSection || selectedBlockId) ? (
                                 <Button
                                     variant="ghost"
                                     size="sm"
                                     className="-ml-2 gap-1 text-slate-500 hover:text-slate-900 font-normal"
-                                    onClick={handleBack}
+                                    onClick={selectedBlockId ? () => {
+                                        setSelectedBlockId(null);
+                                        setSelectedField(null);
+                                    } : handleBack}
                                 >
                                     <ChevronLeft className="h-4 w-4" />
                                     Voltar

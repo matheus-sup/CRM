@@ -1,28 +1,22 @@
 // Plan definitions - shared between client and server
 export const PLANS = {
-    TESTE: {
-        name: "Teste",
-        price: 1,
-        description: "Plano de teste - R$1,00",
-        asaasLink: "" // SUBSTITUIR PELO LINK DO ASAAS
-    },
     STARTER: {
         name: "Starter",
-        price: 97,
-        description: "Plano inicial para começar sua loja",
-        asaasLink: "https://www.asaas.com/c/z5xocudoqchl3y5p"
+        monthlyPrice: 5,
+        annualPrice: 4,
+        description: "Ideal para pequenos negócios que estão começando",
     },
     PROFISSIONAL: {
-        name: "Profissional",
-        price: 197,
-        description: "Para lojas em crescimento",
-        asaasLink: "https://www.asaas.com/c/vm3ts038er85mvcn"
+        name: "Professional",
+        monthlyPrice: 197,
+        annualPrice: 157,
+        description: "Para negócios em crescimento que precisam de mais recursos",
     },
     ENTERPRISE: {
         name: "Enterprise",
-        price: 397,
-        description: "Para grandes operações",
-        asaasLink: "https://www.asaas.com/c/hueyzezcaxrmv4z5"
+        monthlyPrice: 497,
+        annualPrice: 397,
+        description: "Para operações robustas que exigem o máximo",
     }
 } as const;
 

@@ -697,12 +697,35 @@ export const templates: Template[] = [
                 },
                 {
                     id: "reviews-optica",
-                    type: "tool-reviews",
+                    type: "testimonials",
                     content: {
                         title: "O que estão falando da gente",
-                        toolSlug: "avaliacoes-reviews",
-                        limit: 4,
-                        showRating: true
+                        subtitle: "Veja a opinião de quem já comprou conosco",
+                        layout: "grid",
+                        columns: 3,
+                        testimonials: [
+                            {
+                                id: "1",
+                                name: "Maria Silva",
+                                role: "Cliente há 2 anos",
+                                text: "Ótima loja! Produtos de qualidade e atendimento excelente.",
+                                rating: 5
+                            },
+                            {
+                                id: "2",
+                                name: "João Santos",
+                                role: "Cliente",
+                                text: "Sempre encontro o que preciso. Recomendo!",
+                                rating: 5
+                            },
+                            {
+                                id: "3",
+                                name: "Ana Costa",
+                                role: "Cliente há 1 ano",
+                                text: "Entrega rápida e produtos originais. Muito satisfeita!",
+                                rating: 5
+                            }
+                        ]
                     },
                     styles: {
                         headingColor: "#1a1a1a",
