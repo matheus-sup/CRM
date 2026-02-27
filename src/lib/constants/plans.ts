@@ -1,5 +1,11 @@
 // Plan definitions - shared between client and server
 export const PLANS = {
+    TESTE: {
+        name: "Teste",
+        price: 1,
+        description: "Plano de teste - R$1,00",
+        asaasLink: "" // SUBSTITUIR PELO LINK DO ASAAS
+    },
     STARTER: {
         name: "Starter",
         price: 97,

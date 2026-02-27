@@ -17,6 +17,19 @@ export default function PlanosPage() {
 
   const plans = [
     {
+      name: 'TESTE',
+      description: 'Plano de teste - apenas R$1,00',
+      monthlyPrice: 1,
+      annualPrice: 1,
+      features: [
+        { name: 'Teste completo do sistema', included: true },
+        { name: 'Válido por 30 dias', included: true },
+      ],
+      highlighted: false,
+      cta: 'Testar por R$1',
+      asaasLink: '', // SUBSTITUIR PELO LINK DO ASAAS
+    },
+    {
       name: 'Starter',
       description: 'Ideal para pequenos negócios que estão começando',
       monthlyPrice: 97,
@@ -34,6 +47,7 @@ export default function PlanosPage() {
       ],
       highlighted: false,
       cta: 'Começar Grátis',
+      asaasLink: 'https://www.asaas.com/c/z5xocudoqchl3y5p',
     },
     {
       name: 'Professional',
@@ -52,6 +66,7 @@ export default function PlanosPage() {
       ],
       highlighted: true,
       cta: 'Começar Grátis',
+      asaasLink: 'https://www.asaas.com/c/vm3ts038er85mvcn',
     },
     {
       name: 'Enterprise',
@@ -70,6 +85,7 @@ export default function PlanosPage() {
       ],
       highlighted: false,
       cta: 'Começar Grátis',
+      asaasLink: 'https://www.asaas.com/c/hueyzezcaxrmv4z5',
     },
   ]
 
@@ -228,17 +244,33 @@ export default function PlanosPage() {
                   ))}
                 </ul>
 
-                <Link
-                  href="/landing/login?register=true"
-                  className={`w-full py-3 rounded-full font-bold transition-all flex items-center justify-center gap-2 ${
-                    plan.highlighted
-                      ? 'bg-white text-[#5BB5E0] hover:bg-gray-100'
-                      : 'bg-[#5BB5E0] text-white hover:bg-[#4AA5D0]'
-                  }`}
-                >
-                  {plan.cta}
-                  <ArrowRightIcon className="w-4 h-4" />
-                </Link>
+                {plan.asaasLink ? (
+                  <a
+                    href={plan.asaasLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`w-full py-3 rounded-full font-bold transition-all flex items-center justify-center gap-2 ${
+                      plan.highlighted
+                        ? 'bg-white text-[#5BB5E0] hover:bg-gray-100'
+                        : 'bg-[#5BB5E0] text-white hover:bg-[#4AA5D0]'
+                    }`}
+                  >
+                    {plan.cta}
+                    <ArrowRightIcon className="w-4 h-4" />
+                  </a>
+                ) : (
+                  <Link
+                    href="/landing/login?register=true"
+                    className={`w-full py-3 rounded-full font-bold transition-all flex items-center justify-center gap-2 ${
+                      plan.highlighted
+                        ? 'bg-white text-[#5BB5E0] hover:bg-gray-100'
+                        : 'bg-[#5BB5E0] text-white hover:bg-[#4AA5D0]'
+                    }`}
+                  >
+                    {plan.cta}
+                    <ArrowRightIcon className="w-4 h-4" />
+                  </Link>
+                )}
               </div>
             ))}
           </div>
