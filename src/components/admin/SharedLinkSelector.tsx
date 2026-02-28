@@ -86,7 +86,7 @@ export function SharedLinkSelector({ value = "", onChange, onSelectLabel, catego
                             <SelectValue placeholder="Selecione uma categoria..." />
                         </SelectTrigger>
                         <SelectContent>
-                            {categories.map((cat) => (
+                            {(categories || []).map((cat) => (
                                 <SelectItem key={cat.id} value={`/produtos?category=${cat.id}`}>
                                     {cat.name}
                                 </SelectItem>

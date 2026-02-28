@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Search, ShoppingBag, User, Menu, X } from "lucide-react";
@@ -9,6 +9,40 @@ import { Input } from "@/components/ui/input";
 import { useCart } from "@/lib/store/cart";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
+
+// Hook: detect scroll in the nearest scrollable ancestor (for editor preview) or window
+function useScrolled(threshold = 20) {
+    const [scrolled, setScrolled] = useState(false);
+    const headerRef = useRef<HTMLElement>(null);
+
+    useEffect(() => {
+        // Find the nearest scrollable ancestor
+        let scrollTarget: Element | Window = window;
+        let el = headerRef.current?.parentElement;
+        while (el) {
+            const style = getComputedStyle(el);
+            if (style.overflow === "auto" || style.overflow === "scroll" ||
+                style.overflowY === "auto" || style.overflowY === "scroll") {
+                scrollTarget = el;
+                break;
+            }
+            el = el.parentElement;
+        }
+
+        const handleScroll = () => {
+            const scrollY = scrollTarget instanceof Window
+                ? scrollTarget.scrollY
+                : scrollTarget.scrollTop;
+            setScrolled(scrollY > threshold);
+        };
+
+        scrollTarget.addEventListener("scroll", handleScroll, { passive: true });
+        handleScroll();
+        return () => scrollTarget.removeEventListener("scroll", handleScroll);
+    }, [threshold]);
+
+    return { scrolled, headerRef };
+}
 
 // Helper to ensure internal links have leading slash
 function normalizeUrl(url: string) {
@@ -21,39 +55,34 @@ interface HeaderProps {
     config?: any;
     categories?: any[];
     editorMode?: boolean;
+    isPreview?: boolean;
     onFieldClick?: (field: string) => void;
 }
 
-export function Header({ config, categories, editorMode, onFieldClick }: HeaderProps) {
+export function Header({ config, categories, editorMode, isPreview, onFieldClick }: HeaderProps) {
     const headerStyle = config?.headerStyle || "classic";
 
     switch (headerStyle) {
         case "centered":
-            return <CenteredHeader config={config} categories={categories} editorMode={editorMode} onFieldClick={onFieldClick} />;
+            return <CenteredHeader config={config} categories={categories} editorMode={editorMode} isPreview={isPreview} onFieldClick={onFieldClick} />;
         case "minimal":
-            return <MinimalHeader config={config} categories={categories} editorMode={editorMode} onFieldClick={onFieldClick} />;
+            return <MinimalHeader config={config} categories={categories} editorMode={editorMode} isPreview={isPreview} onFieldClick={onFieldClick} />;
         case "restaurant":
-            return <RestaurantHeader config={config} categories={categories} editorMode={editorMode} onFieldClick={onFieldClick} />;
+            return <RestaurantHeader config={config} categories={categories} editorMode={editorMode} isPreview={isPreview} onFieldClick={onFieldClick} />;
         case "optica":
-            return <OpticaHeader config={config} categories={categories} editorMode={editorMode} onFieldClick={onFieldClick} />;
+            return <OpticaHeader config={config} categories={categories} editorMode={editorMode} isPreview={isPreview} onFieldClick={onFieldClick} />;
         case "classic":
         default:
-            return <ClassicHeader config={config} categories={categories} editorMode={editorMode} onFieldClick={onFieldClick} />;
+            return <ClassicHeader config={config} categories={categories} editorMode={editorMode} isPreview={isPreview} onFieldClick={onFieldClick} />;
     }
 }
 
 // =============================================================================
 // CLASSIC HEADER - Logo left, search center, icons right, menu below
 // =============================================================================
-function ClassicHeader({ config, categories, editorMode, onFieldClick }: { config?: any, categories?: any[], editorMode?: boolean, onFieldClick?: (field: string) => void }) {
+function ClassicHeader({ config, categories, editorMode, isPreview, onFieldClick }: { config?: any, categories?: any[], editorMode?: boolean, isPreview?: boolean, onFieldClick?: (field: string) => void }) {
     const { toggleCart, items } = useCart();
-    const [scrolled, setScrolled] = useState(false);
-
-    useEffect(() => {
-        const handleScroll = () => setScrolled(window.scrollY > 20);
-        window.addEventListener("scroll", handleScroll);
-        return () => window.removeEventListener("scroll", handleScroll);
-    }, []);
+    const { scrolled, headerRef } = useScrolled();
 
     const storeName = config?.storeName || "Loja";
     const logoUrl = config?.logoUrl;
@@ -77,6 +106,7 @@ function ClassicHeader({ config, categories, editorMode, onFieldClick }: { confi
 
     return (
         <header
+            ref={headerRef}
             data-section="header"
             data-style="classic"
             className={cn(
@@ -207,16 +237,10 @@ function ClassicHeader({ config, categories, editorMode, onFieldClick }: { confi
 // =============================================================================
 // CENTERED HEADER - Logo centered, menu above, search and icons on sides
 // =============================================================================
-function CenteredHeader({ config, categories, editorMode, onFieldClick }: { config?: any, categories?: any[], editorMode?: boolean, onFieldClick?: (field: string) => void }) {
+function CenteredHeader({ config, categories, editorMode, isPreview, onFieldClick }: { config?: any, categories?: any[], editorMode?: boolean, isPreview?: boolean, onFieldClick?: (field: string) => void }) {
     const { toggleCart, items } = useCart();
-    const [scrolled, setScrolled] = useState(false);
+    const { scrolled, headerRef } = useScrolled();
     const [searchOpen, setSearchOpen] = useState(false);
-
-    useEffect(() => {
-        const handleScroll = () => setScrolled(window.scrollY > 20);
-        window.addEventListener("scroll", handleScroll);
-        return () => window.removeEventListener("scroll", handleScroll);
-    }, []);
 
     const storeName = config?.storeName || "Loja";
     const logoUrl = config?.logoUrl;
@@ -239,6 +263,7 @@ function CenteredHeader({ config, categories, editorMode, onFieldClick }: { conf
 
     return (
         <header
+            ref={headerRef}
             data-section="header"
             data-style="centered"
             className={cn(
@@ -358,16 +383,10 @@ function CenteredHeader({ config, categories, editorMode, onFieldClick }: { conf
 // =============================================================================
 // MINIMAL HEADER - Compact, logo left, no visible search, icons right
 // =============================================================================
-function MinimalHeader({ config, categories, editorMode, onFieldClick }: { config?: any, categories?: any[], editorMode?: boolean, onFieldClick?: (field: string) => void }) {
+function MinimalHeader({ config, categories, editorMode, isPreview, onFieldClick }: { config?: any, categories?: any[], editorMode?: boolean, isPreview?: boolean, onFieldClick?: (field: string) => void }) {
     const { toggleCart, items } = useCart();
-    const [scrolled, setScrolled] = useState(false);
+    const { scrolled, headerRef } = useScrolled();
     const [searchOpen, setSearchOpen] = useState(false);
-
-    useEffect(() => {
-        const handleScroll = () => setScrolled(window.scrollY > 20);
-        window.addEventListener("scroll", handleScroll);
-        return () => window.removeEventListener("scroll", handleScroll);
-    }, []);
 
     const storeName = config?.storeName || "Loja";
     const logoUrl = config?.logoUrl;
@@ -390,6 +409,7 @@ function MinimalHeader({ config, categories, editorMode, onFieldClick }: { confi
 
     return (
         <header
+            ref={headerRef}
             data-section="header"
             data-style="minimal"
             className={cn(
@@ -498,21 +518,15 @@ function MinimalHeader({ config, categories, editorMode, onFieldClick }: { confi
 // =============================================================================
 // OPTICA HEADER - Text logo with slash, centered nav, minimal icons (like NOVA/YORK)
 // =============================================================================
-function OpticaHeader({ config, categories, editorMode, onFieldClick }: { config?: any, categories?: any[], editorMode?: boolean, onFieldClick?: (field: string) => void }) {
+function OpticaHeader({ config, categories, editorMode, isPreview, onFieldClick }: { config?: any, categories?: any[], editorMode?: boolean, isPreview?: boolean, onFieldClick?: (field: string) => void }) {
     const { toggleCart, items } = useCart();
-    const [scrolled, setScrolled] = useState(false);
+    const { scrolled, headerRef } = useScrolled();
     const [searchOpen, setSearchOpen] = useState(false);
     const pathname = usePathname();
 
-    // Only use transparent mode on home page (where hero exists)
-    const isHomePage = pathname === "/" || pathname.startsWith("/preview/");
+    // Only use transparent mode on home page (where hero exists) or in editor preview
+    const isHomePage = pathname === "/" || pathname.startsWith("/preview/") || isPreview;
     const useTransparent = isHomePage && !scrolled;
-
-    useEffect(() => {
-        const handleScroll = () => setScrolled(window.scrollY > 20);
-        window.addEventListener("scroll", handleScroll);
-        return () => window.removeEventListener("scroll", handleScroll);
-    }, []);
 
     const storeName = config?.storeName || "Loja";
     const logoUrl = config?.logoUrl;
@@ -533,6 +547,7 @@ function OpticaHeader({ config, categories, editorMode, onFieldClick }: { config
 
     return (
         <header
+            ref={headerRef}
             data-section="header"
             data-style="optica"
             className={cn(
@@ -713,16 +728,10 @@ function NavMenu({ config, className, inline, minimal, editorMode, onFieldClick,
 // =============================================================================
 // RESTAURANT HEADER - Food delivery style with status, time, and floating cart
 // =============================================================================
-function RestaurantHeader({ config, categories, editorMode, onFieldClick }: { config?: any, categories?: any[], editorMode?: boolean, onFieldClick?: (field: string) => void }) {
+function RestaurantHeader({ config, categories, editorMode, isPreview, onFieldClick }: { config?: any, categories?: any[], editorMode?: boolean, isPreview?: boolean, onFieldClick?: (field: string) => void }) {
     const { toggleCart, items } = useCart();
-    const [scrolled, setScrolled] = useState(false);
+    const { scrolled, headerRef } = useScrolled();
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
-
-    useEffect(() => {
-        const handleScroll = () => setScrolled(window.scrollY > 20);
-        window.addEventListener("scroll", handleScroll);
-        return () => window.removeEventListener("scroll", handleScroll);
-    }, []);
 
     const storeName = config?.storeName || "Restaurante";
     const logoUrl = config?.logoUrl;
@@ -743,6 +752,7 @@ function RestaurantHeader({ config, categories, editorMode, onFieldClick }: { co
 
     return (
         <header
+            ref={headerRef}
             data-section="header"
             data-style="restaurant"
             className={cn(

@@ -55,7 +55,7 @@ export default async function RootLayout({
             <AnalyticsScripts />
           </Suspense>
           {children}
-          <WhatsAppButton />
+          <WhatsAppButton phoneNumber={config.whatsapp} />
           <Toaster />
         </ThemeProvider>
       </body>

@@ -31,8 +31,10 @@ import { Header } from "@/components/shop/Header";
 import { Footer } from "@/components/shop/Footer";
 import { EditableFooter } from "@/components/admin/footer/EditableFooter";
 import { TemplateSelector } from "@/components/admin/site/TemplateSelector";
+import { MobilePreviewFrame } from "@/components/admin/site/MobilePreviewFrame";
 import { Button } from "@/components/ui/button";
-import { Eye, Check, ChevronLeft, ChevronRight, LayoutTemplate, Palette, Type, PanelTop, Home, Grid, ShoppingBag, ShoppingCart, PanelBottom, Share2, List, FileText, Smartphone, Plus, Layers, MapPin, Trash2 } from "lucide-react";
+import { Eye, Check, ChevronLeft, ChevronRight, LayoutTemplate, Palette, Type, PanelTop, Home, Grid, ShoppingBag, ShoppingCart, PanelBottom, Share2, List, FileText, Smartphone, Plus, Layers, MapPin, Trash2, Settings, LayoutDashboard, ArrowLeft, ExternalLink } from "lucide-react";
+import Link from "next/link";
 
 // Simple ID generator to avoid 'uuid' package dependency issues
 const uuidv4 = () => {
@@ -706,33 +708,134 @@ export function SiteEditorLayout({ config, banners, products, categories = [], b
                     mobileEditMode ? "fixed inset-0 w-full" : "hidden"
                 )}>
 
-                    {/* Header of Sidebar */}
-                    <div className="h-14 border-b flex items-center justify-between px-4 shrink-0 bg-white">
+                    {/* Top Bar - Voltar + Editor Visual + Preview Controls + Ver Site */}
+                    <div className="h-11 border-b flex items-center justify-between px-3 shrink-0 bg-white">
                         <div className="flex items-center gap-2">
-                            {(activeSection || selectedBlockId) ? (
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="-ml-2 gap-1 text-slate-500 hover:text-slate-900 font-normal"
-                                    onClick={selectedBlockId ? () => {
+                            <Button variant="ghost" size="sm" asChild className="gap-1 text-slate-500 hover:text-slate-900 h-7 px-1.5">
+                                <Link href="/admin/site">
+                                    <ArrowLeft className="h-3.5 w-3.5" />
+                                </Link>
+                            </Button>
+                            <div className="h-4 w-px bg-slate-200"></div>
+                            <span className="font-semibold text-slate-800 text-xs">Editor</span>
+                        </div>
+                        {/* Preview Controls - Page & Device */}
+                        <div className="flex items-center gap-1">
+                            <div className="flex items-center bg-slate-100 rounded-md p-0.5 gap-0.5">
+                                <button
+                                    onClick={() => setPreviewPage('home')}
+                                    className={cn(
+                                        "flex items-center gap-1 px-1.5 py-1 rounded text-[10px] font-medium transition-colors",
+                                        previewPage === 'home' ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                                    )}
+                                >
+                                    <Home className="h-3 w-3" />
+                                    Início
+                                </button>
+                                <button
+                                    onClick={() => setPreviewPage('product')}
+                                    className={cn(
+                                        "flex items-center gap-1 px-1.5 py-1 rounded text-[10px] font-medium transition-colors",
+                                        previewPage === 'product' ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                                    )}
+                                >
+                                    <ShoppingBag className="h-3 w-3" />
+                                    Produto
+                                </button>
+                            </div>
+                            <div className="flex items-center bg-slate-100 rounded-md p-0.5 gap-0.5">
+                                <button
+                                    onClick={() => setPreviewDevice('desktop')}
+                                    className={cn(
+                                        "p-1 rounded transition-colors",
+                                        previewDevice === 'desktop' ? "bg-white text-slate-800 shadow-sm" : "text-slate-400 hover:text-slate-600"
+                                    )}
+                                >
+                                    <LayoutTemplate className="h-3 w-3" />
+                                </button>
+                                <button
+                                    onClick={() => setPreviewDevice('mobile')}
+                                    className={cn(
+                                        "p-1 rounded transition-colors",
+                                        previewDevice === 'mobile' ? "bg-white text-slate-800 shadow-sm" : "text-slate-400 hover:text-slate-600"
+                                    )}
+                                >
+                                    <Smartphone className="h-3 w-3" />
+                                </button>
+                            </div>
+                        </div>
+                        <Button variant="outline" size="sm" asChild className="gap-1 text-[10px] text-slate-500 hover:text-slate-900 h-6 px-1.5">
+                            <Link href="/" target="_blank">
+                                <ExternalLink className="h-2.5 w-2.5" />
+                                Ver Site
+                            </Link>
+                        </Button>
+                    </div>
+
+                    {/* Header of Sidebar */}
+                    <div className="border-b shrink-0 bg-white">
+                        {/* Back button row - only show when inside a sub-section (not block editing, which has its own back button) */}
+                        {(activeSection && activeSection !== "home" && !selectedBlockId) && (
+                            <div className="h-10 flex items-center justify-between px-3">
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="-ml-2 gap-1 text-slate-500 hover:text-slate-900 font-normal text-xs h-8"
+                                        onClick={() => {
+                                            setSelectedBlockId(null);
+                                            setSelectedField(null);
+                                            router.push(pathname);
+                                        }}
+                                    >
+                                        <ChevronLeft className="h-3.5 w-3.5" />
+                                        Voltar
+                                    </Button>
+                                </div>
+                                {/* Mobile Close Button */}
+                                <div className="md:hidden">
+                                    <Button variant="ghost" size="sm" onClick={() => setMobileEditMode(false)}>
+                                        Fechar
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+                        {/* Two main navigation tabs */}
+                        {!selectedBlockId && (!activeSection || activeSection === "home") && (
+                            <div className="flex px-3 gap-1 pb-0">
+                                <button
+                                    onClick={() => {
+                                        setSection("home");
+                                        setTimeout(() => highlightComponent("home"), 100);
+                                    }}
+                                    className={cn(
+                                        "flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors border border-b-0 -mb-[1px] relative",
+                                        activeSection === "home"
+                                            ? "bg-white text-blue-600 border-slate-200 z-10"
+                                            : "text-slate-500 hover:text-slate-700 bg-slate-50 border-transparent hover:bg-slate-100"
+                                    )}
+                                >
+                                    <LayoutDashboard className="h-4 w-4" />
+                                    Blocos
+                                </button>
+                                <button
+                                    onClick={() => {
                                         setSelectedBlockId(null);
                                         setSelectedField(null);
-                                    } : handleBack}
+                                        router.push(pathname);
+                                    }}
+                                    className={cn(
+                                        "flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors border border-b-0 -mb-[1px] relative",
+                                        !activeSection
+                                            ? "bg-white text-blue-600 border-slate-200 z-10"
+                                            : "text-slate-500 hover:text-slate-700 bg-slate-50 border-transparent hover:bg-slate-100"
+                                    )}
                                 >
-                                    <ChevronLeft className="h-4 w-4" />
-                                    Voltar
-                                </Button>
-                            ) : (
-                                <span className="font-bold text-slate-800">Personalizar Layout</span>
-                            )}
-                        </div>
-
-                        {/* Mobile Close Button */}
-                        <div className="md:hidden">
-                            <Button variant="ghost" size="sm" onClick={() => setMobileEditMode(false)}>
-                                Fechar
-                            </Button>
-                        </div>
+                                    <Settings className="h-4 w-4" />
+                                    Configurações
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                     {/* Content Area */}
@@ -761,15 +864,17 @@ export function SiteEditorLayout({ config, banners, products, categories = [], b
                         ) : activeSection ? (
                             /* Active Form View */
                             <div className="p-4">
-                                <div className="mb-4 pb-2 border-b">
-                                    <h2 className="text-lg font-bold text-slate-800 capitalize flex items-center gap-2">
-                                        {getSectionLabel(activeSection)}
-                                    </h2>
-                                </div>
+                                {activeSection !== "home" && (
+                                    <div className="mb-4 pb-2 border-b">
+                                        <h2 className="text-lg font-bold text-slate-800 capitalize flex items-center gap-2">
+                                            {getSectionLabel(activeSection)}
+                                        </h2>
+                                    </div>
+                                )}
                                 {renderContent()}
                             </div>
                         ) : (
-                            /* Main Menu View (Print 4 Style) */
+                            /* Main Menu View - Configurações */
                             <div className="py-2">
                                 <div className="px-4 py-3">
                                     <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Geral</h3>
@@ -811,14 +916,6 @@ export function SiteEditorLayout({ config, banners, products, categories = [], b
                                         onClick={() => {
                                             setSection("header");
                                             setTimeout(() => highlightComponent("header"), 100);
-                                        }}
-                                    />
-                                    <SidebarMenuItem
-                                        label="Página inicial"
-                                        icon={Home}
-                                        onClick={() => {
-                                            setSection("home");
-                                            setTimeout(() => highlightComponent("home"), 100);
                                         }}
                                     />
                                     <SidebarMenuItem
@@ -905,78 +1002,43 @@ export function SiteEditorLayout({ config, banners, products, categories = [], b
 
             {/* Right Panel: Live Preview */}
             <div className={cn(
-                "flex-1 bg-slate-100 overflow-y-auto flex items-start justify-center relative transition-all duration-300",
-                fullScreenPreview ? "p-0" : "p-4"
+                "flex-1 bg-white overflow-hidden relative transition-all duration-300",
+                previewDevice === 'mobile' && !fullScreenPreview && "flex items-center justify-center bg-slate-100"
             )}>
-                {!fullScreenPreview && (
-                    <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
-                        {/* Page Selector */}
-                        <div className="bg-white/80 backdrop-blur rounded-lg border shadow-sm flex items-center p-1 gap-1">
-                            <Button
-                                variant={previewPage === 'home' ? 'secondary' : 'ghost'}
-                                size="sm"
-                                className="h-8 text-xs gap-1.5"
-                                onClick={() => setPreviewPage('home')}
-                                title="Página Inicial"
-                            >
-                                <Home className="h-3.5 w-3.5" />
-                                Início
-                            </Button>
-                            <Button
-                                variant={previewPage === 'product' ? 'secondary' : 'ghost'}
-                                size="sm"
-                                className="h-8 text-xs gap-1.5"
-                                onClick={() => setPreviewPage('product')}
-                                title="Página de Produto"
-                            >
-                                <ShoppingBag className="h-3.5 w-3.5" />
-                                Produto
-                            </Button>
-                        </div>
-
-                        {/* Device Toggles */}
-                        <div className="bg-white/80 backdrop-blur rounded-lg border shadow-sm flex items-center p-1 gap-1">
-                            <Button
-                                variant={previewDevice === 'desktop' ? 'secondary' : 'ghost'}
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={() => setPreviewDevice('desktop')}
-                                title="Visualizar Desktop"
-                            >
-                                <LayoutTemplate className="h-4 w-4" />
-                            </Button>
-                            <Button
-                                variant={previewDevice === 'mobile' ? 'secondary' : 'ghost'}
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={() => setPreviewDevice('mobile')}
-                                title="Visualizar Mobile"
-                            >
-                                <Smartphone className="h-4 w-4" />
-                            </Button>
-                        </div>
-
-                        <div className="bg-white/80 backdrop-blur px-3 py-1.5 rounded-full text-xs font-medium text-slate-500 border shadow-sm flex items-center gap-2 pointer-events-none h-10">
-                            <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                            </span>
-                            Live Preview
-                        </div>
+                {/* Mobile Preview via iframe */}
+                {previewDevice === 'mobile' && !fullScreenPreview ? (
+                    <div
+                        className="w-[375px] h-[calc(100%-2rem)] overflow-hidden border-slate-300 border-8 rounded-[3rem] shadow-2xl bg-white"
+                        style={{ zIndex: 0 }}
+                    >
+                        <MobilePreviewFrame
+                            activeConfig={activeConfig}
+                            blocks={blocks}
+                            footerBlocks={footerBlocks}
+                            footerBottomBlocks={footerBottomBlocks}
+                            previewPage={previewPage}
+                            products={products || []}
+                            categories={categories || []}
+                            brands={brands || []}
+                            menus={menus || []}
+                            banners={banners || []}
+                            deliveryCategories={deliveryCategories || []}
+                            onBlockClick={(blockId) => {
+                                setSection("home", true);
+                                setSelectedBlockId(blockId);
+                            }}
+                            onSectionClick={(section) => {
+                                setSelectedBlockId(null);
+                                setSection(section);
+                            }}
+                        />
                     </div>
-                )}
-
-                {/* Browser Frame */}
-                {/* Responsive Width Logic */}
-                <div
-                    ref={previewRef}
-                    className={cn(
-                        "shadow-2xl overflow-auto border border-slate-200 origin-top transform transition-all duration-500",
-                        fullScreenPreview ? "w-full h-full rounded-none scale-100 border-0" : "min-h-[800px] max-h-[90vh] rounded-lg",
-                        /* Width override based on device */
-                        !fullScreenPreview && previewDevice === 'mobile' ? "w-[375px] border-slate-300 border-8 rounded-[3rem]" : (!fullScreenPreview && "w-full")
-                    )}
-                >
+                ) : (
+                    <div
+                        ref={previewRef}
+                        className="absolute inset-0 overflow-auto"
+                        style={{ zIndex: 0, transform: "translateZ(0)" }}
+                    >
                     {/* Preview Styles Injection */}
                     <style jsx global>{`
                             /* Component Highlight Animation */
@@ -1049,6 +1111,7 @@ export function SiteEditorLayout({ config, banners, products, categories = [], b
                                 font-family: var(--font-body);
                                 font-size: var(--size-body);
                             }
+
                         `}</style>
                     {/* Dynamic Font Loader (Simple version) */}
                     <link href={`https://fonts.googleapis.com/css2?family=${(activeConfig.headingFont || "Inter").replace(' ', '+')}:wght@400;700&family=${(activeConfig.bodyFont || "Inter").replace(' ', '+')}:wght@400;500;700&display=swap`} rel="stylesheet" />
@@ -1067,6 +1130,7 @@ export function SiteEditorLayout({ config, banners, products, categories = [], b
                                     config={activeConfig}
                                     categories={categories}
                                     editorMode={activeSection === "header"}
+                                    isPreview={true}
                                     onFieldClick={(field) => setSelectedHeaderField({ field, timestamp: Date.now() })}
                                 />
 
@@ -1153,8 +1217,9 @@ export function SiteEditorLayout({ config, banners, products, categories = [], b
                             </>
                         )}
                     </div>
-                </div>
+                    </div>
+                )}
             </div>
-        </div >
+        </div>
     );
 }

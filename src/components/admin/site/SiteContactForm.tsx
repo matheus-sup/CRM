@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Phone, MapPin, Mail, Instagram, Facebook, Youtube, Twitter, ChevronDown } from "lucide-react";
+import { Phone, MapPin, Mail, Instagram, Facebook, Youtube, Twitter, ChevronDown, Info } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
@@ -51,21 +51,27 @@ export function SiteContactForm({ config, onConfigChange, onHighlightComponent }
 
                     <div className="grid gap-6 md:grid-cols-2">
                         <div className="space-y-2">
-                            <Label htmlFor="whatsapp">WhatsApp</Label>
+                            <div className="flex items-center gap-1.5">
+                                <Label htmlFor="whatsapp">WhatsApp</Label>
+                                <div className="relative group">
+                                    <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 w-56 text-center z-50 pointer-events-none">
+                                        Preencha o DDD + número (ex: 11999999999). Um botão flutuante do WhatsApp aparecerá no site. Deixe vazio para desativar.
+                                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900" />
+                                    </div>
+                                </div>
+                            </div>
                             <div className="relative">
                                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                 <Input
                                     id="whatsapp"
                                     name="whatsapp"
                                     className="pl-9"
-                                    placeholder="5511999999999"
-                                    defaultValue={config.whatsapp || ""}
+                                    placeholder="11999999999"
+                                    defaultValue={(config.whatsapp || "").replace(/^\+?55/, "")}
                                     onChange={(e) => onConfigChange?.("whatsapp", e.target.value)}
                                 />
                             </div>
-                            <p className="text-xs text-muted-foreground">
-                                Ao configurar, um botão flutuante do WhatsApp aparecerá no site.
-                            </p>
                         </div>
 
                         <div className="space-y-2">

@@ -161,6 +161,17 @@
 }
 
 /* Rich Text Editor Styles */
+/* Product grid: 2 columns on mobile, auto-fit on desktop */
+[data-product-grid] {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (min-width: 640px) {
+  [data-product-grid] {
+    grid-template-columns: repeat(auto-fit, minmax(min(var(--card-size, 200px), 45vw), var(--card-size, 200px)));
+  }
+}
+
 .rich-text-editor:empty:before {
   content: attr(data-placeholder);
   color: #9ca3af;

@@ -71,7 +71,7 @@ function StandardCard({ product, config }: ProductCardProps) {
 
     return (
         <Link href={`/loja/produto/${product.slug}`} className="group relative block h-full">
-            <div className="flex h-full flex-col gap-4 rounded-xl p-4 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border border-transparent hover:border-primary/10">
+            <div className="flex h-full flex-col gap-2 sm:gap-4 rounded-xl p-2 sm:p-4 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border border-transparent hover:border-primary/10">
                 {/* Image Container */}
                 <div
                     className="relative aspect-square w-full overflow-hidden rounded-lg bg-transparent"
@@ -169,7 +169,7 @@ function StandardCard({ product, config }: ProductCardProps) {
                             </span>
                         )}
                         <div className="flex items-center justify-between">
-                            <span className="text-lg font-bold" style={{ color: config?.priceColor || config?.themeColor || "var(--primary)" }}>
+                            <span className="text-sm sm:text-lg font-bold" style={{ color: config?.priceColor || config?.themeColor || "var(--primary)" }}>
                                 {formatPrice(price)}
                             </span>
                             {showInstallments && (

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Trash2, Image as ImageIcon, X } from "lucide-react";
+import { ArrowLeft, Trash2, Image as ImageIcon, X, PenLine, Palette, Info, Smartphone } from "lucide-react";
 import { PageBlock } from "@/types/page-builder";
 import { ColorPickerInput } from "./ColorPickerInput";
 import {
@@ -28,6 +28,26 @@ interface BlockPropertyEditorProps {
     categories?: any[];
     brands?: any[];
 }
+
+// Block type labels in Portuguese
+const BLOCK_TYPE_LABELS: Record<string, string> = {
+    "hero": "Banner Hero",
+    "text": "Texto Rico",
+    "html": "HTML Personalizado",
+    "product-grid": "Grid de Produtos",
+    "promo-banner": "Banner Promocional",
+    "testimonials": "Depoimentos",
+    "brands": "Marcas",
+    "newsletter": "Newsletter",
+    "categories": "Categorias",
+    "columns": "Colunas",
+    "blog-posts": "Blog / Posts",
+    "instagram": "Instagram",
+    "map": "Mapa",
+    "promo": "Promoção",
+};
+
+const getBlockTypeLabel = (type: string) => BLOCK_TYPE_LABELS[type] || type;
 
 // =============================================================================
 // COMPACT IMAGE PICKER - Small inline image picker with media library
@@ -367,21 +387,58 @@ export function BlockPropertyEditor({ block, onUpdate, onDelete, onBack, focusFi
         onUpdate(newData);
     };
 
+    const [editorTab, setEditorTab] = useState<"content" | "style">("content");
+
     return (
         <div className="h-full flex flex-col">
-            <div className="p-4 border-b flex items-center justify-between bg-slate-50">
-                <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" onClick={onBack} className="h-8 w-8">
-                        <ArrowLeft className="h-4 w-4" />
+            {/* Header with block name + actions */}
+            <div className="px-4 pt-3 pb-0 border-b bg-slate-50">
+                <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="icon" onClick={onBack} className="h-8 w-8">
+                            <ArrowLeft className="h-4 w-4" />
+                        </Button>
+                        <h3 className="font-bold text-slate-800 text-sm truncate w-40">Editar {block.label || getBlockTypeLabel(block.type)}</h3>
+                    </div>
+                    <Button variant="ghost" size="icon" onClick={() => {
+                        if (window.confirm(`Tem certeza que deseja excluir o bloco "${block.label || getBlockTypeLabel(block.type)}"?`)) {
+                            onDelete(block.id);
+                        }
+                    }} className="h-8 w-8 text-red-500 hover:bg-red-50">
+                        <Trash2 className="h-4 w-4" />
                     </Button>
-                    <h3 className="font-bold text-slate-800 text-sm truncate w-40">Editar {block.label || block.type}</h3>
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => onDelete(block.id)} className="h-8 w-8 text-red-500 hover:bg-red-50">
-                    <Trash2 className="h-4 w-4" />
-                </Button>
+                {/* Tabs */}
+                <div className="flex gap-1">
+                    <button
+                        onClick={() => setEditorTab("content")}
+                        className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-t-md transition-colors ${
+                            editorTab === "content"
+                                ? "bg-white text-blue-600 border border-b-white -mb-[1px] relative z-10"
+                                : "text-slate-500 hover:text-slate-700 hover:bg-slate-100"
+                        }`}
+                    >
+                        <PenLine className="h-3.5 w-3.5" />
+                        Conteúdo
+                    </button>
+                    <button
+                        onClick={() => setEditorTab("style")}
+                        className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-t-md transition-colors ${
+                            editorTab === "style"
+                                ? "bg-white text-blue-600 border border-b-white -mb-[1px] relative z-10"
+                                : "text-slate-500 hover:text-slate-700 hover:bg-slate-100"
+                        }`}
+                    >
+                        <Palette className="h-3.5 w-3.5" />
+                        Estilo / Layout
+                    </button>
+                </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-6">
+
+            {/* ===== CONTENT TAB ===== */}
+            {editorTab === "content" && (<>
 
                 {/* --- HTML BLOCK EDITOR --- */}
                 {block.type === "html" && (
@@ -552,7 +609,7 @@ export function BlockPropertyEditor({ block, onUpdate, onDelete, onBack, focusFi
                                                     </div>
                                                     <div className="space-y-1 border-t pt-2 mt-2">
                                                         <CompactImagePicker
-                                                            label="Imagem do Banner"
+                                                            label="Imagem do Banner (Desktop)"
                                                             value={slide.imageUrl || ""}
                                                             onChange={(url) => {
                                                                 const newSlides = [...slides];
@@ -560,7 +617,37 @@ export function BlockPropertyEditor({ block, onUpdate, onDelete, onBack, focusFi
                                                                 updateContent("slides", newSlides);
                                                             }}
                                                         />
-                                                        <p className="text-[10px] text-slate-400">PNG, JPG ou GIF. Tamanho: 1920 × 840px</p>
+                                                        <div className="flex items-center gap-1">
+                                                            <p className="text-[10px] text-slate-400">Tamanho: 1920 × 840px</p>
+                                                            <div className="relative group">
+                                                                <Info className="h-3 w-3 text-slate-400 cursor-help" />
+                                                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-900 text-white text-[10px] rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 w-48 text-center z-50 pointer-events-none">
+                                                                    Imagem horizontal para telas grandes (notebooks e desktops). Proporção 2.3:1.
+                                                                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900" />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="mt-2">
+                                                            <CompactImagePicker
+                                                                label="Imagem Mobile"
+                                                                value={slide.mobileImageUrl || ""}
+                                                                onChange={(url) => {
+                                                                    const newSlides = [...slides];
+                                                                    newSlides[index] = { ...slide, mobileImageUrl: url };
+                                                                    updateContent("slides", newSlides);
+                                                                }}
+                                                            />
+                                                            <div className="flex items-center gap-1">
+                                                                <p className="text-[10px] text-slate-400">Tamanho: 750 × 1200px</p>
+                                                                <div className="relative group">
+                                                                    <Info className="h-3 w-3 text-slate-400 cursor-help" />
+                                                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-900 text-white text-[10px] rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 w-48 text-center z-50 pointer-events-none">
+                                                                        Opcional. Imagem vertical otimizada para celulares (proporção 5:8). Se vazio, a imagem desktop será redimensionada automaticamente para mobile.
+                                                                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900" />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -2083,9 +2170,10 @@ export function BlockPropertyEditor({ block, onUpdate, onDelete, onBack, focusFi
                     </div>
                 )}
 
-                <div className="border-t pt-4 my-2"></div>
-                <h4 className="font-semibold text-xs uppercase text-slate-400 mb-3">Estilo / Layout</h4>
+            </>)}
 
+            {/* ===== STYLE TAB ===== */}
+            {editorTab === "style" && (
                 <div className="space-y-4">
                     <ColorPickerInput
                         id="bg-color"
@@ -2234,6 +2322,7 @@ export function BlockPropertyEditor({ block, onUpdate, onDelete, onBack, focusFi
                         </div>
                     )}
                 </div>
+            )}
 
             </div>
         </div>

@@ -36,6 +36,12 @@ const getBlockLabel = (block: PageBlock) => {
     if (block.type === "html") return "HTML Personalizado";
     if (block.type === "product-grid") return "Grid de Produtos";
     if (block.type === "promo-banner") return block.content?.title || "Banner Promocional";
+    if (block.type === "testimonials") return "Depoimentos";
+    if (block.type === "brands") return "Marcas";
+    if (block.type === "newsletter") return "Newsletter";
+    if (block.type === "categories") return "Categorias";
+    if (block.type === "columns") return "Colunas";
+    if (block.type === "blog-posts") return "Blog / Posts";
     return "Bloco";
 };
 
@@ -115,7 +121,7 @@ function SortableBlockItem({ block, isSelected, onSelect, onHighlightBlock, onMo
                     variant="ghost"
                     size="icon"
                     className="h-7 w-7 text-red-300 hover:text-red-600 hover:bg-red-50"
-                    onClick={(e) => { e.stopPropagation(); onDelete(block.id); }}
+                    onClick={(e) => { e.stopPropagation(); if (window.confirm(`Tem certeza que deseja excluir o bloco "${getBlockLabel(block)}"?`)) { onDelete(block.id); } }}
                     title="Excluir"
                 >
                     <Trash2 className="h-3 w-3" />

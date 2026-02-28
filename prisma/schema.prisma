@@ -188,13 +188,19 @@ model StoreConfig {
   maintenancePassword  String? 
 
   // Social Login Configuration
-  googleClientId    String?
-  googleClientSecret String?
+  googleLoginEnabled  Boolean @default(false)
+  googleClientId      String?
+  googleClientSecret  String?
 
-  appleClientId     String?
-  appleKeyId        String?
-  appleTeamId       String?
-  applePrivateKey   String?
+  appleLoginEnabled   Boolean @default(false)
+  appleClientId       String?
+  appleKeyId          String?
+  appleTeamId         String?
+  applePrivateKey     String?
+
+  facebookLoginEnabled Boolean @default(false)
+  facebookAppId       String?
+  facebookAppSecret   String?
 
   // Restaurant/Cardapio Configuration
   siteType          String?  // "restaurant", "cardapio", null for standard ecommerce

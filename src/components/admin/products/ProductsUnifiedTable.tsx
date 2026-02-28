@@ -23,6 +23,13 @@ import { StockHistoryDialog } from "./StockHistoryDialog";
 import { StockAdjustmentDialog } from "./StockAdjustmentDialog";
 import { useRouter } from "next/navigation";
 
+interface ProductVariant {
+    id: string;
+    name: string;
+    colorHex: string | null;
+    colorImage: string | null;
+}
+
 interface Product {
     id: string;
     name: string;
@@ -37,6 +44,7 @@ interface Product {
     brand?: { name: string } | null;
     brandLegacy?: string | null;
     category?: { id: string; name: string } | null;
+    variants?: ProductVariant[];
 }
 
 const ITEMS_PER_PAGE = 50;
@@ -57,10 +65,15 @@ const ProductRow = memo(function ProductRow({
 }) {
     const brandName = product.brand?.name || product.brandLegacy || "-";
 
+    const variants = product.variants || [];
+    const maxSwatches = 5;
+    const visibleVariants = variants.slice(0, maxSwatches);
+    const extraCount = variants.length - maxSwatches;
+
     return (
         <div className="flex items-center p-4 border-b last:border-0 hover:bg-slate-50 transition-colors">
             {/* Product Info */}
-            <div className={`${showCostColumn ? "w-[24%]" : "w-[28%]"} flex items-center gap-4`}>
+            <div className={`${showCostColumn ? "w-[24%]" : "w-[30%]"} flex items-center gap-4`}>
                 <div className="h-10 w-10 rounded-md bg-slate-100 flex items-center justify-center text-slate-400 text-sm font-bold overflow-hidden shrink-0">
                     {product.images?.[0]?.url ? (
                         <img
@@ -104,7 +117,7 @@ const ProductRow = memo(function ProductRow({
             )}
 
             {/* Stock */}
-            <div className={`${showCostColumn ? "w-[10%]" : "w-[12%]"}`}>
+            <div className={`${showCostColumn ? "w-[8%]" : "w-[10%]"}`}>
                 <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                     product.stock > 0 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
                 }`}>
@@ -112,11 +125,35 @@ const ProductRow = memo(function ProductRow({
                 </span>
             </div>
 
-            {/* Expiration - simplified */}
-            <div className="w-[14%] text-sm text-slate-500">
-                {product.nextBatchExpiry || product.expiresAt
-                    ? new Date(product.nextBatchExpiry || product.expiresAt!).toLocaleDateString("pt-BR")
-                    : "-"}
+            {/* Color Variants */}
+            <div className="w-[14%]">
+                {variants.length > 0 ? (
+                    <div className="flex items-center gap-1 flex-wrap">
+                        {visibleVariants.map((v) => (
+                            v.colorImage ? (
+                                <img
+                                    key={v.id}
+                                    src={v.colorImage}
+                                    alt={v.name}
+                                    title={v.name}
+                                    className="h-5 w-5 rounded-full object-cover border border-slate-200 shrink-0"
+                                />
+                            ) : (
+                                <span
+                                    key={v.id}
+                                    title={v.name}
+                                    className="h-5 w-5 rounded-full border border-slate-200 shrink-0"
+                                    style={{ backgroundColor: v.colorHex || "#ccc" }}
+                                />
+                            )
+                        ))}
+                        {extraCount > 0 && (
+                            <span className="text-xs text-slate-400 ml-0.5">+{extraCount}</span>
+                        )}
+                    </div>
+                ) : (
+                    <span className="text-sm text-slate-400">-</span>
+                )}
             </div>
 
             {/* Actions */}
@@ -301,12 +338,12 @@ export function ProductsUnifiedTable({ products }: { products: Product[] }) {
             <div className="rounded-lg border bg-white shadow-sm overflow-hidden">
                 {/* Header */}
                 <div className="p-3 border-b bg-slate-50 flex text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                    <div className={showCostColumn ? "w-[24%]" : "w-[28%]"}>Produto</div>
+                    <div className={showCostColumn ? "w-[24%]" : "w-[30%]"}>Produto</div>
                     <div className={showCostColumn ? "w-[10%]" : "w-[12%]"}>Marca</div>
                     <div className={showCostColumn ? "w-[10%]" : "w-[12%]"}>Preço</div>
                     {showCostColumn && <div className="w-[10%]">Custo</div>}
-                    <div className={showCostColumn ? "w-[10%]" : "w-[12%]"}>Estoque</div>
-                    <div className="w-[14%]">Validade</div>
+                    <div className={showCostColumn ? "w-[8%]" : "w-[10%]"}>Estoque</div>
+                    <div className="w-[14%]">Cor</div>
                     <div className="w-[22%] text-right">Ações</div>
                 </div>
 

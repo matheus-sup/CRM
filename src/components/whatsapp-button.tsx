@@ -1,7 +1,43 @@
-export function WhatsAppButton() {
+"use client";
+
+import { usePathname } from "next/navigation";
+
+// Pages where the WhatsApp button should be visible
+const ALLOWED_PREFIXES = [
+    "/loja",
+    "/admin/editor/preview",
+];
+
+// Pages where it should NOT appear (even if they match above)
+const BLOCKED_PREFIXES = [
+    "/admin",
+];
+
+function isAllowed(pathname: string): boolean {
+    // Explicitly allowed paths
+    if (ALLOWED_PREFIXES.some(p => pathname.startsWith(p))) return true;
+    // Block admin pages
+    if (BLOCKED_PREFIXES.some(p => pathname.startsWith(p))) return false;
+    // Allow root / homepage and public pages
+    if (pathname === "/" || pathname.startsWith("/produto") || pathname.startsWith("/cardapio")) return true;
+    return false;
+}
+
+interface WhatsAppButtonProps {
+    phoneNumber?: string | null;
+}
+
+export function WhatsAppButton({ phoneNumber }: WhatsAppButtonProps) {
+    const pathname = usePathname();
+
+    if (!phoneNumber || !isAllowed(pathname)) return null;
+
+    const cleanNumber = phoneNumber.replace(/\D/g, "");
+    const fullNumber = cleanNumber.startsWith("55") ? cleanNumber : `55${cleanNumber}`;
+
     return (
         <a
-            href="https://wa.me/5511999999999"
+            href={`https://wa.me/${fullNumber}`}
             target="_blank"
             rel="noopener noreferrer"
             className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition-transform hover:scale-110 hover:bg-[#20BD5A] animate-in fade-in zoom-in"

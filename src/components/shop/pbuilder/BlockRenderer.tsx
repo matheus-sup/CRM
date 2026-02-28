@@ -118,23 +118,52 @@ function HeroDefault({ content, styles }: any) {
     const { slides, currentSlide, currentSlideData, nextSlide, prevSlide, goToSlide, isTransitioning, slideDirection, transition } = useHeroCarousel(content);
     const alignClass = styles.textAlign === 'left' ? 'items-start text-left' : styles.textAlign === 'right' ? 'items-end text-right' : 'items-center text-center';
     const hasImage = !!currentSlideData.imageUrl;
+    const hasMobileImage = !!currentSlideData.mobileImageUrl;
 
     return (
         <div
-            className="w-full relative overflow-hidden"
+            className="w-full relative overflow-hidden h-[45vh] sm:h-auto"
+            data-hero-inner="true"
             style={{
                 background: styles.background || undefined,
                 backgroundColor: !styles.background ? (styles.backgroundColor || undefined) : undefined,
                 minHeight: styles.minHeight || undefined
             }}
         >
-            {/* Background Image */}
-            {hasImage && (
+            {/* Background Image - Mobile specific or Desktop with optimized sizes */}
+            {hasImage && hasMobileImage ? (
+                <>
+                    {/* Mobile image - hidden on sm+ */}
+                    <Image
+                        src={currentSlideData.mobileImageUrl}
+                        alt={currentSlideData.title || "Banner"}
+                        fill
+                        sizes="100vw"
+                        className={cn(
+                            "object-cover transition-opacity duration-500 sm:hidden",
+                            isTransitioning ? "opacity-0" : "opacity-100"
+                        )}
+                        priority
+                    />
+                    {/* Desktop image - hidden on mobile */}
+                    <Image
+                        src={currentSlideData.imageUrl}
+                        alt={currentSlideData.title || "Banner"}
+                        fill
+                        sizes="(max-width: 639px) 0px, 100vw"
+                        className={cn(
+                            "object-cover transition-opacity duration-500 hidden sm:block",
+                            isTransitioning ? "opacity-0" : "opacity-100"
+                        )}
+                        priority
+                    />
+                </>
+            ) : hasImage && (
                 <Image
                     src={currentSlideData.imageUrl}
                     alt={currentSlideData.title || "Banner"}
                     fill
-                    sizes="100vw"
+                    sizes="(max-width: 639px) 750px, 100vw"
                     className={cn(
                         "object-cover transition-opacity duration-500",
                         isTransitioning ? "opacity-0" : "opacity-100"
@@ -148,7 +177,7 @@ function HeroDefault({ content, styles }: any) {
                     className={cn(
                         "w-full flex flex-col justify-center px-6 sm:px-12 md:px-20 lg:px-28 pt-16 sm:pt-20 md:pt-32 pb-10 sm:pb-12 relative z-[1]",
                         alignClass,
-                        hasImage && "min-h-[300px] sm:min-h-[400px] md:min-h-[500px]"
+                        hasImage && "min-h-full sm:min-h-[400px] md:min-h-[500px]"
                     )}
                     style={{ minHeight: !hasImage && styles.minHeight ? styles.minHeight : undefined }}
                 >
@@ -618,16 +647,26 @@ const ProductGridBlock = ({ content, products, isAdmin, config, variant, styles 
     return (
         <div className="py-4 sm:py-6 md:py-8 px-2 sm:px-4">
             {title}
+            {!isHorizontalCards && (
+                <style>{`
+                    [data-product-grid] {
+                        grid-template-columns: repeat(2, 1fr) !important;
+                    }
+                    @media (min-width: 640px) {
+                        [data-product-grid] {
+                            grid-template-columns: repeat(auto-fit, minmax(min(${cardSize}px, 45vw), ${cardSize}px)) !important;
+                        }
+                    }
+                `}</style>
+            )}
             <div
+                data-product-grid
                 className={cn(
                     "gap-2 sm:gap-3 md:gap-4",
                     isHorizontalCards
                         ? "flex flex-col max-w-2xl mx-auto"
-                        : "grid justify-center"
+                        : "grid"
                 )}
-                style={isHorizontalCards ? undefined : {
-                    gridTemplateColumns: `repeat(auto-fit, minmax(min(${cardSize}px, 45vw), ${cardSize}px))`
-                }}
             >
                 {filteredProducts.map((product) => (
                     <ProductCard key={product.id} product={product} config={mergedConfig} />
@@ -1974,6 +2013,7 @@ export function BlockRenderer({ blocks, isAdmin, onSelectBlock, products = [], c
                         key={block.id}
                         id={block.id}
                         data-block-id={block.id}
+                        data-block-type={block.type}
                         onClick={(e) => {
                             if (isAdmin && onSelectBlock) {
                                 e.stopPropagation(); // Prevent parent clicks
